@@ -1,0 +1,8 @@
+===== 模型/关键文件 SHA256 2026-08-31T14:43:48+08:00 =====
+6466d021101d558d5bb119397ed595d0f64d0a0dcca977e874ff2d7b537efd9e  /home/jedyying/Downloads/yolov8n-pose_ncnn_model/model.ncnn.param
+e3d735f7e5281bbd882b272b03a167746844f5d05d1d7f2f67a8c28f82223c57  /home/jedyying/Downloads/yolov8n-pose_ncnn_model/model.ncnn.bin
+f974359b4bd4f382ac50b4f0fb3d9d96b7a7356bccbebb9dc15303869df0a579  /home/jedyying/Downloads/yolov8n-pose_ncnn_model/metadata.yaml
+2ef3b8b4ce416351044fe2d8adf34866aa468edf473e671a475ead67af296771  /home/jedyying/Downloads/yolov8n_ncnn_model/model.ncnn.param
+5240315048b690b47c1a7bdefc8f3b3db8275b5c79b3a4cfc9977e26863c5f8e  /home/jedyying/Downloads/yolov8n_ncnn_model/model.ncnn.bin
+e118ba5867f9fe127b600f5499c5441551e16dae92c7e2526604a58c9b96ab9a  /home/jedyying/Agent工作区/yolo_demo/test_face_posture.py
+d68a2226a4ba31fd99b83e5cc12e565dcbd568826b47a87b00ccd6925f525c31  /home/jedyying/Agent工作区/yolo_demo/export.log

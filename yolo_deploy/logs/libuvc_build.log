@@ -1,0 +1,45 @@
+Error: could not find CMAKE_PROJECT_NAME in Cache
+In file included from /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/src/ctrl.c:42:
+/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/include/libuvc/libuvc.h:11:10: fatal error: libuvc/libuvc_config.h: No such file or directory
+   11 | #include <libuvc/libuvc_config.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+In file included from /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/src/ctrl-gen.c:2:
+/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/include/libuvc/libuvc.h:11:10: fatal error: libuvc/libuvc_config.h: No such file or directory
+   11 | #include <libuvc/libuvc_config.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+In file included from /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/src/device.c:39:
+/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/include/libuvc/libuvc.h:11:10: fatal error: libuvc/libuvc_config.h: No such file or directory
+   11 | #include <libuvc/libuvc_config.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+In file included from /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/src/diag.c:39:
+/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/include/libuvc/libuvc.h:11:10: fatal error: libuvc/libuvc_config.h: No such file or directory
+   11 | #include <libuvc/libuvc_config.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+In file included from /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/src/example.c:1:
+/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/include/libuvc/libuvc.h:11:10: fatal error: libuvc/libuvc_config.h: No such file or directory
+   11 | #include <libuvc/libuvc_config.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+In file included from /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/src/frame.c:38:
+/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/include/libuvc/libuvc.h:11:10: fatal error: libuvc/libuvc_config.h: No such file or directory
+   11 | #include <libuvc/libuvc_config.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+In file included from /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/src/init.c:78:
+/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/include/libuvc/libuvc.h:11:10: fatal error: libuvc/libuvc_config.h: No such file or directory
+   11 | #include <libuvc/libuvc_config.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+In file included from /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/src/stream.c:39:
+/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/include/libuvc/libuvc.h:11:10: fatal error: libuvc/libuvc_config.h: No such file or directory
+   11 | #include <libuvc/libuvc_config.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libuvc-musl/src/src/test.c:35:10: fatal error: opencv2/highgui/highgui_c.h: No such file or directory
+   35 | #include <opencv2/highgui/highgui_c.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.

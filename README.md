@@ -63,3 +63,14 @@ RG660MK AI CPE (192.168.1.1, OpenWrt 23.05 / aarch64)
 - 阈值（0.45/0.18/0.12/0.75/0.35）为初值，需真实数据调优
 
 详见 docs/architecture.md 与 docs/report_*.pdf
+
+## 仓库结构（2026-09-01 追加 DPI / 人脸 / 坐姿成果）
+
+| 目录 | 内容 |
+|------|------|
+| `dpi/` | 5G 视频轻量 DPI 只读状态查询接口（`dpi_status_api.py`）、设备 Hermes 对接说明、播放卡顿诊断 skill。令牌走设备本地文件，不入库 |
+| `yolo_deploy/` | YOLOv8-pose 人脸可见性 / 坐姿检测的 C++ 部署工程：源码（`src/`）、构建与测试脚本（`scripts/`）、基线对比与部署报告（`results/`）、安装打包（`package/`，仅配置与服务，权重 .bin 与 ARM 可执行不入库）、证据链（`evidence/`）、日志（`logs/`） |
+| `demo/` | 人脸 / 坐姿检测快速验证脚本与样例输出图 |
+| `docs/` | 设计文档、部署方案（docx）、DPI 阶段报告、服务化交付报告等 |
+
+> 编译产物（`build/`）、ncnn 模型权重（`*.ncnn.bin`，各 13MB）、443MB 固件包均按 `.gitignore` 排除，可按 `yolo_deploy/package/install.sh` 与源码自行编译 / 导出。

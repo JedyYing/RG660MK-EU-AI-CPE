@@ -1,0 +1,1 @@
+阶段B 摄像头测试日志:待真机接入后由 scripts/20_stageB_camera_bench.sh 生成。当前设备访问被阻塞(SSH 凭据缺失)。

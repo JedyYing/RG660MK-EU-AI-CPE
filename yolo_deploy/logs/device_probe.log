@@ -1,0 +1,24 @@
+===== RG660MK 连通性只读探测 2026-08-31T14:43:06+08:00 =====
+---- ip route to 192.168.1.1 ----
+192.168.1.1 via 192.168.1.1 dev enx9c69d3c6b35d src 192.168.1.244 uid 1000 
+    cache 
+---- ping 192.168.1.1 ----
+PING 192.168.1.1 (192.168.1.1) 56(84) bytes of data.
+64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=2.28 ms
+64 bytes from 192.168.1.1: icmp_seq=2 ttl=64 time=1.63 ms
+
+--- 192.168.1.1 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 1.626/1.953/2.280/0.327 ms
+---- ssh probe (BatchMode, 8s timeout) ----
+root@192.168.1.1: Permission denied (publickey,password).
+EXIT=0
+
+===== 设备访问结论 2026-08-31T14:52:17+08:00 =====
+网络: 192.168.1.1 可 ping 通 (RTT ~2ms), 经网卡 enx9c69d3c6b35d, 本机 192.168.1.244
+SSH: TCP/22 开放, 但认证失败 (publickey,password) —— agent 默认 key 与 id_ed25519_termux 均被拒
+根因(据 ~/.bash_history): 之前设备是用临时 key /tmp/kiro_rg660_usb_host_20260825_ed25519 接入,
+  该 key 通过 adb 写入设备 /etc/dropbear/authorized_keys。现 /tmp 下该 key 已被清理。
+ADB: adb devices 无设备 (设备当前不在 adb/USB-gadget 模式), lsusb 无 Quectel(2c7c) 节点。
+结论: 设备端执行(阶段A/B/C 真机)当前被阻塞,缺少 SSH 凭据/adb 通道。
+解阻塞需用户: 重新用 adb 授权并把新公钥写入设备 dropbear,或提供设备 root 口令。

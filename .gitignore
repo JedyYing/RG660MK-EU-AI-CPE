@@ -2,3 +2,17 @@ __pycache__/
 *.pyc
 .immich_key
 .DS_Store
+
+# 敏感令牌 / 凭据 — 绝不入库
+.status_token
+*.token
+*_token
+
+# 大二进制产物 — 可重新编译/导出, 不入库
+*.ncnn.bin
+*.tar.gz
+build/
+*.dbg
+pose_image_arm64
+pose_camera_arm64
+pose_image_host
