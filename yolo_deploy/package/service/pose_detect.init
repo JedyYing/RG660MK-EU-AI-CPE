@@ -1,0 +1,31 @@
+#!/bin/sh /etc/rc.common
+# OpenWrt procd 服务:RG660MK 姿态/坐姿检测(pose-only)
+# 安装为 /etc/init.d/pose_detect;默认不 enable(验收通过后再 enable)。
+# procd 负责断线自动重试(带退避),不会无限高频重启。
+
+USE_PROCD=1
+START=99      # 尽量晚启动,让 5G/Wi-Fi/路由先就绪
+STOP=10
+
+# 部署根目录(install.sh 会写入实际路径)
+BASE="__BASE__"
+
+start_service() {
+    procd_open_instance
+    procd_set_param command "$BASE/service/pose_run.sh" "$BASE/config/pose.conf"
+    procd_set_param respawn 30 10 0    # 崩溃后:阈值30s内、每次间隔10s、无限次(0)但有间隔,避免高频重启
+    procd_set_param nice 10            # 低优先级,保 CPE 主业务
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_set_param pidfile /var/run/pose_detect.pid
+    procd_close_instance
+}
+
+stop_service() {
+    :
+}
+
+reload_service() {
+    stop
+    start
+}

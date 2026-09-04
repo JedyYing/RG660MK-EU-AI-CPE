@@ -1,0 +1,64 @@
+(CDPATH="${ZSH_VERSION+.}:" && cd . && /bin/bash '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src/missing' autoheader)
+rm -f stamp-h1
+touch config.h.in
+cd . && /bin/bash ./config.status config.h
+config.status: creating config.h
+config.status: config.h is unchanged
+make  all-recursive
+make[1]: Entering directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src'
+Making all in libusb
+make[2]: Entering directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src/libusb'
+  CC       core.lo
+  CC       descriptor.lo
+  CC       hotplug.lo
+  CC       io.lo
+  CC       strerror.lo
+  CC       sync.lo
+  CC       os/events_posix.lo
+  CC       os/threads_posix.lo
+  CC       os/linux_usbfs.lo
+  CC       os/linux_netlink.lo
+  CCLD     libusb-1.0.la
+make[2]: Leaving directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src/libusb'
+make[2]: Entering directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src'
+make[2]: Leaving directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src'
+make[1]: Leaving directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src'
+Making install in libusb
+make[1]: Entering directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src/libusb'
+make[2]: Entering directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src/libusb'
+ /usr/bin/mkdir -p '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/lib'
+ /bin/bash ../libtool   --mode=install /usr/bin/install -c   libusb-1.0.la '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/lib'
+libtool: install: /usr/bin/install -c .libs/libusb-1.0.lai /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/lib/libusb-1.0.la
+libtool: install: /usr/bin/install -c .libs/libusb-1.0.a /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/lib/libusb-1.0.a
+libtool: install: chmod 644 /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/lib/libusb-1.0.a
+libtool: install: ranlib /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/lib/libusb-1.0.a
+libtool: finish: PATH="/tmp/.mount_QRIBudQnCZmH/resources/app.asar/node_modules/.bin:/tmp/.mount_QRIBudQnCZmH:/tmp/.mount_QRIBudQnCZmH/usr/sbin:/home/jedyying/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/opt/apps/com.volcengine.feilian/files/mdm/opt/corplink-mdm/bin:/tmp/.mount_QRIBudQnCZmH/resources/app.asar.unpacked/assets/builtin-skills/bin:/home/jedyying/Agent工作区/.qa-skills/bin:/sbin" ldconfig -n /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/lib
+----------------------------------------------------------------------
+Libraries have been installed in:
+   /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/lib
+
+If you ever happen to want to link against installed libraries
+in a given directory, LIBDIR, you must either use libtool, and
+specify the full pathname of the library, or use the '-LLIBDIR'
+flag during linking and do at least one of the following:
+   - add LIBDIR to the 'LD_LIBRARY_PATH' environment variable
+     during execution
+   - add LIBDIR to the 'LD_RUN_PATH' environment variable
+     during linking
+   - use the '-Wl,-rpath -Wl,LIBDIR' linker flag
+   - have your system administrator add LIBDIR to '/etc/ld.so.conf'
+
+See any operating system documentation about shared libraries for
+more information, such as the ld(1) and ld.so(8) manual pages.
+----------------------------------------------------------------------
+ /usr/bin/mkdir -p '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/include/libusb-1.0'
+ /usr/bin/install -c -m 644 libusb.h '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/include/libusb-1.0'
+make[2]: Leaving directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src/libusb'
+make[1]: Leaving directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src/libusb'
+make[1]: Entering directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src'
+make[2]: Entering directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src'
+make[2]: Nothing to be done for 'install-exec-am'.
+ /usr/bin/mkdir -p '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/lib/pkgconfig'
+ /usr/bin/install -c -m 644 libusb-1.0.pc '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/install/lib/pkgconfig'
+make[2]: Leaving directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src'
+make[1]: Leaving directory '/home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/build/libusb-musl/src'

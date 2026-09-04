@@ -1,0 +1,62 @@
+===== RG660MK YOLO 部署 源码/模型清单 2026-08-31T14:43:48+08:00 =====
+
+#### /home/jedyying/Agent工作区/yolo_demo
+total 32
+drwxrwxr-x 3 jedyying jedyying 4096 2026-08-27 16:58 .
+drwxrwxr-x 8 jedyying jedyying 4096 2026-08-31 13:35 ..
+-rw-rw-r-- 1 jedyying jedyying 9347 2026-08-27 17:03 export.log
+-rw-rw-r-- 1 jedyying jedyying 6290 2026-08-27 16:50 test_face_posture.py
+drwxrwxr-x 2 jedyying jedyying 4096 2026-08-28 10:47 输出
+
+#### /home/jedyying/Downloads/yolov8n-pose_ncnn_model
+total 13072
+drwxrwxr-x  2 jedyying jedyying     4096 2026-08-27 17:03 .
+drwxr-xr-x 30 jedyying jedyying    20480 2026-08-31 14:36 ..
+-rw-rw-r--  1 jedyying jedyying      358 2026-08-27 17:03 metadata.yaml
+-rw-rw-r--  1 jedyying jedyying 13328148 2026-08-27 17:03 model.ncnn.bin
+-rw-rw-r--  1 jedyying jedyying    19344 2026-08-27 17:03 model.ncnn.param
+-rw-rw-r--  1 jedyying jedyying      737 2026-08-27 17:03 model_ncnn.py
+
+#### /home/jedyying/Downloads/yolov8n_ncnn_model
+total 12468
+drwxrwxr-x  2 jedyying jedyying     4096 2026-08-27 17:03 .
+drwxr-xr-x 30 jedyying jedyying    20480 2026-08-31 14:36 ..
+-rw-rw-r--  1 jedyying jedyying     1375 2026-08-27 17:03 metadata.yaml
+-rw-rw-r--  1 jedyying jedyying 12708672 2026-08-27 17:03 model.ncnn.bin
+-rw-rw-r--  1 jedyying jedyying    16629 2026-08-27 17:03 model.ncnn.param
+-rw-rw-r--  1 jedyying jedyying      727 2026-08-27 17:03 model_ncnn.py
+
+#### /home/jedyying/Downloads/rg660mk_c270_userspace.d
+
+#### /home/jedyying/Documents/基于SDR的语义通信实验平台/AI_CPE_Demo/.build/yolo-models
+total 39124
+drwxrwxr-x  4 jedyying jedyying     4096 2026-08-27 09:58 .
+drwxrwxr-x 20 jedyying jedyying     4096 2026-08-28 09:16 ..
+-rw-rw-r--  1 jedyying jedyying     5426 2026-08-27 09:58 smoke.jpg
+drwxrwxr-x  2 jedyying jedyying     4096 2026-08-27 09:44 yolov8n_ncnn_model
+drwxrwxr-x  2 jedyying jedyying     4096 2026-08-27 09:44 yolov8n-pose_ncnn_model
+-rw-rw-r--  1 jedyying jedyying  6832633 2026-08-27 09:44 yolov8n-pose.pt
+-rw-rw-r--  1 jedyying jedyying 13624608 2026-08-27 09:44 yolov8n-pose.torchscript
+-rw-rw-r--  1 jedyying jedyying  6549796 2026-08-27 09:39 yolov8n.pt
+-rw-rw-r--  1 jedyying jedyying 13020638 2026-08-27 09:39 yolov8n.torchscript
+
+===== rg660mk_c270 userspace 相关(Downloads) =====
+-rw-rw-r--  1 jedyying jedyying      1342 2026-08-26 16:50 i2c_read_rg660mk.c
+-rw-rw-r--  1 jedyying jedyying    335018 2026-08-20 16:38 Quectel_RG660MK-EU_5G_Module_Specification_V1.0.1_Preliminary_20260819.pdf
+-rw-rw-r--  1 jedyying jedyying     31782 2026-08-19 10:04 RG660MK_AI_CPE_PicoClaw_Migration_Design.md
+-rw-rw-r--  1 jedyying jedyying    239984 2026-08-20 09:48 RG660MK_AI_CPE_PicoClaw_Migration_Design.pdf
+-rw-r--r--  1 jedyying jedyying     32168 2026-08-27 15:05 RG660MK_C270.jpg
+-rwxrwxr-x  1 jedyying jedyying    801880 2026-08-27 15:04 rg660mk_c270_snapshot
+drwx------  6 jedyying jedyying      4096 2026-08-27 15:04 rg660mk_c270_userspace.Nne8IG
+-rw-rw-r--  1 jedyying jedyying    106742 2026-08-28 11:16 RG660MK_ccmni2_20260828_111540.pcap
+-rw-rw-r--  1 jedyying jedyying     36192 2026-08-24 18:34 RG660MK_CPE_Diagnostic_Report_20260824_164259.pdf
+-rw-rw-r--  1 jedyying jedyying    760544 2026-08-24 16:45 RG660MK CPE 全功能诊断与报告生成.pdf
+-rw-rw-r--  1 jedyying jedyying    499701 2026-08-29 11:44 rg660mk-dpi-video-protocol-map (1).png
+-rw-rw-r--  1 jedyying jedyying    499701 2026-08-29 11:44 rg660mk-dpi-video-protocol-map (2).png
+-rw-rw-r--  1 jedyying jedyying    456177 2026-08-29 10:48 rg660mk-dpi-video-protocol-map.png
+-rw-rw-r--  1 jedyying jedyying    263603 2026-08-28 11:17 RG660MK_eth1_20260828_111711.pcap
+-rw-rw-r--  1 jedyying jedyying   1089376 2026-08-21 10:49 RG660MK-EU_AI_CPE_SG560D_USB算力棒迁移设计_V2.1_20260820.pdf
+-rw-rw-r--  1 jedyying jedyying    188534 2026-08-26 17:16 rg660mk-live.dts
+drwx------ 13 jedyying jedyying      4096 2026-08-29 14:24 RG660MK_RTP_PLAINTEXT_20260828_135350
+-rw-rw-r--  1 jedyying jedyying 662734811 2026-08-31 14:43 RG660MK_SDK.tar.zst.larkcache
+drwxr-xr-x 10 jedyying jedyying      4096 2026-08-28 11:57 RG660MK_Video_DPI

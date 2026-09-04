@@ -1,0 +1,7 @@
+===== 部署模型 SHA256 =====
+1ae07a5f58ba9b567ee4851d21d5502fdac520c011982d95a4f777c09784c10d  /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/package/models/pose_320/model.ncnn.param
+ad80beb3c034d243765157ee4a2a9317fc75dc9b3012c54a0cfe8d55b2e08429  /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/package/models/pose_320/model.ncnn.bin
+fdcc05325050693e803b8b8540110f01e0e7a2b12c8bee2a07a56ad9684f8765  /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/package/models/pose_416/model.ncnn.param
+3a19ba67d205f03e6376a0bab162b912ee6655f015532598df19e47aa841333e  /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/package/models/pose_416/model.ncnn.bin
+6466d021101d558d5bb119397ed595d0f64d0a0dcca977e874ff2d7b537efd9e  /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/package/models/pose_640/model.ncnn.param
+e3d735f7e5281bbd882b272b03a167746844f5d05d1d7f2f67a8c28f82223c57  /home/jedyying/Agent工作区/rg660mk_yolo_deploy_20260831_144149/package/models/pose_640/model.ncnn.bin
