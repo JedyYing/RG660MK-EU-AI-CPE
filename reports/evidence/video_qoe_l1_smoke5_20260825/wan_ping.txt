@@ -1,0 +1,13 @@
+PING 223.5.5.5 (223.5.5.5) from 10.42.13.53 ccmni3: 56(84) bytes of data.
+64 bytes from 223.5.5.5: icmp_seq=1 ttl=54 time=35.9 ms
+64 bytes from 223.5.5.5: icmp_seq=2 ttl=54 time=42.3 ms
+64 bytes from 223.5.5.5: icmp_seq=3 ttl=54 time=31.6 ms
+64 bytes from 223.5.5.5: icmp_seq=4 ttl=54 time=32.5 ms
+64 bytes from 223.5.5.5: icmp_seq=5 ttl=54 time=29.1 ms
+64 bytes from 223.5.5.5: icmp_seq=6 ttl=54 time=16.1 ms
+64 bytes from 223.5.5.5: icmp_seq=7 ttl=54 time=72.0 ms
+64 bytes from 223.5.5.5: icmp_seq=8 ttl=54 time=62.3 ms
+
+--- 223.5.5.5 ping statistics ---
+8 packets transmitted, 8 received, 0% packet loss, time 7013ms
+rtt min/avg/max/mdev = 16.068/40.220/71.953/17.176 ms

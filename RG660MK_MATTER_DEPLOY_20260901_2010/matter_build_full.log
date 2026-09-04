@@ -1,0 +1,38 @@
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/boot/kexec-tools/Makefile' has a dependency on 'liblzma', which does not exist
+WARNING: Makefile 'package/network/services/lldpd/Makefile' has a dependency on 'libnetsnmp', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/px5g-wolfssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/feeds/matter/python3-host-ssl/Makefile' has a build dependency on 'python3/host', which does not exist
+WARNING: Makefile 'package/utils/uencrypt/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/libs/ustream-ssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+make[2]: 'conf' is up to date.
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+make[1]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt'
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/gn'
+[host-build.mk] Will Skip gn-2025-03-21-6e8e0d6d? 
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/gn'
+time: package/feeds/matter/gn/host-compile#0.10#0.24#0.45
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/python3-host-ssl'
+[host-build.mk] Will Skip python3-host-ssl? 
+Makefile:26: /var/tmp/RG660MK_build/T930/openwrt/feeds/packages/lang/python/python3-host.mk: No such file or directory
+make[2]: *** No rule to make target '/var/tmp/RG660MK_build/T930/openwrt/feeds/packages/lang/python/python3-host.mk'.  Stop.
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/python3-host-ssl'
+time: package/feeds/matter/python3-host-ssl/host-compile#0.09#0.20#0.40
+    ERROR: package/feeds/matter/python3-host-ssl [host] failed to build.
+make[1]: *** [package/Makefile:118: package/feeds/matter/python3-host-ssl/host/compile] Error 1
+make[1]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt'
+make: *** [/var/tmp/RG660MK_build/T930/openwrt/include/toplevel.mk:270: package/feeds/matter/matter-netman/compile] Error 2

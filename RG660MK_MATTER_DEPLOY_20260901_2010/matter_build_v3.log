@@ -1,0 +1,175 @@
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/boot/kexec-tools/Makefile' has a dependency on 'liblzma', which does not exist
+WARNING: Makefile 'package/network/services/lldpd/Makefile' has a dependency on 'libnetsnmp', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/px5g-wolfssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/feeds/matter/python3-host-ssl/Makefile' has a build dependency on 'python3/host', which does not exist
+WARNING: Makefile 'package/utils/uencrypt/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/libs/ustream-ssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+make[2]: 'conf' is up to date.
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+make[1]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt'
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/feeds/matter/service/matter-netman'
+rm -rf /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80
+rm -f /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/stamp/.matter-netman.mbedtls_installed
+rm -f /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/packages/matter-netman.mbedtls.list
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/feeds/matter/service/matter-netman'
+time: package/feeds/matter/matter-netman/mbedtls/clean#0.06#0.10#0.25
+make[1]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt'
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/boot/kexec-tools/Makefile' has a dependency on 'liblzma', which does not exist
+WARNING: Makefile 'package/network/services/lldpd/Makefile' has a dependency on 'libnetsnmp', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/px5g-wolfssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/feeds/matter/python3-host-ssl/Makefile' has a build dependency on 'python3/host', which does not exist
+WARNING: Makefile 'package/utils/uencrypt/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/libs/ustream-ssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+make[2]: 'conf' is up to date.
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+make[1]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt'
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/toolchain'
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/python3-host-ssl'
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/gn'
+[host-build.mk] Will Skip python3-host-ssl? 
+[host-build.mk] Will Skip gn-2025-03-21-6e8e0d6d? 
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/python3-host-ssl'
+time: package/feeds/matter/python3-host-ssl/host-compile#0.07#0.15#0.37
+echo "libc" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libgcc" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libatomic" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libstdcpp" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libpthread" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "librt" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/gn'
+time: package/feeds/matter/gn/host-compile#0.07#0.21#0.43
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/toolchain'
+time: package/libs/toolchain/compile#0.08#0.20#0.44
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/mbedtls'
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/libjson-c'
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/utils/lua'
+[host-build.mk] Will Skip lua-5.1.5? 
+[host-build.mk] Will Skip json-c-0.16? 
+echo "libmbedtls" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/mbedtls.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/mbedtls'
+time: package/libs/mbedtls/compile#0.11#0.23#0.59
+echo "liblua" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/lua.default.install
+echo "lua" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/lua.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/utils/lua'
+time: package/utils/lua/compile#0.12#0.32#0.76
+echo "libjson-c" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libjson-c.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/libjson-c'
+time: package/libs/libjson-c/compile#0.15#0.31#0.78
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/libubox'
+[host-build.mk] Will Skip libubox-2023-05-23-75a3b870? 
+echo "libubox" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libubox.default.install
+echo "libblobmsg-json" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libubox.default.install
+echo "jshn" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libubox.default.install
+echo "libjson-script" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libubox.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/libubox'
+time: package/libs/libubox/compile#0.12#0.30#0.54
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/system/ubus'
+echo "libubus" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/ubus.default.install
+echo "libubus-lua" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/ubus.default.install
+echo "ubus" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/ubus.default.install
+echo "ubusd" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/ubus.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/system/ubus'
+time: package/system/ubus/compile#0.10#0.24#0.50
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/feeds/matter/service/matter-netman'
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.prepared_check
+rm -rf /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80
+ln -snf /home/jedyying/Downloads/connectedhomeip /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.source_dir
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.prepared
+if [ -s "/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/patches/series" ]; then (cd "/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80"; if quilt --quiltrc=- next >/dev/null 2>&1; then quilt --quiltrc=- push -a; else quilt --quiltrc=- top >/dev/null 2>&1; fi ); fi
+touch "/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.quilt_checked"
+rm -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.configured_*
+rm -f /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/stamp/.matter-netman.mbedtls_installed
+mkdir -p /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/out/openwrt && cd /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/out/openwrt && AR="aarch64-openwrt-linux-musl-gcc-ar" AS="aarch64-openwrt-linux-musl-gcc -c -Os -pipe -fno-caller-saves -fno-plt -Wno-error=unused-label -Wno-error=vla -Wno-error=unused-function -Wno-error=address-of-packed-member -funwind-tables -fhonour-copts -Wno-error=unused-but-set-variable -Wno-error=unused-result -Wformat -Werror=format-security -DPIC -fPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,now -Wl,-z,relro -DCHIP_SYSLOG_IDENT=\"matter\" -DCHIP_CONFIG_KVS_PATH=\"/etc/matter/chip_kvs.ini\" -DFATCONFDIR=\"/etc/matter\" -DSYSCONFDIR=\"/etc/matter\" -DLOCALSTATEDIR=\"/etc/matter\" -DCHIP_DEVICE_CONFIG_ENABLE_TEST_SETUP_PARAMS=0 -DCHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING=\"2025-10-29-8f221d80@23.05.0-r23497-6637af95aa\" -DCHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING=\"-\" -DCHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME=\"OpenWrt\" -DCHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME=\"\" -DCHIP_DEVICE_CONFIG_TEST_SERIAL_NUMBER=\"\" -Wno-format-nonliteral" LD=aarch64-openwrt-linux-musl-ld NM="aarch64-openwrt-linux-musl-gcc-nm" CC="aarch64-openwrt-linux-musl-gcc" GCC="aarch64-openwrt-linux-musl-gcc" CXX="aarch64-openwrt-linux-musl-g++" RANLIB="aarch64-openwrt-linux-musl-gcc-ranlib" STRIP=aarch64-openwrt-linux-musl-strip OBJCOPY=aarch64-openwrt-linux-musl-objcopy OBJDUMP=aarch64-openwrt-linux-musl-objdump SIZE=aarch64-openwrt-linux-musl-size CFLAGS="-Os -pipe -fno-caller-saves -fno-plt -Wno-error=unused-label -Wno-error=vla -Wno-error=unused-function -Wno-error=address-of-packed-member -funwind-tables -fhonour-copts -Wno-error=unused-but-set-variable -Wno-error=unused-result -Wformat -Werror=format-security -DPIC -fPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,now -Wl,-z,relro -DCHIP_SYSLOG_IDENT=\"matter\" -DCHIP_CONFIG_KVS_PATH=\"/etc/matter/chip_kvs.ini\" -DFATCONFDIR=\"/etc/matter\" -DSYSCONFDIR=\"/etc/matter\" -DLOCALSTATEDIR=\"/etc/matter\" -DCHIP_DEVICE_CONFIG_ENABLE_TEST_SETUP_PARAMS=0 -DCHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING=\"2025-10-29-8f221d80@23.05.0-r23497-6637af95aa\" -DCHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING=\"-\" -DCHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME=\"OpenWrt\" -DCHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME=\"\" -DCHIP_DEVICE_CONFIG_TEST_SERIAL_NUMBER=\"\" -Wno-format-nonliteral " CXXFLAGS="-Os -pipe -fno-caller-saves -fno-plt -Wno-error=unused-label -Wno-error=vla -Wno-error=unused-function -Wno-error=address-of-packed-member -funwind-tables -fhonour-copts -Wno-error=unused-but-set-variable -Wno-error=unused-result -Wformat -Werror=format-security -DPIC -fPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,now -Wl,-z,relro -DCHIP_SYSLOG_IDENT=\"matter\" -DCHIP_CONFIG_KVS_PATH=\"/etc/matter/chip_kvs.ini\" -DFATCONFDIR=\"/etc/matter\" -DSYSCONFDIR=\"/etc/matter\" -DLOCALSTATEDIR=\"/etc/matter\" -DCHIP_DEVICE_CONFIG_ENABLE_TEST_SETUP_PARAMS=0 -DCHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING=\"2025-10-29-8f221d80@23.05.0-r23497-6637af95aa\" -DCHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING=\"-\" -DCHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME=\"OpenWrt\" -DCHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME=\"\" -DCHIP_DEVICE_CONFIG_TEST_SERIAL_NUMBER=\"\" -Wno-format-nonliteral " CPPFLAGS="-I/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/include -I/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/include/fortify " LDFLAGS="-L/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/lib -DPIC -fPIC -specs=/var/tmp/RG660MK_build/T930/openwrt/include/hardened-ld-pie.specs -znow -zrelro -lmbedcrypto -lmbedx509 "  /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/scripts/configure --build-env-dir="/var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/share/matter-build-env" --project=examples/network-manager-app/linux --target=aarch64-openwrt-linux-musl --enable-ubus --enable-detail-logging --enable-recommended=no --enable-access-restrictions=no --enable-network-layer-ble=no --enable-tracing-support=no --logging-backend=syslog --crypto=mbedtls --enable-external-mbedtls
+Checking for gn... /var/tmp/RG660MK_build/T930/openwrt/staging_dir/hostpkg/bin/gn
+Checking for ninja... /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/ninja
+Using existing build environment: /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/share/matter-build-env
+Creating empty build_overrides/pigweed_environment.gni in source tree
+Configuring gn build arguments (see ./build-args.txt for supported arguments)
+ - custom_toolchain = "custom"
+ - target_cc = "aarch64-openwrt-linux-musl-gcc"
+ - target_cxx = "aarch64-openwrt-linux-musl-g++"
+ - target_ar = "aarch64-openwrt-linux-musl-gcc-ar"
+ - target_cflags = ["-I/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/include", "-I/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/include/fortify"]
+ - target_cflags_c = ["-Os", "-pipe", "-fno-caller-saves", "-fno-plt", "-Wno-error=unused-label", "-Wno-error=vla", "-Wno-error=unused-function", "-Wno-error=address-of-packed-member", "-funwind-tables", "-fhonour-copts", "-Wno-error=unused-but-set-variable", "-Wno-error=unused-result", "-Wformat", "-Werror=format-security", "-DPIC", "-fPIC", "-fstack-protector-strong", "-D_FORTIFY_SOURCE=2", "-Wl,-z,now", "-Wl,-z,relro", "-DCHIP_SYSLOG_IDENT=\"matter\"", "-DCHIP_CONFIG_KVS_PATH=\"/etc/matter/chip_kvs.ini\"", "-DFATCONFDIR=\"/etc/matter\"", "-DSYSCONFDIR=\"/etc/matter\"", "-DLOCALSTATEDIR=\"/etc/matter\"", "-DCHIP_DEVICE_CONFIG_ENABLE_TEST_SETUP_PARAMS=0", "-DCHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING=\"2025-10-29-8f221d80@23.05.0-r23497-6637af95aa\"", "-DCHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING=\"-\"", "-DCHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME=\"OpenWrt\"", "-DCHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME=\"\"", "-DCHIP_DEVICE_CONFIG_TEST_SERIAL_NUMBER=\"\"", "-Wno-format-nonliteral"]
+ - target_cflags_cc = ["-Os", "-pipe", "-fno-caller-saves", "-fno-plt", "-Wno-error=unused-label", "-Wno-error=vla", "-Wno-error=unused-function", "-Wno-error=address-of-packed-member", "-funwind-tables", "-fhonour-copts", "-Wno-error=unused-but-set-variable", "-Wno-error=unused-result", "-Wformat", "-Werror=format-security", "-DPIC", "-fPIC", "-fstack-protector-strong", "-D_FORTIFY_SOURCE=2", "-Wl,-z,now", "-Wl,-z,relro", "-DCHIP_SYSLOG_IDENT=\"matter\"", "-DCHIP_CONFIG_KVS_PATH=\"/etc/matter/chip_kvs.ini\"", "-DFATCONFDIR=\"/etc/matter\"", "-DSYSCONFDIR=\"/etc/matter\"", "-DLOCALSTATEDIR=\"/etc/matter\"", "-DCHIP_DEVICE_CONFIG_ENABLE_TEST_SETUP_PARAMS=0", "-DCHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING=\"2025-10-29-8f221d80@23.05.0-r23497-6637af95aa\"", "-DCHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING=\"-\"", "-DCHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME=\"OpenWrt\"", "-DCHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME=\"\"", "-DCHIP_DEVICE_CONFIG_TEST_SERIAL_NUMBER=\"\"", "-Wno-format-nonliteral"]
+ - target_ldflags = ["-L/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/lib", "-DPIC", "-fPIC", "-specs=/var/tmp/RG660MK_build/T930/openwrt/include/hardened-ld-pie.specs", "-znow", "-zrelro", "-lmbedcrypto", "-lmbedx509"]
+ - target_cpu = "aarch64"
+ - target_os = "linux"
+ - matter_enable_ubus = true
+ - chip_detail_logging = true
+ - matter_enable_recommended = false
+ - chip_enable_access_restrictions = false
+ - chip_config_network_layer_ble = false
+ - matter_enable_tracing_support = false
+ - chip_logging_backend = "syslog"
+ - chip_crypto = "mbedtls"
+ - chip_external_mbedtls = true
+Running gn gen to generate ninja files
+You can now run ./ninja-build (or ninja)
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.configured_5e3b0573f493d21ceb341dfc0dc232c1
+rm -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.built
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.built_check
+MAKEFLAGS="--jobserver-auth=3,4" /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/ninja   -C /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/out/openwrt matter-network-manager-app
+ninja: Entering directory `/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/out/openwrt'
+[1/1] ld ./matter-network-manager-app
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.built
+mkdir -p /var/tmp/RG660MK_build/T930/openwrt/bin/targets/gem6xxx/evb6988_cpe_mt7992_emmc/packages /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/CONTROL /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo
+install -d -m0755 /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/usr/sbin /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/usr/share/matter /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/etc/init.d /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/usr/share/acl.d
+install -m0755 /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/out/openwrt/matter-network-manager-app /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/usr/sbin
+install -m0644 ./files/bootstrap.sh /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/usr/share/matter/
+install -m0644 ./files/matter_acl.json /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/usr/share/acl.d
+install -m0755 ./files/matter.init /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/etc/init.d/matter
+find /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls -name 'CVS' -o -name '.svn' -o -name '.#*' -o -name '*~'| xargs -r rm -rf
+export CROSS="aarch64-openwrt-linux-musl-"  NO_RENAME=1 ; NM="aarch64-openwrt-linux-musl-nm" STRIP="aarch64-openwrt-linux-musl-strip --strip-all" STRIP_KMOD="/var/tmp/RG660MK_build/T930/openwrt/scripts/strip-kmod.sh" PATCHELF="/var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/patchelf" /var/tmp/RG660MK_build/T930/openwrt/scripts/rstrip.sh /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls
+rstrip.sh: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/usr/sbin/matter-network-manager-app: executable
+(cd /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/CONTROL; ( echo "$CONTROL"; printf "Description: "; echo "$DESCRIPTION" | sed -e 's,^[[:space:]]*, ,g'; ) > control; chmod 644 control; ( echo "#!/bin/sh"; echo "[ \"\${IPKG_NO_SCRIPT}\" = \"1\" ] && exit 0"; echo "[ -s "\${IPKG_INSTROOT}/lib/functions.sh" ] || exit 0"; echo ". \${IPKG_INSTROOT}/lib/functions.sh"; echo "default_postinst \$0 \$@"; ) > postinst; ( echo "#!/bin/sh"; echo "[ -s "\${IPKG_INSTROOT}/lib/functions.sh" ] || exit 0"; echo ". \${IPKG_INSTROOT}/lib/functions.sh"; echo "default_prerm \$0 \$@"; ) > prerm; chmod 0755 postinst prerm; echo "$V_Package_matter_netman_mbedtls_conffiles" > conffiles;  )
+install -d -m0755 /var/tmp/RG660MK_build/T930/openwrt/bin/packages/aarch64_cortex-a55_neon-vfpv4/matter
+/var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/fakeroot /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/bash /var/tmp/RG660MK_build/T930/openwrt/scripts/ipkg-build -m "" /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls /var/tmp/RG660MK_build/T930/openwrt/bin/packages/aarch64_cortex-a55_neon-vfpv4/matter
+/var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/find: '/home/jedyying/Downloads/connectedhomeip/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls/etc/matter/': No such file or directory
+Packaged contents of /home/jedyying/Downloads/connectedhomeip/ipkg-aarch64_cortex-a55_neon-vfpv4/matter-netman-mbedtls into /var/tmp/RG660MK_build/T930/openwrt/bin/packages/aarch64_cortex-a55_neon-vfpv4/matter/matter-netman-mbedtls_2025-10-29-8f221d80-1_aarch64_cortex-a55_neon-vfpv4.ipk
+rm -rf /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls.installed /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls
+mkdir -p /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls
+install -d -m0755 /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls/usr/sbin /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls/usr/share/matter /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls/etc/init.d /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls/usr/share/acl.d
+install -m0755 /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/out/openwrt/matter-network-manager-app /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls/usr/sbin
+install -m0644 ./files/bootstrap.sh /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls/usr/share/matter/
+install -m0644 ./files/matter_acl.json /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls/usr/share/acl.d
+install -m0755 ./files/matter.init /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls/etc/init.d/matter
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls.installed
+mkdir -p /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/root-gem6xxx/stamp
+SHELL= flock /var/tmp/RG660MK_build/T930/openwrt/tmp/.root-copy.flock -c 'cp -fpR /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.pkgdir/matter-netman-mbedtls/. /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/root-gem6xxx/'
+touch /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/root-gem6xxx/stamp/.matter-netman-mbedtls_installed
+echo "matter-netman-mbedtls" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/matter-netman.mbedtls.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/feeds/matter/service/matter-netman'
+time: package/feeds/matter/matter-netman/mbedtls/compile#7.95#2.04#7.83
+make[1]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt'

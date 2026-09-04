@@ -1,0 +1,31 @@
+===== 改过的文件与备份 =====
+1) target.config (加4行matter配置)
+-rw-r--r-- 1 jedyying jedyying 26210  9月  1 14:41 /var/tmp/RG660MK_build/T930/openwrt/target/linux/gem6xxx/evb6988_cpe_mt7992_emmc/target.config.bak
+   备份存在
+2) gn包Makefile (哈希对齐本地gn)
+/var/tmp/RG660MK_build/T930/openwrt/feeds/matter/devel/gn/Makefile
+3) matter-netman Makefile (启用USE_SOURCE_DIR)
+USE_SOURCE_DIR:=/home/jedyying/Downloads/connectedhomeip
+/var/tmp/RG660MK_build/T930/openwrt/feeds/matter/service/matter-netman/Makefile.bak
+   备份存在
+4) connectedhomeip源码 (打了2个feed补丁)
+ .../network-manager-common/network-manager-app.zap | 51 +------------------
+ src/platform/Linux/PosixConfig.cpp                 | 59 ++++++++++++++--------
+ 2 files changed, 39 insertions(+), 71 deletions(-)
+
+===== target最终证据 =====
+SDK唯一合法组合(quecopen_projects):
+RG660MKEU00AA,RG660ENDC,evb6988_cpe_mt7992_emmc,RxxAxx,DEBUG_20260828,0,0,RG660MK,01.001,01.001
+
+===== host构建环境 =====
+系统python3: Python 3.10.12
+host python链接: /usr/bin/python3.10
+gcc: gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+
+===== .config最终关键项 =====
+CONFIG_MBEDTLS_CCM_C=y
+CONFIG_MBEDTLS_HKDF_C=y
+CONFIG_PACKAGE_matter-netman-mbedtls=y
+
+===== matter.tar.gz SHA256 =====
+550842c20b16648792e99e4732be41d8265add9a83f104b44ca4fdbfd851df23

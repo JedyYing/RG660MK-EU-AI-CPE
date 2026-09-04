@@ -1,0 +1,26 @@
+===== SDK完整性检查(brief第三步4个必需文件) =====
+  OK   openwrt/Makefile
+  OK   openwrt/scripts/feeds
+  OK   openwrt/include/toplevel.mk
+  OK   openwrt/target/linux/gem6xxx
+
+===== SDK内所有target候选(brief第四步) =====
+/var/tmp/RG660MK_build/T930/openwrt/target/linux/gem6xxx/evb6988_cpe_mt7992_emmc/target.config
+/var/tmp/RG660MK_build/T930/openwrt/target/linux/gem6xxx/evb6988_cpe_mt7990_nand/target.config
+/var/tmp/RG660MK_build/T930/openwrt/target/linux/gem6xxx/evb6988_cpe_mt7992_nand/target.config
+/var/tmp/RG660MK_build/T930/openwrt/target/linux/gem6xxx/evb6988_cpe_mt7990/target.config
+/var/tmp/RG660MK_build/T930/openwrt/target/linux/gem6xxx/evb6988_cpe_mt7990_emmc/target.config
+
+===== quecopen合法项目组合(厂商构建入口) =====
+[Modules]
+RG660MKEU00AA
+[Modem_ENDC]
+RG660ENDC
+[AP_Flavors]
+evb6988_cpe_mt7992_emmc
+[Project_Combinations]
+RG660MKEU00AA,RG660ENDC,evb6988_cpe_mt7992_emmc,RxxAxx,DEBUG_20260828,0,0,RG660MK,01.001,01.001
+
+===== matter.tar.gz是feed而非源码(应有service/matter-netman/Makefile) =====
+  确认: 是matter-openwrt feed(有service/matter-netman/Makefile)
+550842c20b16648792e99e4732be41d8265add9a83f104b44ca4fdbfd851df23  /home/jedyying/Downloads/openwrt 集成matter/matter.tar.gz

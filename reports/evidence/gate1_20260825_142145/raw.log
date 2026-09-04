@@ -1,0 +1,632 @@
+===== GATE1 START 2026-08-25T14:21:45+08:00 =====
+--- baseline
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0             UP             
+eth1             UP             
+ccmni0           DOWN           
+ccmni1           DOWN           
+ccmni2           UNKNOWN        10.46.234.220/29 2408:840d:a920:6438:18ce:f6f9:9bb9:3028/128 
+ccmni3           DOWN           
+ccmni4           DOWN           
+ccmni5           DOWN           
+ccmni6           DOWN           
+ccmni7           DOWN           
+ccmni8           DOWN           
+ccmni9           DOWN           
+ccmni10          DOWN           
+ccmni11          DOWN           
+ccmni12          DOWN           
+ccmni13          DOWN           
+ccmni14          DOWN           
+ccmni15          DOWN           
+ccmni16          DOWN           
+ccmni17          DOWN           
+ccmni18          DOWN           
+ccmni19          DOWN           
+ccmni20          DOWN           
+tunl0@NONE       DOWN           
+ip_vti0@NONE     DOWN           
+ip6tnl0@NONE     DOWN           
+gre0@NONE        DOWN           
+gretap0@NONE     DOWN           
+erspan0@NONE     DOWN           
+ip6gre0@NONE     DOWN           
+ra0              UP             
+rai0             UP             
+rndis0           DOWN           
+br-lan           UP             192.168.1.1/24 2408:840d:a920:6438::1/64 fd7d:c840:7681::1/60 fe80::e868:e8ff:fe53:6a31/64 
+apcli0           DOWN           
+ra1              DOWN           
+apclii0          DOWN           
+default via 10.46.234.221 dev ccmni2 proto static src 10.46.234.220 
+10.46.234.216/29 dev ccmni2 proto kernel scope link src 10.46.234.220 
+192.168.1.0/24 dev br-lan proto kernel scope link src 192.168.1.1 
+0:	from all lookup local
+32766:	from all lookup main
+32767:	from all lookup default
+Filesystem           Type            Size      Used Available Use% Mounted on
+/dev/root            squashfs       41.8M     41.8M         0 100% /rom
+/dev/mmcblk0p23      ext4           21.4M    597.0K     19.1M   3% /overlay
+overlayfs:/overlay   overlay        21.4M    597.0K     19.1M   3% /
+/dev/block/nvcfg     ext4           10.1M     47.0K      9.2M   0% /mnt/vendor/nvcfg
+/dev/block/nvdata    ext4           65.9M     14.0M     46.5M  23% /mnt/vendor/nvdata
+/dev/block/protect1  ext4            6.4M    327.0K      5.6M   5% /mnt/vendor/protect_f
+/dev/block/protect2  ext4            6.4M    178.0K      5.7M   3% /mnt/vendor/protect_s
+/dev/block/mcf       ext4            6.4M      2.4M      3.5M  41% /vendor/etc/mdota
+/dev/block/user_data ext4            2.7G    589.2M      2.0G  23% /data
+MemTotal:        1492440 kB
+MemAvailable:     963316 kB
+SwapTotal:             0 kB
+  PID USER       VSZ STAT COMMAND
+    1 root      2084 S    /sbin/procd
+    2 root         0 SW   [kthreadd]
+    3 root         0 IW<  [rcu_gp]
+    4 root         0 IW<  [rcu_par_gp]
+    5 root         0 IW<  [slub_flushwq]
+    6 root         0 IW<  [netns]
+   10 root         0 IW<  [mm_percpu_wq]
+   11 root         0 SW   [rcu_tasks_trace]
+   12 root         0 SW   [ksoftirqd/0]
+   13 root         0 IW   [rcu_sched]
+   14 root         0 SW   [migration/0]
+   15 root         0 SW   [cpuhp/0]
+   16 root         0 SW   [cpuhp/1]
+   17 root         0 SW   [migration/1]
+   18 root         0 SW   [ksoftirqd/1]
+   21 root         0 SW   [cpuhp/2]
+   22 root         0 SW   [migration/2]
+   23 root         0 SW   [ksoftirqd/2]
+   26 root         0 SW   [cpuhp/3]
+   27 root         0 SW   [migration/3]
+   28 root         0 SW   [ksoftirqd/3]
+   31 root         0 IW<  [inet_frag_wq]
+   32 root         0 SW   [kauditd]
+   34 root         0 SW   [irq/229-pmif_ir]
+   37 root         0 SW   [irq/223-rcs_irq]
+   39 root         0 SW   [oom_reaper]
+   40 root         0 IW<  [writeback]
+   41 root         0 SW   [kcompactd0]
+   42 root         0 SWN  [ksmd]
+   48 root         0 IW   [kworker/2:1-eve]
+   90 root         0 IW<  [kintegrityd]
+   91 root         0 IW<  [kblockd]
+   92 root         0 IW<  [dvfsrc_wq]
+   93 root         0 SW   [irq/228-dvfsrc]
+   94 root         0 IW<  [kworker/u9:0-rx]
+   95 root         0 IW<  [pool_reload_wor]
+   96 root         0 IW<  [SSPM_WQ]
+   97 root         0 IW<  [sspm_ts_wq]
+   98 root         0 SW   [irq/240-smpu]
+   99 root         0 SW   [watchdogd]
+  102 root         0 IW<  [kworker/0:1H-mm]
+  103 root         0 SW   [kswapd0]
+  119 root         0 IW   [kworker/u8:3-ev]
+  155 root         0 IW   [kworker/0:5-eve]
+  156 root         0 IW   [kworker/0:6-mm_]
+  171 root         0 SW   [irq/315-aerdrv]
+  276 root         0 IW<  [SCP_WQ]
+  279 root         0 IW<  [SCP_LOG_WQ]
+  281 root         0 IW<  [SCP_RESET_WQ]
+  301 root         0 IW   [kworker/1:11-ev]
+  302 root         0 IW   [kworker/1:12-mm]
+  334 root         0 IW<  [rx0_worker]
+  335 root         0 IW<  [rx1_worker]
+  336 root         0 IW<  [rx2_worker]
+  337 root         0 IW<  [rx3_worker]
+  344 root         0 SW   [ccci_fsm]
+  381 root         0 IW<  [ccmni0_rx_q_wor]
+  385 root         0 IW<  [ccmni1_rx_q_wor]
+  389 root         0 IW<  [ccmni2_rx_q_wor]
+  393 root         0 IW<  [ccmni3_rx_q_wor]
+  397 root         0 IW<  [ccmni4_rx_q_wor]
+  401 root         0 IW<  [ccmni5_rx_q_wor]
+  405 root         0 IW<  [ccmni6_rx_q_wor]
+  409 root         0 IW<  [ccmni7_rx_q_wor]
+  413 root         0 IW<  [ccmni8_rx_q_wor]
+  417 root         0 IW<  [ccmni9_rx_q_wor]
+  421 root         0 IW<  [ccmni10_rx_q_wo]
+  425 root         0 IW<  [ccmni11_rx_q_wo]
+  429 root         0 IW<  [ccmni12_rx_q_wo]
+  433 root         0 IW<  [ccmni13_rx_q_wo]
+  437 root         0 IW<  [ccmni14_rx_q_wo]
+  441 root         0 IW<  [ccmni15_rx_q_wo]
+  445 root         0 IW<  [ccmni16_rx_q_wo]
+  449 root         0 IW<  [ccmni17_rx_q_wo]
+  453 root         0 IW<  [ccmni18_rx_q_wo]
+  457 root         0 IW<  [ccmni19_rx_q_wo]
+  461 root         0 IW<  [ccmni20_rx_q_wo]
+  469 root         0 SW   [ccci_ctrl]
+  473 root         0 SW   [ccci_sys]
+  475 root         0 SW   [ccci_rpc_k]
+  484 root         0 IW<  [kworker/u9:1-rx]
+  485 root         0 IW<  [ccci_dpmaif_rx0]
+  486 root         0 IW<  [SMC_timeout]
+  487 root         0 SW   [dpmaif_rx_push]
+  488 root         0 IW<  [md1_tx0_worker]
+  489 root         0 IW<  [mcupm_ts_wq]
+  490 root         0 SW   [mcupm_task]
+  562 root         0 IW<  [md1_tx1_worker]
+  563 root         0 IW<  [md1_tx2_worker]
+  564 root         0 IW<  [md1_tx3_worker]
+  565 root         0 IW<  [md1_tx4_worker]
+  566 root         0 IW<  [md1_tx5_worker]
+  573 root         0 IW<  [mt-wdk]
+  592 root         0 DW   [wdtk-0]
+  593 root         0 DW   [wdtk-1]
+  594 root         0 DW   [wdtk-2]
+  595 root         0 DW   [wdtk-3]
+  649 root         0 IW<  [nvme-wq]
+  653 root         0 IW<  [nvme-reset-wq]
+  655 root         0 IW<  [nvme-delete-wq]
+  667 root         0 SW   [spi0]
+  734 root         0 SW   [irq/260-1159100]
+  872 root         0 SW   [irq/281-1560000]
+  889 root         0 SW   [irq/282-1560000]
+  890 root         0 SW   [irq/283-1560000]
+  891 root         0 SW   [irq/284-1560000]
+ 1004 root         0 IW<  [mmc_complete]
+ 1107 root         0 IW<  [mld]
+ 1109 root         0 IW<  [ipv6_addrconf]
+ 1110 root         0 IW<  [kworker/3:1H-kb]
+ 1116 root         0 SW   [irq/54-110d0000]
+ 1123 root         0 IW   [kworker/2:3-eve]
+ 1124 root         0 SW   [kworker/2:4+eve]
+ 1138 root         0 IW<  [mmc_complete]
+ 1140 root         0 IW<  [kworker/2:1H-kb]
+ 1256 root         0 IW   [kworker/3:37-ev]
+ 1257 root         0 IW   [kworker/3:38-ev]
+ 1273 root         0 IW<  [kworker/1:1H-kb]
+ 1303 root         0 SW   [conninfra_cored]
+ 1306 root         0 SW   [conninfra_cb]
+ 1307 root         0 SW   [sub_gps_thrd]
+ 1308 root         0 SW   [sub_conninfra_t]
+ 1320 root         0 SW   [gps_kctrld]
+ 1321 root         0 SW   [irq/305-gps_da0]
+ 1322 root         0 SW   [irq/306-gps_nd0]
+ 1323 root         0 SW   [irq/238-gps_mb0]
+ 1324 root         0 SW   [irq/307-gps_da1]
+ 1325 root         0 SW   [irq/308-gps_nd1]
+ 1326 root         0 SW   [irq/309-gps_mb1]
+ 1327 root         0 SW   [irq/310-gps_dma]
+ 1328 root         0 SW   [irq/311-gps_vio]
+ 1337 root         0 IW<  [cfg80211]
+ 1380 root         0 SW   [jbd2/mmcblk0p23]
+ 1381 root         0 IW<  [ext4-rsv-conver]
+ 1749 ubus      1356 S    /sbin/ubusd
+ 1816 root         0 SW   [jbd2/mmcblk0p17]
+ 1817 root         0 IW<  [ext4-rsv-conver]
+ 1819 root         0 SW   [jbd2/mmcblk0p18]
+ 1820 root         0 IW<  [ext4-rsv-conver]
+ 1821 root         0 SW   [jbd2/mmcblk0p20]
+ 1822 root         0 IW<  [ext4-rsv-conver]
+ 1823 root         0 SW   [jbd2/mmcblk0p21]
+ 1824 root         0 IW<  [ext4-rsv-conver]
+ 1825 root         0 SW   [jbd2/mmcblk0p2-]
+ 1826 root         0 IW<  [ext4-rsv-conver]
+ 1827 root         0 SW   [jbd2/mmcblk0p27]
+ 1828 root         0 IW<  [ext4-rsv-conver]
+ 1932 root      1024 S    /sbin/urngd
+ 2017 root      1996 S<   /usr/bin/ccci_fsd 1
+ 2130 root         0 IW<  [cryptodev_queue]
+ 2141 root         0 SW   [tnl_sync_param]
+ 2142 root         0 SW   [tops_mcu_ctrl]
+ 2574 root         0 SW   [ser_mngr]
+ 2610 root         0 IW<  [coex_wq]
+ 2611 root         0 SW   [apccci2fw_task]
+ 2793 root         0 IW<  [uether]
+ 2794 root         0 IW<  [uether_delay]
+ 2937 root         0 SW   [wf_reset_task]
+ 3001 root         0 SW   [wed_task1]
+ 4177 root      6376 S    /sbin/adbd_usb
+ 4179 root      2984 S    {restart_usb.sh} /bin/sh /etc/restart_usb.sh
+ 4422 root      8540 S    /usr/sbin/hostapd -g /var/run/hostapd/global -f /var/log/hostapd.log
+ 4423 root      8548 S    /usr/sbin/wpa_supplicant -n -g /var/run/wpa_supplicant/global -f /var/log/wpa_supplicant.log
+ 4567 logd      1728 S    /sbin/logd -S 500
+ 4643 root      3556 S    /sbin/rpcd -s /var/run/ubus/ubus.sock -t 30
+ 4940 root      1960 S    /usr/bin/ql_key_controller 6
+ 5651 root      1076 S    /usr/sbin/dropbear -F -P /var/run/dropbear.1.pid -p 22 -K 300 -T 3
+ 6040 root      2060 S    /sbin/netifd
+ 6155 root      1756 S    /usr/bin/led_ctrld
+ 6279 root      4672 S    /usr/bin/mtk_netagent
+ 6669 root      1840 S    /usr/bin/ql-hibernated -d 2 -m 3 -a 15 -b 20
+ 6808 root      2988 S    /usr/sbin/crond -f -c /etc/crontabs -l 5
+ 6918 root      1804 S    /usr/bin/thermal_core
+ 7065 root      6760 S    /usr/sbin/uhttpd -f -h /www -r OpenWrt -x /cgi-bin -u /ubus -t 60 -T 30 -k 20 -A 1 -n 3 -N 100 -R -p 0.0.
+ 7206 root      4516 S    /usr/bin/lppe_service
+ 7364 root     21848 S    /usr/bin/mnld
+ 7509 root      1896 S    /usr/bin/scd 1 1 1
+ 7622 root     12836 S    /usr/bin/speech_daemon
+ 7715 root      2576 S    /usr/bin/libmodem-afe-ctrl-server-bin
+ 7815 root      7380 S    /usr/bin/audio-ctrl-service
+ 7935 root      2280 S    /usr/bin/dbus-daemon --system --nofork
+ 9205 root         0 SW   [RtmpCmdQTask_00]
+ 9207 root         0 SW   [RtmpWscTask_00]
+ 9209 root         0 SW   [BPCCCmdQTask_00]
+ 9216 root         0 SW   [ser_task_00]
+ 9297 root      1428 S    /usr/bin/auto_adapt
+ 9430 root      3072 S    /usr/bin/ql_netd
+ 9550 root      3072 S    /usr/bin/ql_ril_service
+ 9623 root      3472 S    /usr/bin/ql_ril_service_dbus
+10132 root      1732 S    /usr/bin/atci_service
+10252 root     10844 S    /usr/bin/atcid
+10421 root      103m S    /usr/bin/emdlogger1
+10808 root      1680 S    /usr/bin/event_trigger_logging
+10885 root      247m S    {hermes} /data/ai_cpe/hermes/venv/bin/python3.12 /data/ai_cpe/hermes/venv/bin/hermes gateway run
+11018 root      1832 S    /usr/bin/log_controld
+11165 root      2932 S    /usr/bin/mipc_submonitor
+14750 root         0 SW   [HwCtrlTask_0]
+14760 root         0 SW   [DeviceTask_0]
+14761 root         0 IW<  [ph_dev_wq_0]
+14765 root         0 SW   [RtmpMlmeTask_00]
+16113 root       960 S    /usr/sbin/wpa_cli -i apcli0 -a /lib/wifi/supplicant_scan_action.sh -B -P /var/run//action-apcli0-scan.pid
+16160 root         0 SW   [RtmpCmdQTask_01]
+16161 root         0 SW   [RtmpWscTask_01]
+16162 root         0 SW   [BPCCCmdQTask_01]
+16163 root         0 SW   [ser_task_01]
+16173 root         0 SW   [RtmpMlmeTask_01]
+17203 root       964 S    /usr/sbin/wpa_cli -i apclii0 -a /lib/wifi/supplicant_scan_action.sh -B -P /var/run//action-apclii0-scan.p
+18317 root      7928 S    wapp -d1 -v2 -cra0 -cra1 -crai0 -iNL80211
+18894 dnsmasq   1616 S    /usr/sbin/dnsmasq -C /var/etc/dnsmasq.conf.cfg01411c -k -x /var/run/dnsmasq/dnsmasq.cfg01411c.pid
+18953 root      1552 S    /usr/sbin/odhcpd
+19977 root         0 IW<  [kworker/1:0H]
+20054 root         0 IW<  [kworker/0:2H-kb]
+20074 root         0 IW   [kworker/u8:1-ev]
+20081 root         0 IW<  [kworker/3:2H]
+20130 root         0 IW<  [kworker/2:0H]
+20594 root      2984 S    /sbin/getty -L ttyS0 921600 -t 60 vt100
+20649 root      2984 S    sleep 1
+20656 root         0 IW   [kworker/u8:0-ev]
+20667 root      3116 S    /bin/sh -c echo "--- baseline"; ip -br addr 2>/dev/null || ip addr; ip route; ip rule; df -hT 2>/dev/null
+20674 root      3124 R    ps w
+[ 1300.632782] thermal_core: [ccci/chr]port ttyCMIPC9 open with flag 20902 by thermal_core
+[ 1300.640028] thermal_core: [ccci/chr]port ttyCMIPC9 close by thermal_core rx_len=0 empty=1, clear_cnt=0, drop=0 usagecnt=0
+[ 1300.640071] thermal_core: [ccci/pot]critical user check: 0x5
+[ 1300.663935] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1300.663992] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1300.944300] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1300.944382] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1301.181599] swapper/1: [thread:0] 2026-08-25 06:21:37.538361 UTC;android time 2026-08-25 14:21:37.538361
+[ 1301.225265] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1301.225332] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1301.506199] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1301.506264] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1301.785068] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1301.785134] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1302.065096] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1302.065161] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1302.344120] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1302.344185] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1302.623867] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1302.623906] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1302.882757] kworker/2:3: [ccci1/net]to:clr(8863:0)
+[ 1302.882791] kworker/2:3: [ccci1/net]ccmni1(0,0), rx=(0,0,11081,0), tx=(1,56), txq_len=0, tx_drop=(0,0), rx_drop=(0,0), tx_busy=(0,0), sta=(0x2,0x80,0x1), skb_cow=1
+[ 1302.882841] kworker/2:3: [ccci1/net]to:clr(8863:0)
+[ 1302.882856] kworker/2:3: [ccci1/net]ccmni2(1,1), rx=(20279,4945761,11081,0), tx=(30912,15063452), txq_len=0, tx_drop=(0,0), rx_drop=(0,0), tx_busy=(0,0), sta=(0x3,0x81,0x0), skb_cow=25
+[ 1302.883518] kworker/2:3: [ccci/cif]total cnt=25327;rxq0 isr_cnt=4;rxq1 isr_cnt=36;rxq2 isr_cnt=0;rxq3 isr_cnt=0;rxq4 isr_cnt=1549;rxq5 isr_cnt=23727;rxq6 isr_cnt=1;rxq7 isr_cnt=10;rxq8 isr_cnt=0;rxq9 isr_cnt=0;rxq10 isr_cnt=0;rxq11 isr_cnt=0;rxq12 isr_cnt=0;rxq13 isr_cnt=0;rxq14 isr_cnt=0;rxq15 isr_cnt=1;rxq16 isr_cnt=0;rxq17 isr_cnt=0;rxq18 isr_cnt=0;rxq19 isr_cnt=0;rxq20 isr_cnt=0;rxq21 isr_cnt=0;rxq22 isr_cnt=0;rxq23 isr_cnt=0;
+[ 1302.904500] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1302.904566] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1303.193970] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1303.194034] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1303.464102] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1303.464166] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1303.464518] kworker/0:1H: scpsys_hwv_power_on name is msdc
+[ 1303.464518]  
+[ 1303.464532] kworker/0:1H: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_on 
+[ 1303.466532] kworker/0:1H: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_on DONE
+[ 1303.467775] kworker/0:1H: mtk-msdc 110c0000.mmc: dll lock done. lock value: 84
+[ 1303.552646] kworker/0:6: scpsys_hwv_power_off name is msdc
+[ 1303.552646]  
+[ 1303.552803] kworker/0:6: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_off DONE
+[ 1303.662559] procd: [wdtk] kick watchdog
+[ 1303.744228] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1303.744307] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1304.024252] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1304.024317] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1304.304192] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1304.304258] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1304.322728] swapper/3: [name:spm&][SPM] MCUSYSOFF wake up by  R12_SYSTIMER_EVENT, timer_out = 241, r13 = 0x80000bdc, debug_flag = 0x10000000 0x2, r12 = 0x40000, r12_ext = 0x0, raw_sta = 0x0 0x0 0x0, idle_sta = 0x0, req_sta =  0x0 0x0 0x0 0x80808 0x77f8003f 0x3abdd00 0x8c00043f 0xfde0 0x0, cg_check_sta =0x0, isr = 0x0, rt_req_sta0 = 0x0 rt_req_sta1 = 0x0 rt_req_sta2 = 0x0 rt_req_sta3 = 0xffffffff dram_sw_con_3 = 0x0, raw_ext_sta = 0xd12955, wake_misc = 0x180030, pcm_flag = 0x90017 0x4000000 0x10017 0x10017, req = 0x79b079b,  clk_settle = 0x79e0, 
+[ 1304.584228] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1304.584296] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1304.865235] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1304.865301] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1305.146195] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1305.146259] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1305.426187] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1305.426254] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1305.641179] thermal_core: [ccci/chr]port ttyCMIPC9 open with flag 20902 by thermal_core
+[ 1305.648274] thermal_core: [ccci/chr]port ttyCMIPC9 close by thermal_core rx_len=0 empty=1, clear_cnt=0, drop=0 usagecnt=0
+[ 1305.648312] thermal_core: [ccci/pot]critical user check: 0x5
+[ 1305.714098] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1305.714162] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1305.906507] kworker/1:1H: scpsys_hwv_power_on name is msdc
+[ 1305.906507]  
+[ 1305.906530] kworker/1:1H: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_on 
+[ 1305.908535] kworker/1:1H: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_on DONE
+[ 1305.909782] kworker/1:1H: mtk-msdc 110c0000.mmc: dll lock done. lock value: 82
+[ 1305.983956] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1305.984006] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1305.992680] kworker/0:6: scpsys_hwv_power_off name is msdc
+[ 1305.992680]  
+[ 1305.992824] kworker/0:6: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_off DONE
+[ 1306.022967] kworker/1:1H: scpsys_hwv_power_on name is msdc
+[ 1306.022967]  
+[ 1306.022991] kworker/1:1H: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_on 
+[ 1306.025003] kworker/1:1H: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_on DONE
+[ 1306.026374] kworker/1:1H: mtk-msdc 110c0000.mmc: dll lock done. lock value: 82
+[ 1306.082626] kworker/0:6: scpsys_hwv_power_off name is msdc
+[ 1306.082626]  
+[ 1306.082755] kworker/0:6: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_off DONE
+[ 1306.263802] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1306.263838] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1306.543814] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1306.543850] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1306.715082] ip: mtk_soc_eth 15100000.ethernet: mtk_stats_update_mac
+[ 1306.715930] ip: mtk_soc_eth 15100000.ethernet: mtk_stats_update_mac
+[ 1306.716755] ip: mtk_soc_eth 15100000.ethernet: mtk_stats_update_mac
+[ 1306.857116] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1306.857180] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+[ 1306.864639] kworker/0:1H: scpsys_hwv_power_on name is msdc
+[ 1306.864639]  
+[ 1306.864687] kworker/0:1H: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_on 
+[ 1306.866763] kworker/0:1H: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_on DONE
+[ 1306.868104] kworker/0:1H: mtk-msdc 110c0000.mmc: dll lock done. lock value: 82
+[ 1306.942613] kworker/0:6: scpsys_hwv_power_off name is msdc
+[ 1306.942613]  
+[ 1306.942739] kworker/0:6: mtk-scpsys 12901000.power-controller: [HWCCF] scpsys_hwv_power_off DONE
+[ 1306.994811] ip: mtk_soc_eth 15100000.ethernet: mtk_stats_update_mac
+[ 1306.995656] ip: mtk_soc_eth 15100000.ethernet: mtk_stats_update_mac
+[ 1306.996482] ip: mtk_soc_eth 15100000.ethernet: mtk_stats_update_mac
+[ 1307.136003] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, irq=223
+[ 1307.136039] irq/223-rcs_irq: spmi spmi-0: rcs_irq_handler, RCS occurred slave id=4, slvx_eint_sta=0x8
+--- sample=1 time=2026-08-25T14:21:45+08:00
+connectivity=PASS
+MemAvailable:     963376 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=53793
+/sys/class/thermal/thermal_zone1/temp=48597
+/sys/class/thermal/thermal_zone10/temp=40905
+/sys/class/thermal/thermal_zone11/temp=40248
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=44978
+/sys/class/thermal/thermal_zone14/temp=47152
+/sys/class/thermal/thermal_zone15/temp=46608
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=50395
+/sys/class/thermal/thermal_zone3/temp=52530
+/sys/class/thermal/thermal_zone4/temp=51095
+/sys/class/thermal/thermal_zone5/temp=53599
+/sys/class/thermal/thermal_zone6/temp=53774
+/sys/class/thermal/thermal_zone7/temp=53690
+/sys/class/thermal/thermal_zone8/temp=54087
+/sys/class/thermal/thermal_zone9/temp=45994
+--- sample=2 time=2026-08-25T14:22:16+08:00
+connectivity=PASS
+MemAvailable:     962396 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=52159
+/sys/class/thermal/thermal_zone1/temp=47811
+/sys/class/thermal/thermal_zone10/temp=40950
+/sys/class/thermal/thermal_zone11/temp=40242
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=44978
+/sys/class/thermal/thermal_zone14/temp=47152
+/sys/class/thermal/thermal_zone15/temp=46608
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=49531
+/sys/class/thermal/thermal_zone3/temp=51491
+/sys/class/thermal/thermal_zone4/temp=50229
+/sys/class/thermal/thermal_zone5/temp=52157
+/sys/class/thermal/thermal_zone6/temp=52162
+/sys/class/thermal/thermal_zone7/temp=52438
+/sys/class/thermal/thermal_zone8/temp=52594
+/sys/class/thermal/thermal_zone9/temp=45722
+--- sample=3 time=2026-08-25T14:22:46+08:00
+connectivity=PASS
+MemAvailable:     962752 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=52223
+/sys/class/thermal/thermal_zone1/temp=47873
+/sys/class/thermal/thermal_zone10/temp=40896
+/sys/class/thermal/thermal_zone11/temp=40203
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=44978
+/sys/class/thermal/thermal_zone14/temp=47152
+/sys/class/thermal/thermal_zone15/temp=46608
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=49483
+/sys/class/thermal/thermal_zone3/temp=51621
+/sys/class/thermal/thermal_zone4/temp=50309
+/sys/class/thermal/thermal_zone5/temp=52383
+/sys/class/thermal/thermal_zone6/temp=52697
+/sys/class/thermal/thermal_zone7/temp=53135
+/sys/class/thermal/thermal_zone8/temp=53224
+/sys/class/thermal/thermal_zone9/temp=45669
+--- sample=4 time=2026-08-25T14:23:16+08:00
+connectivity=PASS
+MemAvailable:     963640 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=52111
+/sys/class/thermal/thermal_zone1/temp=47936
+/sys/class/thermal/thermal_zone10/temp=40920
+/sys/class/thermal/thermal_zone11/temp=40160
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=44978
+/sys/class/thermal/thermal_zone14/temp=47152
+/sys/class/thermal/thermal_zone15/temp=46608
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=49467
+/sys/class/thermal/thermal_zone3/temp=51427
+/sys/class/thermal/thermal_zone4/temp=50261
+/sys/class/thermal/thermal_zone5/temp=52302
+/sys/class/thermal/thermal_zone6/temp=52178
+/sys/class/thermal/thermal_zone7/temp=52422
+/sys/class/thermal/thermal_zone8/temp=52804
+/sys/class/thermal/thermal_zone9/temp=45671
+--- sample=5 time=2026-08-25T14:23:46+08:00
+connectivity=PASS
+MemAvailable:     962644 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=52256
+/sys/class/thermal/thermal_zone1/temp=47858
+/sys/class/thermal/thermal_zone10/temp=40923
+/sys/class/thermal/thermal_zone11/temp=40233
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=44978
+/sys/class/thermal/thermal_zone14/temp=47152
+/sys/class/thermal/thermal_zone15/temp=46608
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=49387
+/sys/class/thermal/thermal_zone3/temp=51556
+/sys/class/thermal/thermal_zone4/temp=50229
+/sys/class/thermal/thermal_zone5/temp=52431
+/sys/class/thermal/thermal_zone6/temp=52114
+/sys/class/thermal/thermal_zone7/temp=52422
+/sys/class/thermal/thermal_zone8/temp=53062
+/sys/class/thermal/thermal_zone9/temp=45622
+--- sample=6 time=2026-08-25T14:24:17+08:00
+connectivity=PASS
+MemAvailable:     962772 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=52240
+/sys/class/thermal/thermal_zone1/temp=47826
+/sys/class/thermal/thermal_zone10/temp=40852
+/sys/class/thermal/thermal_zone11/temp=40230
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=44978
+/sys/class/thermal/thermal_zone14/temp=46608
+/sys/class/thermal/thermal_zone15/temp=46608
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=49355
+/sys/class/thermal/thermal_zone3/temp=51475
+/sys/class/thermal/thermal_zone4/temp=49973
+/sys/class/thermal/thermal_zone5/temp=52076
+/sys/class/thermal/thermal_zone6/temp=52017
+/sys/class/thermal/thermal_zone7/temp=52228
+/sys/class/thermal/thermal_zone8/temp=52610
+/sys/class/thermal/thermal_zone9/temp=45551
+--- sample=7 time=2026-08-25T14:24:47+08:00
+connectivity=PASS
+MemAvailable:     963416 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=52771
+/sys/class/thermal/thermal_zone1/temp=47952
+/sys/class/thermal/thermal_zone10/temp=41045
+/sys/class/thermal/thermal_zone11/temp=40544
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=44978
+/sys/class/thermal/thermal_zone14/temp=47152
+/sys/class/thermal/thermal_zone15/temp=46608
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=49562
+/sys/class/thermal/thermal_zone3/temp=51556
+/sys/class/thermal/thermal_zone4/temp=50245
+/sys/class/thermal/thermal_zone5/temp=52528
+/sys/class/thermal/thermal_zone6/temp=52551
+/sys/class/thermal/thermal_zone7/temp=52664
+/sys/class/thermal/thermal_zone8/temp=53192
+/sys/class/thermal/thermal_zone9/temp=45686
+--- sample=8 time=2026-08-25T14:25:17+08:00
+connectivity=PASS
+MemAvailable:     964448 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=52256
+/sys/class/thermal/thermal_zone1/temp=47717
+/sys/class/thermal/thermal_zone10/temp=40903
+/sys/class/thermal/thermal_zone11/temp=40200
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=44978
+/sys/class/thermal/thermal_zone14/temp=46608
+/sys/class/thermal/thermal_zone15/temp=46608
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=49371
+/sys/class/thermal/thermal_zone3/temp=51508
+/sys/class/thermal/thermal_zone4/temp=50069
+/sys/class/thermal/thermal_zone5/temp=52625
+/sys/class/thermal/thermal_zone6/temp=52795
+/sys/class/thermal/thermal_zone7/temp=52664
+/sys/class/thermal/thermal_zone8/temp=52852
+/sys/class/thermal/thermal_zone9/temp=45715
+--- sample=9 time=2026-08-25T14:25:47+08:00
+connectivity=PASS
+MemAvailable:     964728 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=52223
+/sys/class/thermal/thermal_zone1/temp=47983
+/sys/class/thermal/thermal_zone10/temp=40967
+/sys/class/thermal/thermal_zone11/temp=40327
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=44978
+/sys/class/thermal/thermal_zone14/temp=47152
+/sys/class/thermal/thermal_zone15/temp=46608
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=49722
+/sys/class/thermal/thermal_zone3/temp=51637
+/sys/class/thermal/thermal_zone4/temp=50405
+/sys/class/thermal/thermal_zone5/temp=52238
+/sys/class/thermal/thermal_zone6/temp=52616
+/sys/class/thermal/thermal_zone7/temp=52422
+/sys/class/thermal/thermal_zone8/temp=52626
+/sys/class/thermal/thermal_zone9/temp=45698
+--- sample=10 time=2026-08-25T14:26:17+08:00
+connectivity=PASS
+MemAvailable:     963936 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=52223
+/sys/class/thermal/thermal_zone1/temp=47999
+/sys/class/thermal/thermal_zone10/temp=41133
+/sys/class/thermal/thermal_zone11/temp=40589
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=44978
+/sys/class/thermal/thermal_zone14/temp=47152
+/sys/class/thermal/thermal_zone15/temp=47152
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=49467
+/sys/class/thermal/thermal_zone3/temp=51621
+/sys/class/thermal/thermal_zone4/temp=50453
+/sys/class/thermal/thermal_zone5/temp=52496
+/sys/class/thermal/thermal_zone6/temp=52033
+/sys/class/thermal/thermal_zone7/temp=52551
+/sys/class/thermal/thermal_zone8/temp=52965
+/sys/class/thermal/thermal_zone9/temp=45759
+--- sample=11 time=2026-08-25T14:26:48+08:00
+connectivity=PASS
+MemAvailable:     962372 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=52529
+/sys/class/thermal/thermal_zone1/temp=48219
+/sys/class/thermal/thermal_zone10/temp=41057
+/sys/class/thermal/thermal_zone11/temp=40493
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=45521
+/sys/class/thermal/thermal_zone14/temp=47152
+/sys/class/thermal/thermal_zone15/temp=47152
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=49802
+/sys/class/thermal/thermal_zone3/temp=51815
+/sys/class/thermal/thermal_zone4/temp=50437
+/sys/class/thermal/thermal_zone5/temp=52803
+/sys/class/thermal/thermal_zone6/temp=52405
+/sys/class/thermal/thermal_zone7/temp=52762
+/sys/class/thermal/thermal_zone8/temp=53160
+/sys/class/thermal/thermal_zone9/temp=45852
+--- sample=12 time=2026-08-25T14:27:18+08:00
+connectivity=PASS
+MemAvailable:     963596 kB
+SwapFree:              0 kB
+/sys/class/thermal/thermal_zone0/temp=52884
+/sys/class/thermal/thermal_zone1/temp=48297
+/sys/class/thermal/thermal_zone10/temp=41203
+/sys/class/thermal/thermal_zone11/temp=40713
+/sys/class/thermal/thermal_zone12/temp=-40000
+/sys/class/thermal/thermal_zone13/temp=45521
+/sys/class/thermal/thermal_zone14/temp=47152
+/sys/class/thermal/thermal_zone15/temp=47152
+/sys/class/thermal/thermal_zone16/temp=46608
+/sys/class/thermal/thermal_zone2/temp=49866
+/sys/class/thermal/thermal_zone3/temp=51847
+/sys/class/thermal/thermal_zone4/temp=50581
+/sys/class/thermal/thermal_zone5/temp=52722
+/sys/class/thermal/thermal_zone6/temp=52551
+/sys/class/thermal/thermal_zone7/temp=52956
+/sys/class/thermal/thermal_zone8/temp=53143
+/sys/class/thermal/thermal_zone9/temp=45965

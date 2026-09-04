@@ -1,0 +1,9 @@
+{
+  "binary": "/data/ai_cpe/demo/matter/bin/chip-tool",
+  "storage_directory": "/data/ai_cpe/demo/matter/credentials",
+  "network_interface": "br-lan",
+  "default_endpoint": 1,
+  "command_timeout_seconds": 120,
+  "commissioning_timeout_seconds": 180,
+  "max_output_bytes": 131072
+}

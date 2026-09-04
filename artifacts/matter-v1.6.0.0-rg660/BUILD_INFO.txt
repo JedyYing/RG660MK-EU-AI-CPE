@@ -1,0 +1,5 @@
+connectedhomeip_tag=v1.6.0.0
+connectedhomeip_commit=250a9e6c50ee2068107f3c4808b680f5f2925415
+build_image=ubuntu@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54
+/home/jedyying/Documents/基于SDR的语义通信实验平台/AI_CPE_Demo/artifacts/matter-v1.6.0.0-rg660/chip-tool: ELF 64-bit LSB executable, ARM aarch64, version 1 (GNU/Linux), statically linked, BuildID[sha1]=d7ea90b209787a260f005642a2ec94d7865e97b4, for GNU/Linux 3.7.0, stripped
+program_interpreter=none_static

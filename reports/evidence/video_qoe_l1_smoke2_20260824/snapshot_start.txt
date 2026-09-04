@@ -1,0 +1,45 @@
+__SNMP__
+Ip: Forwarding DefaultTTL InReceives InHdrErrors InAddrErrors ForwDatagrams InUnknownProtos InDiscards InDelivers OutRequests OutDiscards OutNoRoutes ReasmTimeout ReasmReqds ReasmOKs ReasmFails FragOKs FragFails FragCreates
+Ip: 1 64 88845 0 0 26282 0 0 62495 81736 14 1 0 0 0 0 0 0 0
+Icmp: InMsgs InErrors InCsumErrors InDestUnreachs InTimeExcds InParmProbs InSrcQuenchs InRedirects InEchos InEchoReps InTimestamps InTimestampReps InAddrMasks InAddrMaskReps OutMsgs OutErrors OutDestUnreachs OutTimeExcds OutParmProbs OutSrcQuenchs OutRedirects OutEchos OutEchoReps OutTimestamps OutTimestampReps OutAddrMasks OutAddrMaskReps
+Icmp: 149 0 0 102 0 0 0 0 17 30 0 0 0 0 289 0 211 0 0 0 0 61 17 0 0 0 0
+IcmpMsg: InType0 InType3 InType8 OutType0 OutType3 OutType8
+IcmpMsg: 30 102 17 17 211 61
+Tcp: RtoAlgorithm RtoMin RtoMax MaxConn ActiveOpens PassiveOpens AttemptFails EstabResets CurrEstab InSegs OutSegs RetransSegs InErrs OutRsts InCsumErrors
+Tcp: 1 200 120000 -1 523 15 1 47 2 94199 111815 429 7 117 0
+Udp: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors InCsumErrors IgnoredMulti MemErrors
+Udp: 2952 231 0 3391 0 0 0 0 0
+UdpLite: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors InCsumErrors IgnoredMulti MemErrors
+UdpLite: 0 0 0 0 0 0 0 0 0
+__NETSTAT__
+TcpExt: SyncookiesSent SyncookiesRecv SyncookiesFailed EmbryonicRsts PruneCalled RcvPruned OfoPruned OutOfWindowIcmps LockDroppedIcmps ArpFilter TW TWRecycled TWKilled PAWSActive PAWSEstab DelayedACKs DelayedACKLocked DelayedACKLost ListenOverflows ListenDrops TCPHPHits TCPPureAcks TCPHPAcks TCPRenoRecovery TCPSackRecovery TCPSACKReneging TCPSACKReorder TCPRenoReorder TCPTSReorder TCPFullUndo TCPPartialUndo TCPDSACKUndo TCPLossUndo TCPLostRetransmit TCPRenoFailures TCPSackFailures TCPLossFailures TCPFastRetrans TCPSlowStartRetrans TCPTimeouts TCPLossProbes TCPLossProbeRecovery TCPRenoRecoveryFail TCPSackRecoveryFail TCPRcvCollapsed TCPBacklogCoalesce TCPDSACKOldSent TCPDSACKOfoSent TCPDSACKRecv TCPDSACKOfoRecv TCPAbortOnData TCPAbortOnClose TCPAbortOnMemory TCPAbortOnTimeout TCPAbortOnLinger TCPAbortFailed TCPMemoryPressures TCPMemoryPressuresChrono TCPSACKDiscard TCPDSACKIgnoredOld TCPDSACKIgnoredNoUndo TCPSpuriousRTOs TCPMD5NotFound TCPMD5Unexpected TCPMD5Failure TCPSackShifted TCPSackMerged TCPSackShiftFallback TCPBacklogDrop PFMemallocDrop TCPMinTTLDrop TCPDeferAcceptDrop IPReversePathFilter TCPTimeWaitOverflow TCPReqQFullDoCookies TCPReqQFullDrop TCPRetransFail TCPRcvCoalesce TCPOFOQueue TCPOFODrop TCPOFOMerge TCPChallengeACK TCPSYNChallenge TCPFastOpenActive TCPFastOpenActiveFail TCPFastOpenPassive TCPFastOpenPassiveFail TCPFastOpenListenOverflow TCPFastOpenCookieReqd TCPFastOpenBlackhole TCPSpuriousRtxHostQueues BusyPollRxPackets TCPAutoCorking TCPFromZeroWindowAdv TCPToZeroWindowAdv TCPWantZeroWindowAdv TCPSynRetrans TCPOrigDataSent TCPHystartTrainDetect TCPHystartTrainCwnd TCPHystartDelayDetect TCPHystartDelayCwnd TCPACKSkippedSynRecv TCPACKSkippedPAWS TCPACKSkippedSeq TCPACKSkippedFinWait2 TCPACKSkippedTimeWait TCPACKSkippedChallenge TCPWinProbe TCPKeepAlive TCPMTUPFail TCPMTUPSuccess TCPDelivered TCPDeliveredCE TCPAckCompressed TCPZeroWindowDrop TCPRcvQDrop TCPWqueueTooBig TCPFastOpenPassiveAltKey TcpTimeoutRehash TcpDuplicateDataRehash TCPDSACKRecvSegs TCPDSACKIgnoredDubious TCPMigrateReqSuccess TCPMigrateReqFailure
+TcpExt: 0 0 0 0 0 0 0 0 0 0 237 0 0 0 1 1549 7 1895 0 0 40808 11198 19327 0 3 0 0 0 0 0 0 47 13 79 0 0 0 3 4 167 266 9 0 0 0 15 1907 96 313 0 8 47 0 9 0 0 0 0 0 0 66 1 0 0 0 35 11 29 0 0 0 0 0 0 0 0 0 26909 10938 0 45 5 7 0 0 0 0 0 0 0 0 0 364 0 0 0 15 53448 0 0 172 7993 0 0 0 0 0 2 0 19 0 0 54260 0 549 0 0 0 0 162 237 314 0 0 0
+IpExt: InNoRoutes InTruncatedPkts InMcastPkts OutMcastPkts InBcastPkts OutBcastPkts InOctets OutOctets InMcastOctets OutMcastOctets InBcastOctets OutBcastOctets InCsumErrors InNoECTPkts InECT1Pkts InECT0Pkts InCEPkts ReasmOverlaps
+IpExt: 0 0 0 0 9 0 79418453 81788338 0 0 2970 0 0 123164 0 0 0 0
+__INTERFACES__
+IFACE rai0 rx_bytes=9680512 tx_bytes=95268288 rx_packets=47545 tx_packets=128195 rx_dropped=18775 tx_dropped=48533 rx_errors=18775 tx_errors=48533 
+IFACE br-lan rx_bytes=5235609 tx_bytes=12596037 rx_packets=31511 tx_packets=24083 rx_dropped=0 tx_dropped=0 rx_errors=0 tx_errors=0 
+IFACE ccmni3 rx_bytes=213631748 tx_bytes=77671624 rx_packets=217249 tx_packets=161504 rx_dropped=0 tx_dropped=0 rx_errors=0 tx_errors=0 
+__QDISC__
+QDISC rai0
+qdisc fq_codel 0: root refcnt 2 limit 10240p flows 1024 quantum 1514 target 5ms interval 100ms memory_limit 4Mb ecn drop_batch 64 
+ Sent 12808790 bytes 27046 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+  maxpacket 9618 drop_overlimit 0 new_flow_count 496 ecn_mark 0
+  new_flows_len 0 old_flows_len 0
+QDISC br-lan
+qdisc noqueue 0: root refcnt 2 
+ Sent 0 bytes 0 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+QDISC ccmni3
+qdisc fq_codel 0: root refcnt 2 limit 10240p flows 1024 quantum 1500 target 5ms interval 100ms memory_limit 4Mb ecn drop_batch 64 
+ Sent 75514775 bytes 144466 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+  maxpacket 11200 drop_overlimit 0 new_flow_count 2041 ecn_mark 0
+  new_flows_len 0 old_flows_len 0
+__SYSTEM__
+2026-08-25T09:57:50+08:00
+4.28 4.15 4.42 1/314 10119
+MemTotal:        1492444 kB
+MemAvailable:     839896 kB
+SwapTotal:             0 kB

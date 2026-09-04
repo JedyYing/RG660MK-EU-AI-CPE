@@ -1,0 +1,170 @@
+===== SYSTEM =====
+uid=0(root) gid=0(root) groups=1004,1007,1011,1015,1028,3001,3002,3003,3006 context=system_u:system_r:init_t
+Linux OpenWrt 5.15.134 #0 SMP Mon Oct 9 21:45:35 2023 aarch64 GNU/Linux
+aarch64
+NAME="OpenWrt"
+VERSION="23.05.0"
+ID="openwrt"
+ID_LIKE="lede openwrt"
+PRETTY_NAME="OpenWrt 23.05.0"
+VERSION_ID="23.05.0"
+HOME_URL="https://openwrt.org/"
+BUG_URL="https://bugs.openwrt.org/"
+SUPPORT_URL="https://forum.openwrt.org/"
+BUILD_ID="r23497-6637af95aa"
+OPENWRT_BOARD="gem6xxx/evb6988_cpe_mt7992_emmc"
+OPENWRT_ARCH="aarch64_cortex-a55_neon-vfpv4"
+OPENWRT_TAINTS="no-all busybox"
+OPENWRT_DEVICE_MANUFACTURER="OpenWrt"
+OPENWRT_DEVICE_MANUFACTURER_URL="https://openwrt.org/"
+OPENWRT_DEVICE_PRODUCT="Generic"
+OPENWRT_DEVICE_REVISION="v0"
+OPENWRT_RELEASE="OpenWrt 23.05.0 r23497-6637af95aa"
+Permissive
+===== USB DEVICE TREE =====
+--- /sys/firmware/devicetree/base/usb-phy
+status=disabled
+compatible=mediatek,fpga-u3phy
+--- /sys/firmware/devicetree/base/usb-phy0@115a0000
+compatible=mediatek,xsphy
+--- /sys/firmware/devicetree/base/usb@11591000
+dr_mode=otg
+maximum-speed=super-speed-plus
+compatible=mediatek,mtu3
+--- /proc/device-tree/usb-phy
+status=disabled
+compatible=mediatek,fpga-u3phy
+--- /proc/device-tree/usb-phy0@115a0000
+compatible=mediatek,xsphy
+--- /proc/device-tree/usb@11591000
+dr_mode=otg
+maximum-speed=super-speed-plus
+compatible=mediatek,mtu3
+===== USB ROLE =====
+===== USB HOST BUSES =====
+===== ENUMERATED USB DEVICES =====
+===== UDC/GADGET =====
+--- /sys/class/udc/11591000.usb
+state=configured
+current_speed=high-speed
+maximum_speed=super-speed-plus
+===== CONTROLLERS =====
+/sys/bus/platform/drivers/disable_unused/disable_unused:disable-unused-pd-ssusb_u3phy
+/sys/bus/platform/drivers/disable_unused/disable_unused:disable-unused-pd-ssusb_u2phy
+/sys/bus/platform/drivers/disable_unused/disable_unused:disable-unused-pd-ssusb_top
+/sys/bus/platform/drivers/clk-mt6988-usb_d/11591000.syscon
+/sys/bus/platform/drivers/clk-mt6988-usb_sif/11593e00.syscon
+/sys/bus/platform/drivers/mtu3/11591000.usb
+/sys/bus/platform/drivers/mtk-xsphy/115ab000.usb-phy0
+===== KERNEL LOG =====
+===== NETWORK/STORAGE/RESOURCE =====
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0             UP             
+eth1             DOWN           
+ccmni0           DOWN           
+ccmni1           DOWN           
+ccmni2           DOWN           
+ccmni3           UNKNOWN        10.42.13.53/29 2408:840d:a920:804:18ce:9f17:c0f9:9db3/128 
+ccmni4           DOWN           
+ccmni5           DOWN           
+ccmni6           DOWN           
+ccmni7           DOWN           
+ccmni8           DOWN           
+ccmni9           DOWN           
+ccmni10          DOWN           
+ccmni11          DOWN           
+ccmni12          DOWN           
+ccmni13          DOWN           
+ccmni14          DOWN           
+ccmni15          DOWN           
+ccmni16          DOWN           
+ccmni17          DOWN           
+ccmni18          DOWN           
+ccmni19          DOWN           
+ccmni20          DOWN           
+tunl0@NONE       DOWN           
+ip_vti0@NONE     DOWN           
+ip6tnl0@NONE     DOWN           
+gre0@NONE        DOWN           
+gretap0@NONE     DOWN           
+erspan0@NONE     DOWN           
+ip6gre0@NONE     DOWN           
+ra0              UP             
+rai0             UP             
+br-lan           UP             192.168.1.1/24 2408:840d:a920:804::1/64 fd7d:c840:7681::1/60 fe80::e868:e8ff:fe53:6a31/64 
+rndis0           DOWN           
+apcli0           DOWN           
+apclii0          DOWN           
+ra1              DOWN           
+default via 10.42.13.54 dev ccmni3 proto static src 10.42.13.53 
+10.42.13.48/29 dev ccmni3 proto kernel scope link src 10.42.13.53 
+192.168.1.0/24 dev br-lan proto kernel scope link src 192.168.1.1 
+0:	from all lookup local
+32766:	from all lookup main
+32767:	from all lookup default
+Filesystem           Type            Size      Used Available Use% Mounted on
+/dev/root            squashfs       41.8M     41.8M         0 100% /rom
+/dev/mmcblk0p23      ext4           21.4M    597.0K     19.1M   3% /overlay
+overlayfs:/overlay   overlay        21.4M    597.0K     19.1M   3% /
+/dev/block/nvcfg     ext4           10.1M     47.0K      9.2M   0% /mnt/vendor/nvcfg
+/dev/block/nvdata    ext4           65.9M     13.7M     46.9M  23% /mnt/vendor/nvdata
+/dev/block/protect1  ext4            6.4M    325.0K      5.6M   5% /mnt/vendor/protect_f
+/dev/block/protect2  ext4            6.4M    178.0K      5.7M   3% /mnt/vendor/protect_s
+/dev/block/mcf       ext4            6.4M      2.4M      3.5M  41% /vendor/etc/mdota
+/dev/block/user_data ext4            2.7G    589.1M      2.0G  23% /data
+MemTotal:        1492444 kB
+MemFree:          250772 kB
+MemAvailable:     833100 kB
+Buffers:           58396 kB
+Cached:           530172 kB
+SwapCached:            0 kB
+Active:           390564 kB
+Inactive:         469684 kB
+Active(anon):     314784 kB
+Inactive(anon):      172 kB
+Active(file):      75780 kB
+Inactive(file):   469512 kB
+Unevictable:       43276 kB
+Mlocked:               0 kB
+SwapTotal:             0 kB
+SwapFree:              0 kB
+Dirty:                 4 kB
+Writeback:             0 kB
+AnonPages:        314944 kB
+Mapped:            61632 kB
+processor	: 0
+BogoMIPS	: 26.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x2
+CPU part	: 0xd05
+CPU revision	: 0
+
+processor	: 1
+BogoMIPS	: 26.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x2
+CPU part	: 0xd05
+CPU revision	: 0
+
+processor	: 2
+BogoMIPS	: 26.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x2
+CPU part	: 0xd05
+CPU revision	: 0
+
+processor	: 3
+BogoMIPS	: 26.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x2
+CPU part	: 0xd05
+CPU revision	: 0
+

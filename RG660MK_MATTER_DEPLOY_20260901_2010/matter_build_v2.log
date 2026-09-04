@@ -1,0 +1,751 @@
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/boot/kexec-tools/Makefile' has a dependency on 'liblzma', which does not exist
+WARNING: Makefile 'package/network/services/lldpd/Makefile' has a dependency on 'libnetsnmp', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/px5g-wolfssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/feeds/matter/python3-host-ssl/Makefile' has a build dependency on 'python3/host', which does not exist
+WARNING: Makefile 'package/utils/uencrypt/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/libs/ustream-ssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+make[2]: 'conf' is up to date.
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+time: target/linux/prereq#0.11#0.23#0.47
+make[1]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt'
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/gn'
+[host-build.mk] Will Skip gn-2025-03-21-6e8e0d6d? 
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/gn'
+time: package/feeds/matter/gn/host-compile#0.11#0.27#0.51
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/python3-host-ssl'
+[host-build.mk] Will Skip python3-host-ssl? 
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/hostpkg/python3-host-ssl/.prepareddde5bb6eb71e09f637d237913b5703fc_6664517399ebbbc92a37c5bb081b5c53
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/hostpkg/python3-host-ssl/.configured
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/hostpkg/python3-host-ssl/.built
+install -d -m0755 /var/tmp/RG660MK_build/T930/openwrt/staging_dir/hostpkg/lib/python3.11/site-packages
+/var/tmp/RG660MK_build/T930/openwrt/staging_dir/hostpkg/bin/python3.11 generate.py >/var/tmp/RG660MK_build/T930/openwrt/staging_dir/hostpkg/lib/python3.11/site-packages/host_ssl_config.py
+echo import host_ssl_config >/var/tmp/RG660MK_build/T930/openwrt/staging_dir/hostpkg/lib/python3.11/site-packages/host_ssl_config.pth  
+mkdir -p /var/tmp/RG660MK_build/T930/openwrt/staging_dir/hostpkg/stamp
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/hostpkg/python3-host-ssl/.built
+touch /var/tmp/RG660MK_build/T930/openwrt/staging_dir/hostpkg/stamp/.python3-host-ssl_installed 
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/feeds/matter/devel/python3-host-ssl'
+time: package/feeds/matter/python3-host-ssl/host-compile#0.15#0.29#0.67
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/toolchain'
+echo "libc" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libgcc" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libatomic" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libstdcpp" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libpthread" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "librt" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/toolchain'
+time: package/libs/toolchain/compile#0.10#0.33#0.76
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/libjson-c'
+[host-build.mk] Will Skip json-c-0.16? 
+echo "libjson-c" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libjson-c.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/libjson-c'
+time: package/libs/libjson-c/compile#0.16#0.37#0.65
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/utils/lua'
+[host-build.mk] Will Skip lua-5.1.5? 
+echo "liblua" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/lua.default.install
+echo "lua" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/lua.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/utils/lua'
+time: package/utils/lua/compile#0.14#0.37#0.65
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/libubox'
+[host-build.mk] Will Skip libubox-2023-05-23-75a3b870? 
+echo "libubox" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libubox.default.install
+echo "libblobmsg-json" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libubox.default.install
+echo "jshn" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libubox.default.install
+echo "libjson-script" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libubox.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/libubox'
+time: package/libs/libubox/compile#0.16#0.49#0.96
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/system/ubus'
+echo "libubus" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/ubus.default.install
+echo "libubus-lua" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/ubus.default.install
+echo "ubus" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/ubus.default.install
+echo "ubusd" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/ubus.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/system/ubus'
+time: package/system/ubus/compile#0.11#0.33#0.59
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/mbedtls'
+echo "libmbedtls" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/mbedtls.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/mbedtls'
+time: package/libs/mbedtls/compile#0.14#0.33#0.64
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/feeds/matter/service/matter-netman'
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.prepared_check
+rm -rf /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80
+ln -snf /home/jedyying/Downloads/connectedhomeip /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.source_dir
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.prepared
+if [ -s "/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/patches/series" ]; then (cd "/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80"; if quilt --quiltrc=- next >/dev/null 2>&1; then quilt --quiltrc=- push -a; else quilt --quiltrc=- top >/dev/null 2>&1; fi ); fi
+touch "/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.quilt_checked"
+rm -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.configured_*
+rm -f /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/stamp/.matter-netman.mbedtls_installed
+mkdir -p /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/out/openwrt && cd /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/out/openwrt && AR="aarch64-openwrt-linux-musl-gcc-ar" AS="aarch64-openwrt-linux-musl-gcc -c -Os -pipe -fno-caller-saves -fno-plt -Wno-error=unused-label -Wno-error=vla -Wno-error=unused-function -Wno-error=address-of-packed-member -funwind-tables -fhonour-copts -Wno-error=unused-but-set-variable -Wno-error=unused-result -Wformat -Werror=format-security -DPIC -fPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,now -Wl,-z,relro -DCHIP_SYSLOG_IDENT=\"matter\" -DCHIP_CONFIG_KVS_PATH=\"/etc/matter/chip_kvs.ini\" -DFATCONFDIR=\"/etc/matter\" -DSYSCONFDIR=\"/etc/matter\" -DLOCALSTATEDIR=\"/etc/matter\" -DCHIP_DEVICE_CONFIG_ENABLE_TEST_SETUP_PARAMS=0 -DCHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING=\"2025-10-29-8f221d80@23.05.0-r23497-6637af95aa\" -DCHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING=\"-\" -DCHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME=\"OpenWrt\" -DCHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME=\"\" -DCHIP_DEVICE_CONFIG_TEST_SERIAL_NUMBER=\"\" -Wno-format-nonliteral" LD=aarch64-openwrt-linux-musl-ld NM="aarch64-openwrt-linux-musl-gcc-nm" CC="aarch64-openwrt-linux-musl-gcc" GCC="aarch64-openwrt-linux-musl-gcc" CXX="aarch64-openwrt-linux-musl-g++" RANLIB="aarch64-openwrt-linux-musl-gcc-ranlib" STRIP=aarch64-openwrt-linux-musl-strip OBJCOPY=aarch64-openwrt-linux-musl-objcopy OBJDUMP=aarch64-openwrt-linux-musl-objdump SIZE=aarch64-openwrt-linux-musl-size CFLAGS="-Os -pipe -fno-caller-saves -fno-plt -Wno-error=unused-label -Wno-error=vla -Wno-error=unused-function -Wno-error=address-of-packed-member -funwind-tables -fhonour-copts -Wno-error=unused-but-set-variable -Wno-error=unused-result -Wformat -Werror=format-security -DPIC -fPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,now -Wl,-z,relro -DCHIP_SYSLOG_IDENT=\"matter\" -DCHIP_CONFIG_KVS_PATH=\"/etc/matter/chip_kvs.ini\" -DFATCONFDIR=\"/etc/matter\" -DSYSCONFDIR=\"/etc/matter\" -DLOCALSTATEDIR=\"/etc/matter\" -DCHIP_DEVICE_CONFIG_ENABLE_TEST_SETUP_PARAMS=0 -DCHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING=\"2025-10-29-8f221d80@23.05.0-r23497-6637af95aa\" -DCHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING=\"-\" -DCHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME=\"OpenWrt\" -DCHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME=\"\" -DCHIP_DEVICE_CONFIG_TEST_SERIAL_NUMBER=\"\" -Wno-format-nonliteral " CXXFLAGS="-Os -pipe -fno-caller-saves -fno-plt -Wno-error=unused-label -Wno-error=vla -Wno-error=unused-function -Wno-error=address-of-packed-member -funwind-tables -fhonour-copts -Wno-error=unused-but-set-variable -Wno-error=unused-result -Wformat -Werror=format-security -DPIC -fPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,now -Wl,-z,relro -DCHIP_SYSLOG_IDENT=\"matter\" -DCHIP_CONFIG_KVS_PATH=\"/etc/matter/chip_kvs.ini\" -DFATCONFDIR=\"/etc/matter\" -DSYSCONFDIR=\"/etc/matter\" -DLOCALSTATEDIR=\"/etc/matter\" -DCHIP_DEVICE_CONFIG_ENABLE_TEST_SETUP_PARAMS=0 -DCHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING=\"2025-10-29-8f221d80@23.05.0-r23497-6637af95aa\" -DCHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING=\"-\" -DCHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME=\"OpenWrt\" -DCHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME=\"\" -DCHIP_DEVICE_CONFIG_TEST_SERIAL_NUMBER=\"\" -Wno-format-nonliteral " CPPFLAGS="-I/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/include -I/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/include/fortify " LDFLAGS="-L/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/lib -DPIC -fPIC -specs=/var/tmp/RG660MK_build/T930/openwrt/include/hardened-ld-pie.specs -znow -zrelro -lmbedcrypto -lmbedx509 "  /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/scripts/configure --build-env-dir="/var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/share/matter-build-env" --project=examples/network-manager-app/linux --target=aarch64-openwrt-linux-musl --enable-ubus --enable-detail-logging --enable-recommended=no --enable-access-restrictions=no --enable-network-layer-ble=no --enable-tracing-support=no --logging-backend=syslog --crypto=mbedtls --enable-external-mbedtls
+Checking for gn... /var/tmp/RG660MK_build/T930/openwrt/staging_dir/hostpkg/bin/gn
+Checking for ninja... /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/ninja
+Checking for Python 3.11 or later... /var/tmp/RG660MK_build/T930/openwrt/staging_dir/hostpkg/bin/python3
+Setting up Python venv... /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/share/matter-build-env
+Installing Python build dependencies... /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/share/matter-build-env/lib/python3.11/site-packages/pip/_vendor/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 3.7.2'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+ok
+Checking for zap-cli... not found
+Installing zap-cli from https://github.com/project-chip/zap/releases/download/v2026.08.24/zap-linux-x64.zip... ok
+Creating empty build_overrides/pigweed_environment.gni in source tree
+Configuring gn build arguments (see ./build-args.txt for supported arguments)
+ - custom_toolchain = "custom"
+ - target_cc = "aarch64-openwrt-linux-musl-gcc"
+ - target_cxx = "aarch64-openwrt-linux-musl-g++"
+ - target_ar = "aarch64-openwrt-linux-musl-gcc-ar"
+ - target_cflags = ["-I/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/include", "-I/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/include/fortify"]
+ - target_cflags_c = ["-Os", "-pipe", "-fno-caller-saves", "-fno-plt", "-Wno-error=unused-label", "-Wno-error=vla", "-Wno-error=unused-function", "-Wno-error=address-of-packed-member", "-funwind-tables", "-fhonour-copts", "-Wno-error=unused-but-set-variable", "-Wno-error=unused-result", "-Wformat", "-Werror=format-security", "-DPIC", "-fPIC", "-fstack-protector-strong", "-D_FORTIFY_SOURCE=2", "-Wl,-z,now", "-Wl,-z,relro", "-DCHIP_SYSLOG_IDENT=\"matter\"", "-DCHIP_CONFIG_KVS_PATH=\"/etc/matter/chip_kvs.ini\"", "-DFATCONFDIR=\"/etc/matter\"", "-DSYSCONFDIR=\"/etc/matter\"", "-DLOCALSTATEDIR=\"/etc/matter\"", "-DCHIP_DEVICE_CONFIG_ENABLE_TEST_SETUP_PARAMS=0", "-DCHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING=\"2025-10-29-8f221d80@23.05.0-r23497-6637af95aa\"", "-DCHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING=\"-\"", "-DCHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME=\"OpenWrt\"", "-DCHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME=\"\"", "-DCHIP_DEVICE_CONFIG_TEST_SERIAL_NUMBER=\"\"", "-Wno-format-nonliteral"]
+ - target_cflags_cc = ["-Os", "-pipe", "-fno-caller-saves", "-fno-plt", "-Wno-error=unused-label", "-Wno-error=vla", "-Wno-error=unused-function", "-Wno-error=address-of-packed-member", "-funwind-tables", "-fhonour-copts", "-Wno-error=unused-but-set-variable", "-Wno-error=unused-result", "-Wformat", "-Werror=format-security", "-DPIC", "-fPIC", "-fstack-protector-strong", "-D_FORTIFY_SOURCE=2", "-Wl,-z,now", "-Wl,-z,relro", "-DCHIP_SYSLOG_IDENT=\"matter\"", "-DCHIP_CONFIG_KVS_PATH=\"/etc/matter/chip_kvs.ini\"", "-DFATCONFDIR=\"/etc/matter\"", "-DSYSCONFDIR=\"/etc/matter\"", "-DLOCALSTATEDIR=\"/etc/matter\"", "-DCHIP_DEVICE_CONFIG_ENABLE_TEST_SETUP_PARAMS=0", "-DCHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING=\"2025-10-29-8f221d80@23.05.0-r23497-6637af95aa\"", "-DCHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING=\"-\"", "-DCHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME=\"OpenWrt\"", "-DCHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME=\"\"", "-DCHIP_DEVICE_CONFIG_TEST_SERIAL_NUMBER=\"\"", "-Wno-format-nonliteral"]
+ - target_ldflags = ["-L/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/lib", "-DPIC", "-fPIC", "-specs=/var/tmp/RG660MK_build/T930/openwrt/include/hardened-ld-pie.specs", "-znow", "-zrelro", "-lmbedcrypto", "-lmbedx509"]
+ - target_cpu = "aarch64"
+ - target_os = "linux"
+ - matter_enable_ubus = true
+ - chip_detail_logging = true
+ - matter_enable_recommended = false
+ - chip_enable_access_restrictions = false
+ - chip_config_network_layer_ble = false
+ - matter_enable_tracing_support = false
+ - chip_logging_backend = "syslog"
+ - chip_crypto = "mbedtls"
+ - chip_external_mbedtls = true
+Running gn gen to generate ninja files
+You can now run ./ninja-build (or ninja)
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.configured_5e3b0573f493d21ceb341dfc0dc232c1
+rm -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.built
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.built_check
+MAKEFLAGS="" /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/ninja  -j1 -C /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/out/openwrt matter-network-manager-app
+ninja: Entering directory `/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/out/openwrt'
+[1/590] ACTION //third_party/connectedhomeip/examples/network-manager-app/network-manager-common:network-manager-common_codegen_generate(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[2/590] ACTION //third_party/connectedhomeip/examples/network-manager-app/network-manager-common:network-manager-common_zapgen_generate(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[3/590] ACTION //third_party/connectedhomeip/src/access:gen_access_buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[4/590] ACTION //third_party/connectedhomeip/src/app:gen_app_buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[5/590] ACTION //third_party/connectedhomeip/src/app/icd/server:gen_icd-server-buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[6/590] ACTION //third_party/connectedhomeip/src/ble:gen_ble_buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[7/590] ACTION //third_party/connectedhomeip/src/credentials:gen_build_time_header(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[8/590] ACTION //third_party/connectedhomeip/src/crypto:gen_crypto_buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[9/590] ACTION //third_party/connectedhomeip/src/data-model-providers/codegen:gen_processing-buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[10/590] ACTION //third_party/connectedhomeip/src/inet:gen_inet_buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[11/590] ACTION //third_party/connectedhomeip/src/lib/asn1:gen_asn1oid(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[12/590] ACTION //third_party/connectedhomeip/src/lib/core:gen_chip_buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[13/590] ACTION //third_party/connectedhomeip/src/lib/dnssd/minimal_mdns:gen_minmdns_buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[14/590] ACTION //third_party/connectedhomeip/src/lib/support:gen_chip_version(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[15/590] ACTION //third_party/connectedhomeip/src/platform:gen_platform_buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[16/590] ACTION //third_party/connectedhomeip/src/setup_payload:gen_additional_data_payload_buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[17/590] ACTION //third_party/connectedhomeip/src/system:gen_system_buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[18/590] c++ obj/third_party/connectedhomeip/examples/platform/linux/linux-commissionable-data-provider.LinuxCommissionableDataProvider.cpp.o
+[19/590] c++ obj/third_party/connectedhomeip/examples/providers/libMatterAllClustersDeviceInfoProviderExample.AllClustersExampleDeviceInfoProviderImpl.cpp.o
+[20/590] c++ obj/third_party/connectedhomeip/examples/providers/libMatterDeviceInfoProviderExample.DeviceInfoProviderImpl.cpp.o
+[21/590] c++ obj/third_party/connectedhomeip/src/app/attribute-persistence.SafeAttributePersistenceProvider.cpp.o
+[22/590] c++ obj/third_party/connectedhomeip/src/app/storage-wrapper.StorageDelegateWrapper.cpp.o
+[23/590] c++ obj/third_party/connectedhomeip/src/app/clusters/network-commissioning/thread-response-encoding.ThreadScanResponse.cpp.o
+[24/590] c++ obj/third_party/connectedhomeip/src/app/clusters/network-commissioning/wifi-response-encoding.WifiScanResponse.cpp.o
+[25/590] c++ obj/third_party/connectedhomeip/src/app/clusters/proximity-ranging-server/ble-rssi-helpers.BleRssiRangingHelpers.cpp.o
+[26/590] c++ obj/third_party/connectedhomeip/src/app/clusters/software-diagnostics-server/software-fault-listener.software-fault-listener.cpp.o
+[27/590] c++ obj/third_party/connectedhomeip/src/app/clusters/time-synchronization-server/time-sync-data-provider.TimeSyncDataProvider.cpp.o
+[28/590] c++ obj/third_party/connectedhomeip/zzz_generated/app-common/app-common/zap-generated/libClusterObjects.cluster-objects.cpp.o
+[29/590] c++ obj/third_party/connectedhomeip/src/app/data-model/data-model.FabricScopedPreEncodedValue.cpp.o
+[30/590] c++ obj/third_party/connectedhomeip/src/app/data-model/data-model.PreEncodedValue.cpp.o
+[31/590] c++ obj/third_party/connectedhomeip/src/app/data-model/encode-decode.StructDecodeIterator.cpp.o
+[32/590] c++ obj/third_party/connectedhomeip/src/app/data-model/encode-decode.WrappedStructEncoder.cpp.o
+[33/590] c++ obj/third_party/connectedhomeip/src/app/icd/server/configuration-data.ICDConfigurationData.cpp.o
+[34/590] c++ obj/third_party/connectedhomeip/src/app/util/types.attribute-metadata.cpp.o
+[35/590] c++ obj/third_party/connectedhomeip/src/app/util/types.ember-strings.cpp.o
+[36/590] c++ obj/third_party/connectedhomeip/src/credentials/attestation_verifier/test_paa_store.TestPAAStore.cpp.o
+[37/590] c++ obj/third_party/connectedhomeip/src/crypto/libChipCrypto.CHIPCryptoPAL.cpp.o
+[38/590] c++ obj/third_party/connectedhomeip/src/crypto/libChipCrypto.RandUtils.cpp.o
+[39/590] c++ obj/third_party/connectedhomeip/src/crypto/libChipCrypto.RawKeySessionKeystore.cpp.o
+[40/590] c++ obj/third_party/connectedhomeip/src/crypto/libChipCrypto.PersistentStorageOperationalKeystore.cpp.o
+[41/590] c++ obj/third_party/connectedhomeip/src/crypto/cryptopal_mbedtls.CHIPCryptoPALmbedTLS.cpp.o
+[42/590] c++ obj/third_party/connectedhomeip/src/crypto/cryptopal_mbedtls.CHIPCryptoPALmbedTLSCert.cpp.o
+[43/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.IPAddress-StringFuncts.cpp.o
+[44/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.IPAddress.cpp.o
+[45/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.IPPacketInfo.cpp.o
+[46/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.IPPrefix.cpp.o
+[47/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.InetError.cpp.o
+[48/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.InetInterface.cpp.o
+[49/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.TCPEndPoint.cpp.o
+[50/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.TCPEndPointImplSockets.cpp.o
+[51/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.UDPEndPoint.cpp.o
+[52/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.UDPEndPointImplSockets.cpp.o
+[53/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.InetFaultInjection.cpp.o
+[54/590] c++ obj/third_party/connectedhomeip/src/inet/libInetLayer.InetInterfaceImplDefault.cpp.o
+[55/590] c++ obj/third_party/connectedhomeip/src/lib/asn1/libASN1.ASN1Error.cpp.o
+[56/590] c++ obj/third_party/connectedhomeip/src/lib/asn1/libASN1.ASN1OID.cpp.o
+[57/590] c++ obj/third_party/connectedhomeip/src/lib/asn1/libASN1.ASN1Reader.cpp.o
+[58/590] c++ obj/third_party/connectedhomeip/src/lib/asn1/libASN1.ASN1Time.cpp.o
+[59/590] c++ obj/third_party/connectedhomeip/src/lib/asn1/libASN1.ASN1Writer.cpp.o
+[60/590] c++ obj/third_party/connectedhomeip/src/lib/core/libChipCore.CHIPKeyIds.cpp.o
+[61/590] c++ obj/third_party/connectedhomeip/src/lib/core/libChipCore.OTAImageHeader.cpp.o
+[62/590] c++ obj/third_party/connectedhomeip/src/lib/core/libChipCore.TLVCircularBuffer.cpp.o
+[63/590] c++ obj/third_party/connectedhomeip/src/lib/core/libChipCore.TLVDebug.cpp.o
+[64/590] c++ obj/third_party/connectedhomeip/src/lib/core/libChipCore.TLVReader.cpp.o
+[65/590] c++ obj/third_party/connectedhomeip/src/lib/core/libChipCore.TLVTags.cpp.o
+[66/590] c++ obj/third_party/connectedhomeip/src/lib/core/libChipCore.TLVUpdater.cpp.o
+[67/590] c++ obj/third_party/connectedhomeip/src/lib/core/libChipCore.TLVUtilities.cpp.o
+[68/590] c++ obj/third_party/connectedhomeip/src/lib/core/libChipCore.TLVWriter.cpp.o
+[69/590] c++ obj/third_party/connectedhomeip/src/lib/core/error.CHIPError.cpp.o
+[70/590] c++ obj/third_party/connectedhomeip/src/lib/core/error.ErrorStr.cpp.o
+[71/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/naming.ServiceNaming.cpp.o
+[72/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/minimal_mdns/address_policy.AddressPolicy.cpp.o
+[73/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/minimal_mdns/default_policy.AddressPolicy_DefaultImpl.cpp.o
+[74/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/minimal_mdns/minimal_mdns.ResponseSender.cpp.o
+[75/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/minimal_mdns/minimal_mdns.Server.cpp.o
+[76/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/minimal_mdns/responders/responders.IP.cpp.o
+[77/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/minimal_mdns/responders/responders.QueryResponder.cpp.o
+[78/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/wire/reader.Parser.cpp.o
+[79/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/wire/reader.RecordData.cpp.o
+[80/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/wire/wire.QName.cpp.o
+[81/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/wire/wire.QNameString.cpp.o
+[82/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/wire/wire.RecordWriter.cpp.o
+[83/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/wire/records/records.IP.cpp.o
+[84/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/wire/records/records.ResourceRecord.cpp.o
+[85/590] c++ obj/third_party/connectedhomeip/src/lib/support/arg_parser.CHIPArgParser.cpp.o
+[86/590] c++ obj/third_party/connectedhomeip/src/lib/support/memory.CHIPMem.cpp.o
+[87/590] c++ obj/third_party/connectedhomeip/src/lib/support/memory.CHIPPlatformMemory.cpp.o
+[88/590] c++ obj/third_party/connectedhomeip/src/lib/support/memory.CHIPMem-Malloc.cpp.o
+[89/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.Base64.cpp.o
+[90/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.Base85.cpp.o
+[91/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.BufferReader.cpp.o
+[92/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.BufferWriter.cpp.o
+[93/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.BytesCircularBuffer.cpp.o
+[94/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.BytesToHex.cpp.o
+[95/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.FibonacciUtils.cpp.o
+[96/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.FixedBufferAllocator.cpp.o
+[97/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.IniEscaping.cpp.o
+[98/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.PersistentStorageAudit.cpp.o
+[99/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.Pool.cpp.o
+[100/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.PrivateHeap.cpp.o
+[101/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.ReadOnlyBuffer.cpp.o
+[102/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.StringBuilder.cpp.o
+[103/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.ThreadDiscoveryCode.cpp.o
+[104/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.ThreadOperationalDataset.cpp.o
+[105/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.TimeUtils.cpp.o
+[106/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.ZclString.cpp.o
+[107/590] c++ obj/third_party/connectedhomeip/src/lib/support/logging/libSupportLayer.BinaryLogging.cpp.o
+[108/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.utf8.cpp.o
+[109/590] c++ obj/third_party/connectedhomeip/src/lib/support/verhoeff/libSupportLayer.Verhoeff.cpp.o
+[110/590] c++ obj/third_party/connectedhomeip/src/lib/support/verhoeff/libSupportLayer.Verhoeff10.cpp.o
+[111/590] c++ obj/third_party/connectedhomeip/src/lib/support/libSupportLayer.CHIPFaultInjection.cpp.o
+[112/590] c++ obj/third_party/connectedhomeip/src/lib/support/logging/text_only_logging.TextOnlyLogging.cpp.o
+[113/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.CommissionableDataProvider.cpp.o
+[114/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.DefaultTimerDelegate.cpp.o
+[115/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.DeviceControlServer.cpp.o
+[116/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.DeviceInfoProvider.cpp.o
+[117/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.DeviceInstanceInfoProvider.cpp.o
+[118/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.DiagnosticDataProvider.cpp.o
+[119/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.Entropy.cpp.o
+[120/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.GeneralUtils.cpp.o
+[121/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.Globals.cpp.o
+[122/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.LockTracker.cpp.o
+[123/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.PersistedStorage.cpp.o
+[124/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.PlatformEventSupport.cpp.o
+[125/590] c++ obj/third_party/connectedhomeip/src/platform/libDeviceLayer.RuntimeOptionsProvider.cpp.o
+[126/590] c++ obj/third_party/connectedhomeip/src/platform/Linux.DeviceSafeQueue.cpp.o
+[127/590] c++ obj/third_party/connectedhomeip/src/platform/Linux.SingletonConfigurationManager.cpp.o
+[128/590] c++ obj/third_party/connectedhomeip/src/platform/Linux.SingletonConnectivityManager.cpp.o
+[129/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.CHIPLinuxStorage.cpp.o
+[130/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.CHIPLinuxStorageIni.cpp.o
+[131/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.ConfigurationManagerImpl.cpp.o
+[132/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.ConnectivityManagerImpl.cpp.o
+[133/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.ConnectivityManagerImpl_NetworkManagementBasis.cpp.o
+[134/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.ConnectivityUtils.cpp.o
+[135/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.DeviceInstanceInfoProviderImpl.cpp.o
+[136/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.DiagnosticDataProviderImpl.cpp.o
+[137/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.KeyValueStoreManagerImpl.cpp.o
+[138/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.NetworkCommissioningEthernetDriver.cpp.o
+[139/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.PlatformManagerImpl.cpp.o
+[140/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.PosixConfig.cpp.o
+[141/590] c++ obj/third_party/connectedhomeip/src/platform/Linux/Linux.SystemTimeSupport.cpp.o
+[142/590] c++ obj/third_party/connectedhomeip/src/platform/logging/impl/syslog.Syslog.cpp.o
+[143/590] c++ obj/third_party/connectedhomeip/src/protocols/interaction_model/libInteractionModel.StatusCode.cpp.o
+[144/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/check-in-counter.CheckInCounter.cpp.o
+[145/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/check-in-message.CheckinMessage.cpp.o
+[146/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/libSecureChannelTypes.StatusReport.cpp.o
+[147/590] c++ obj/third_party/connectedhomeip/src/setup_payload/additional_data_payload.AdditionalDataPayloadGenerator.cpp.o
+[148/590] c++ obj/third_party/connectedhomeip/src/setup_payload/additional_data_payload.AdditionalDataPayloadParser.cpp.o
+[149/590] c++ obj/third_party/connectedhomeip/src/setup_payload/onboarding-codes-utils.OnboardingCodesUtil.cpp.o
+[150/590] c++ obj/third_party/connectedhomeip/src/setup_payload/libSetupPayload.Base38Decode.cpp.o
+[151/590] c++ obj/third_party/connectedhomeip/src/setup_payload/libSetupPayload.Base38Encode.cpp.o
+[152/590] c++ obj/third_party/connectedhomeip/src/setup_payload/libSetupPayload.ManualSetupPayloadGenerator.cpp.o
+[153/590] c++ obj/third_party/connectedhomeip/src/setup_payload/libSetupPayload.ManualSetupPayloadParser.cpp.o
+[154/590] c++ obj/third_party/connectedhomeip/src/setup_payload/libSetupPayload.QRCodeSetupPayloadGenerator.cpp.o
+[155/590] c++ obj/third_party/connectedhomeip/src/setup_payload/libSetupPayload.QRCodeSetupPayloadParser.cpp.o
+[156/590] c++ obj/third_party/connectedhomeip/src/setup_payload/libSetupPayload.SetupPayload.cpp.o
+[157/590] c++ obj/third_party/connectedhomeip/src/system/libSystemLayer.SystemClock.cpp.o
+[158/590] c++ obj/third_party/connectedhomeip/src/system/libSystemLayer.SystemError.cpp.o
+[159/590] c++ obj/third_party/connectedhomeip/src/system/libSystemLayer.SystemLayer.cpp.o
+[160/590] c++ obj/third_party/connectedhomeip/src/system/libSystemLayer.SystemMutex.cpp.o
+[161/590] c++ obj/third_party/connectedhomeip/src/system/libSystemLayer.SystemPacketBuffer.cpp.o
+[162/590] c++ obj/third_party/connectedhomeip/src/system/libSystemLayer.SystemStats.cpp.o
+[163/590] c++ obj/third_party/connectedhomeip/src/system/libSystemLayer.SystemTimer.cpp.o
+[164/590] c++ obj/third_party/connectedhomeip/src/system/libSystemLayer.TLVPacketBufferBackingStore.cpp.o
+[165/590] c++ obj/third_party/connectedhomeip/src/system/libSystemLayer.SystemLayerImplSelect.cpp.o
+[166/590] c++ obj/third_party/connectedhomeip/src/system/libSystemLayer.WakeEvent.cpp.o
+[167/590] c++ obj/third_party/connectedhomeip/src/system/libSystemLayer.SystemFaultInjection.cpp.o
+[168/590] ACTION //third_party/connectedhomeip/src/tracing:gen_tracing_buildconfig(//third_party/connectedhomeip/build/toolchain/custom:custom)
+[169/590] c++ obj/matter-network-manager-app.main.cpp.o
+[170/590] c++ obj/matter-network-manager-app.ThreadBROpenThreadUbus.cpp.o
+[171/590] c++ obj/matter-network-manager-app.UboxUtils.cpp.o
+[172/590] c++ obj/matter-network-manager-app.UbusManager.cpp.o
+[173/590] c++ obj/matter-network-manager-app.UloopHandler.cpp.o
+[174/590] c++ obj/third_party/connectedhomeip/src/app/util/network-manager-common.generic-callback-stubs.cpp.o
+[175/590] c++ obj/third_party/connectedhomeip/src/app/util/network-manager-common.privilege-storage.cpp.o
+[176/590] c++ obj/third_party/connectedhomeip/zzz_generated/app-common/app-common/zap-generated/attributes/network-manager-common.Accessors.cpp.o
+[177/590] c++ obj/third_party/connectedhomeip/src/data-model-providers/codegen/network-manager-common.ClusterIntegration.cpp.o
+[178/590] c++ obj/third_party/connectedhomeip/src/data-model-providers/codegen/network-manager-common.CodegenDataModelProvider.cpp.o
+[179/590] c++ obj/third_party/connectedhomeip/src/data-model-providers/codegen/network-manager-common.CodegenDataModelProvider_Read.cpp.o
+[180/590] c++ obj/third_party/connectedhomeip/src/data-model-providers/codegen/network-manager-common.CodegenDataModelProvider_Write.cpp.o
+[181/590] c++ obj/third_party/connectedhomeip/src/data-model-providers/codegen/network-manager-common.EmberAttributeDataBuffer.cpp.o
+[182/590] c++ obj/third_party/connectedhomeip/src/data-model-providers/codegen/network-manager-common.Instance.cpp.o
+[183/590] c++ obj/third_party/connectedhomeip/src/app/reporting/network-manager-common.reporting.cpp.o
+[184/590] c++ obj/third_party/connectedhomeip/src/app/util/network-manager-common.DataModelHandler.cpp.o
+[185/590] c++ obj/third_party/connectedhomeip/src/app/util/network-manager-common.attribute-storage.cpp.o
+[186/590] c++ obj/third_party/connectedhomeip/src/app/util/network-manager-common.attribute-table.cpp.o
+[187/590] c++ obj/third_party/connectedhomeip/src/app/util/network-manager-common.ember-io-storage.cpp.o
+[188/590] c++ obj/third_party/connectedhomeip/src/app/util/network-manager-common.util.cpp.o
+[189/590] c++ obj/third_party/connectedhomeip/src/app/clusters/access-control-server/network-manager-common.CodegenIntegration.cpp.o
+[190/590] c++ obj/third_party/connectedhomeip/src/app/clusters/administrator-commissioning-server/network-manager-common.CodegenIntegration.cpp.o
+[191/590] c++ obj/third_party/connectedhomeip/src/app/clusters/basic-information/network-manager-common.CodegenIntegration.cpp.o
+[192/590] c++ obj/third_party/connectedhomeip/src/app/clusters/descriptor/network-manager-common.CodegenIntegration.cpp.o
+[193/590] c++ obj/third_party/connectedhomeip/src/app/clusters/general-commissioning-server/network-manager-common.CodegenIntegration.cpp.o
+[194/590] c++ obj/third_party/connectedhomeip/src/app/clusters/general-diagnostics-server/network-manager-common.CodegenIntegration.cpp.o
+[195/590] c++ obj/third_party/connectedhomeip/src/app/clusters/group-key-mgmt-server/network-manager-common.CodegenIntegration.cpp.o
+[196/590] c++ obj/third_party/connectedhomeip/src/app/clusters/network-commissioning/network-manager-common.CodegenInstance.cpp.o
+[197/590] c++ obj/third_party/connectedhomeip/src/app/clusters/network-identity-management-server/network-manager-common.CodegenIntegration.cpp.o
+[198/590] c++ obj/third_party/connectedhomeip/src/app/clusters/operational-credentials-server/network-manager-common.CodegenIntegration.cpp.o
+[199/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thread-border-router-management-server/network-manager-common.CodegenIntegration.cpp.o
+[200/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thread-network-diagnostics-server/network-manager-common.CodegenIntegration.cpp.o
+[201/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thread-network-directory-server/network-manager-common.CodegenIntegration.cpp.o
+[202/590] c++ obj/third_party/connectedhomeip/src/app/clusters/wifi-network-management-server/network-manager-common.CodegenIntegration.cpp.o
+[203/590] c++ obj/gen/third_party/connectedhomeip/examples/network-manager-app/network-manager-common/app/network-manager-common_codegen.callback-stub.cpp.o
+[204/590] c++ obj/gen/third_party/connectedhomeip/examples/network-manager-app/network-manager-common/app/network-manager-common_codegen.cluster-callbacks.cpp.o
+[205/590] c++ obj/gen/third_party/connectedhomeip/examples/network-manager-app/network-manager-common/zapgen/zap-generated/network-manager-common_zapgen.CodeDrivenInitShutdown.cpp.o
+[206/590] c++ obj/gen/third_party/connectedhomeip/examples/network-manager-app/network-manager-common/zapgen/zap-generated/network-manager-common_zapgen.IMClusterCommandHandler.cpp.o
+[207/590] c++ obj/third_party/connectedhomeip/examples/platform/linux/app-main.AppMain.cpp.o
+[208/590] c++ obj/third_party/connectedhomeip/examples/platform/linux/app-options.Options.cpp.o
+[209/590] c++ obj/third_party/connectedhomeip/examples/platform/linux/testing/app-options.CustomCSRResponse.cpp.o
+[210/590] c++ obj/third_party/connectedhomeip/examples/platform/linux/testing/app-options.CustomCSRResponseOperationalKeyStore.cpp.o
+[211/590] c++ obj/third_party/connectedhomeip/examples/platform/linux/commissionable-init.CommissionableInit.cpp.o
+[212/590] c++ obj/third_party/connectedhomeip/examples/platform/linux/commissioner-main.CommissionerMain.cpp.o
+[213/590] c++ obj/third_party/connectedhomeip/examples/platform/linux/named-pipes.NamedPipeCommands.cpp.o
+[214/590] c++ obj/third_party/connectedhomeip/src/access/libaccess.AccessControl.cpp.o
+[215/590] c++ obj/third_party/connectedhomeip/src/access/examples/libaccess.ExampleAccessControlDelegate.cpp.o
+[216/590] c++ obj/third_party/connectedhomeip/src/access/examples/libaccess.GroupAuxiliaryAccessControlDelegateImpl.cpp.o
+[217/590] c++ obj/third_party/connectedhomeip/src/access/examples/libaccess.PermissiveAccessControlDelegate.cpp.o
+[218/590] c++ obj/third_party/connectedhomeip/src/app/libCHIPDataModel.ChunkedWriteCallback.cpp.o
+[219/590] c++ obj/third_party/connectedhomeip/src/app/libCHIPDataModel.CommandResponseSender.cpp.o
+[220/590] c++ obj/third_party/connectedhomeip/src/app/libCHIPDataModel.EventManagement.cpp.o
+[221/590] c++ obj/third_party/connectedhomeip/src/app/libCHIPDataModel.FailSafeContext.cpp.o
+[222/590] c++ obj/third_party/connectedhomeip/src/app/libCHIPDataModel.ReadHandler.cpp.o
+[223/590] c++ obj/third_party/connectedhomeip/src/app/libCHIPDataModel.WriteHandler.cpp.o
+[224/590] c++ obj/third_party/connectedhomeip/src/app/libCHIPDataModel.BufferedReadCallback.cpp.o
+[225/590] c++ obj/third_party/connectedhomeip/src/app/libCHIPDataModel.ClusterStateCache.cpp.o
+[226/590] c++ obj/third_party/connectedhomeip/src/app/attribute-access.AttributeAccessInterfaceRegistry.cpp.o
+[227/590] c++ obj/third_party/connectedhomeip/src/app/attribute-access.AttributeReportBuilder.cpp.o
+[228/590] c++ obj/third_party/connectedhomeip/src/app/attribute-access.AttributeValueEncoder.cpp.o
+[229/590] c++ obj/third_party/connectedhomeip/src/app/command-handler.CommandHandler.cpp.o
+[230/590] c++ obj/third_party/connectedhomeip/src/app/command-handler-impl.CommandHandlerImpl.cpp.o
+[231/590] c++ obj/third_party/connectedhomeip/src/app/command-handler-interface.CommandHandlerInterfaceRegistry.cpp.o
+[232/590] c++ obj/third_party/connectedhomeip/src/app/global-attributes.GlobalAttributes.cpp.o
+[233/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.CASEClient.cpp.o
+[234/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.CASESessionManager.cpp.o
+[235/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.CommandSender.cpp.o
+[236/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.DeviceProxy.cpp.o
+[237/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.InteractionModelDelegatePointers.cpp.o
+[238/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.InteractionModelEngine.cpp.o
+[239/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.OperationalSessionSetup.cpp.o
+[240/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.PendingResponseTrackerImpl.cpp.o
+[241/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.TimedHandler.cpp.o
+[242/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.TimedRequest.cpp.o
+[243/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.WriteClient.cpp.o
+[244/590] c++ obj/third_party/connectedhomeip/src/app/reporting/interaction-model.Engine.cpp.o
+[245/590] c++ obj/third_party/connectedhomeip/src/app/reporting/interaction-model.ReportSchedulerImpl.cpp.o
+[246/590] c++ obj/third_party/connectedhomeip/src/app/reporting/interaction-model.SynchronizedReportSchedulerImpl.cpp.o
+[247/590] c++ obj/third_party/connectedhomeip/src/app/reporting/interaction-model.reporting.cpp.o
+[248/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.ReadClient.cpp.o
+[249/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.SimpleSubscriptionResumptionStorage.cpp.o
+[250/590] c++ obj/third_party/connectedhomeip/src/app/interaction-model.SubscriptionResumptionSessionEstablisher.cpp.o
+[251/590] c++ obj/third_party/connectedhomeip/src/app/path-expansion.AttributePathExpandIterator.cpp.o
+[252/590] c++ obj/third_party/connectedhomeip/src/app/status-response.StatusResponse.cpp.o
+[253/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.ArrayBuilder.cpp.o
+[254/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.ArrayParser.cpp.o
+[255/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.AttributeDataIB.cpp.o
+[256/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.AttributeDataIBs.cpp.o
+[257/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.AttributePathIB.cpp.o
+[258/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.AttributePathIBs.cpp.o
+[259/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.AttributeReportIB.cpp.o
+[260/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.AttributeReportIBs.cpp.o
+[261/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.AttributeStatusIB.cpp.o
+[262/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.AttributeStatusIBs.cpp.o
+[263/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.Builder.cpp.o
+[264/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.ClusterPathIB.cpp.o
+[265/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.CommandDataIB.cpp.o
+[266/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.CommandPathIB.cpp.o
+[267/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.CommandStatusIB.cpp.o
+[268/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.DataVersionFilterIB.cpp.o
+[269/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.DataVersionFilterIBs.cpp.o
+[270/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.EventDataIB.cpp.o
+[271/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.EventFilterIB.cpp.o
+[272/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.EventFilterIBs.cpp.o
+[273/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.EventPathIB.cpp.o
+[274/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.EventPathIBs.cpp.o
+[275/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.EventReportIB.cpp.o
+[276/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.EventReportIBs.cpp.o
+[277/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.EventStatusIB.cpp.o
+[278/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.InvokeRequestMessage.cpp.o
+[279/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.InvokeRequests.cpp.o
+[280/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.InvokeResponseIB.cpp.o
+[281/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.InvokeResponseIBs.cpp.o
+[282/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.InvokeResponseMessage.cpp.o
+[283/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.ListBuilder.cpp.o
+[284/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.ListParser.cpp.o
+[285/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.MessageBuilder.cpp.o
+[286/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.MessageDefHelper.cpp.o
+[287/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.MessageParser.cpp.o
+[288/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.Parser.cpp.o
+[289/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.ReadRequestMessage.cpp.o
+[290/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.ReportDataMessage.cpp.o
+[291/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.StatusIB.cpp.o
+[292/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.StatusResponseMessage.cpp.o
+[293/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.StructBuilder.cpp.o
+[294/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.StructParser.cpp.o
+[295/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.SubscribeRequestMessage.cpp.o
+[296/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.SubscribeResponseMessage.cpp.o
+[297/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.TimedRequestMessage.cpp.o
+[298/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.WriteRequestMessage.cpp.o
+[299/590] c++ obj/third_party/connectedhomeip/src/app/MessageDef/MessageDef.WriteResponseMessage.cpp.o
+[300/590] c++ obj/third_party/connectedhomeip/src/app/clusters/access-control-server/access-control-event-helper.AccessControlEventHelper.cpp.o
+[301/590] c++ obj/third_party/connectedhomeip/src/app/clusters/access-control-server/access-control-server.access-control-cluster.cpp.o
+[302/590] c++ obj/third_party/connectedhomeip/src/app/clusters/access-control-server/arl-encoder.ArlEncoder.cpp.o
+[303/590] c++ obj/third_party/connectedhomeip/src/app/clusters/actions-server/actions-server.ActionsCluster.cpp.o
+[304/590] c++ obj/third_party/connectedhomeip/src/app/clusters/administrator-commissioning-server/administrator-commissioning-server.AdministratorCommissioningCluster.cpp.o
+[305/590] c++ obj/third_party/connectedhomeip/src/app/clusters/administrator-commissioning-server/administrator-commissioning-server.AdministratorCommissioningLogic.cpp.o
+[306/590] c++ obj/third_party/connectedhomeip/src/app/clusters/air-quality-server/air-quality-server.AirQualityCluster.cpp.o
+[307/590] c++ obj/third_party/connectedhomeip/src/app/clusters/alarm-base-server/alarm-base-server.AlarmBaseCluster.cpp.o
+[308/590] c++ obj/third_party/connectedhomeip/src/app/clusters/ambient-context-sensing-server/ambient-context-sensing-server.AmbientContextSensingCluster.cpp.o
+[309/590] c++ obj/third_party/connectedhomeip/src/app/clusters/bindings/binding-manager.BindingManager.cpp.o
+[310/590] c++ obj/third_party/connectedhomeip/src/app/clusters/bindings/binding-manager.PendingNotificationMap.cpp.o
+[311/590] c++ obj/third_party/connectedhomeip/src/app/clusters/bindings/binding-manager.binding-table.cpp.o
+[312/590] c++ obj/third_party/connectedhomeip/src/app/clusters/bindings/bindings.BindingCluster.cpp.o
+[313/590] c++ obj/third_party/connectedhomeip/src/app/clusters/boolean-state-configuration-server/boolean-state-configuration-server.BooleanStateConfigurationCluster.cpp.o
+[314/590] c++ obj/third_party/connectedhomeip/src/app/clusters/boolean-state-server/boolean-state-server.BooleanStateCluster.cpp.o
+[315/590] c++ obj/third_party/connectedhomeip/src/app/clusters/bridged-device-basic-information-server/bridged-device-basic-information-server.BridgedDeviceBasicInformationCluster.cpp.o
+[316/590] c++ obj/third_party/connectedhomeip/src/app/clusters/camera-av-settings-user-level-management-server/camera-av-settings-user-level-management-server.CameraAvSettingsUserLevelManagementCluster.cpp.o
+[317/590] c++ obj/third_party/connectedhomeip/src/app/clusters/camera-av-settings-user-level-management-server/camera-av-settings-user-level-management-server.CameraAvSettingsUserLevelManagementLogic.cpp.o
+[318/590] c++ obj/third_party/connectedhomeip/src/app/clusters/camera-av-stream-management-server/camera-av-stream-management-server.CameraAVStreamManagementCluster.cpp.o
+[319/590] c++ obj/third_party/connectedhomeip/src/app/clusters/camera-av-stream-management-server/camera-av-stream-management-server.MigrationCameraAVStreamManagementCluster.cpp.o
+[320/590] c++ obj/third_party/connectedhomeip/src/app/clusters/camera-av-stream-management-server/camera-av-stream-management-server.MigratorCameraAVStreamManagementStorage.cpp.o
+[321/590] c++ obj/third_party/connectedhomeip/src/app/clusters/chime-server/chime-server.ChimeCluster.cpp.o
+[322/590] c++ obj/third_party/connectedhomeip/src/app/clusters/closure-control-server/closure-control-server.ClosureControlCluster.cpp.o
+[323/590] c++ obj/third_party/connectedhomeip/src/app/clusters/closure-dimension-server/closure-dimension-server.ClosureDimensionCluster.cpp.o
+[324/590] c++ obj/third_party/connectedhomeip/src/app/clusters/color-control-server/color-control-server.ColorControlCluster.cpp.o
+[325/590] c++ obj/third_party/connectedhomeip/src/app/clusters/commissioner-control-server/commissioner-control-server.CommissionerControlCluster.cpp.o
+[326/590] c++ obj/third_party/connectedhomeip/src/app/clusters/commodity-price-server/commodity-price-server.CommodityPriceCluster.cpp.o
+[327/590] c++ obj/third_party/connectedhomeip/src/app/clusters/concentration-measurement-server/concentration-measurement-server.ConcentrationMeasurementCluster.cpp.o
+[328/590] c++ obj/third_party/connectedhomeip/src/app/clusters/descriptor/descriptor.DescriptorCluster.cpp.o
+[329/590] c++ obj/third_party/connectedhomeip/src/app/clusters/device-energy-management-server/device-energy-management-server.DeviceEnergyManagementCluster.cpp.o
+[330/590] c++ obj/third_party/connectedhomeip/src/app/clusters/diagnostic-logs-server/diagnostic-logs-server.BDXDiagnosticLogsProvider.cpp.o
+[331/590] c++ obj/third_party/connectedhomeip/src/app/clusters/diagnostic-logs-server/diagnostic-logs-server.DiagnosticLogsCluster.cpp.o
+[332/590] c++ obj/third_party/connectedhomeip/src/app/clusters/dishwasher-alarm-server/dishwasher-alarm-server.DishwasherAlarmCluster.cpp.o
+[333/590] c++ obj/third_party/connectedhomeip/src/app/clusters/dynamic-lighting-server/dynamic-lighting-server.DynamicLightingCluster.cpp.o
+[334/590] c++ obj/third_party/connectedhomeip/src/app/clusters/electrical-distribution-server/electrical-distribution-server.ElectricalDistributionCluster.cpp.o
+[335/590] c++ obj/third_party/connectedhomeip/src/app/clusters/electrical-energy-measurement-server/electrical-energy-measurement-server.ElectricalEnergyMeasurementCluster.cpp.o
+[336/590] c++ obj/third_party/connectedhomeip/src/app/clusters/electrical-power-measurement-server/electrical-power-measurement-server.ElectricalPowerMeasurementCluster.cpp.o
+[337/590] c++ obj/third_party/connectedhomeip/src/app/clusters/electrical-protection-alarm-server/electrical-protection-alarm-server.ElectricalProtectionAlarmCluster.cpp.o
+[338/590] c++ obj/third_party/connectedhomeip/src/app/clusters/energy-evse-server/energy-evse-server.EnergyEvseCluster.cpp.o
+[339/590] c++ obj/third_party/connectedhomeip/src/app/clusters/energy-preference-server/energy-preference-server.EnergyPreferenceCluster.cpp.o
+[340/590] c++ obj/third_party/connectedhomeip/src/app/clusters/ethernet-network-diagnostics-server/ethernet-network-diagnostics-server.EthernetDiagnosticsCluster.cpp.o
+[341/590] c++ obj/third_party/connectedhomeip/src/app/clusters/fan-control-server/fan-control-server.FanControlCluster.cpp.o
+[342/590] c++ obj/third_party/connectedhomeip/src/app/clusters/fixed-label-server/fixed-label-server.FixedLabelCluster.cpp.o
+[343/590] c++ obj/third_party/connectedhomeip/src/app/clusters/flow-measurement-server/flow-measurement-server.FlowMeasurementCluster.cpp.o
+[344/590] c++ obj/third_party/connectedhomeip/src/app/clusters/general-commissioning-server/general-commissioning-server.GeneralCommissioningCluster.cpp.o
+[345/590] c++ obj/third_party/connectedhomeip/src/app/clusters/general-diagnostics-server/general-diagnostics-server.GeneralDiagnosticsCluster.cpp.o
+[346/590] c++ obj/third_party/connectedhomeip/src/app/clusters/group-key-mgmt-server/group-key-mgmt-server.GroupKeyManagementCluster.cpp.o
+[347/590] c++ obj/third_party/connectedhomeip/src/app/clusters/groupcast/groupcast.GroupcastCluster.cpp.o
+[348/590] c++ obj/third_party/connectedhomeip/src/app/clusters/groups-server/groups-server.GroupsCluster.cpp.o
+[349/590] c++ obj/third_party/connectedhomeip/src/app/clusters/humidistat-server/humidistat-server.HumidistatCluster.cpp.o
+[350/590] c++ obj/third_party/connectedhomeip/src/app/clusters/icd-management-server/icd-management-server.ICDManagementCluster.cpp.o
+[351/590] c++ obj/third_party/connectedhomeip/src/app/clusters/identify-server/identify-server.IdentifyCluster.cpp.o
+[352/590] c++ obj/third_party/connectedhomeip/src/app/clusters/illuminance-measurement-server/illuminance-measurement-server.IlluminanceMeasurementCluster.cpp.o
+[353/590] c++ obj/third_party/connectedhomeip/src/app/clusters/laundry-dryer-controls-server/laundry-dryer-controls-server.LaundryDryerControlsCluster.cpp.o
+[354/590] c++ obj/third_party/connectedhomeip/src/app/clusters/laundry-washer-controls-server/laundry-washer-controls-server.LaundryWasherControlsCluster.cpp.o
+[355/590] c++ obj/third_party/connectedhomeip/src/app/clusters/level-control/level-control.LevelControlCluster.cpp.o
+[356/590] c++ obj/third_party/connectedhomeip/src/app/clusters/localization-configuration-server/localization-configuration-server.LocalizationConfigurationCluster.cpp.o
+[357/590] c++ obj/third_party/connectedhomeip/src/app/clusters/media-file-management-server/media-file-management-server.MediaFileManagementCluster.cpp.o
+[358/590] c++ obj/third_party/connectedhomeip/src/app/clusters/microwave-oven-control-server/microwave-oven-control-server.MicrowaveOvenControlCluster.cpp.o
+[359/590] c++ obj/third_party/connectedhomeip/src/app/clusters/mode-base-server/mode-base-server.ModeBaseCluster.cpp.o
+[360/590] c++ obj/third_party/connectedhomeip/src/app/clusters/network-commissioning/network-commissioning.NetworkCommissioningCluster.cpp.o
+[361/590] c++ obj/third_party/connectedhomeip/src/app/clusters/network-identity-management-server/network-identity-management-server.DefaultNetworkIdentityStorage.cpp.o
+[362/590] c++ obj/third_party/connectedhomeip/src/app/clusters/network-identity-management-server/network-identity-management-server.NetworkAdministratorSecret.cpp.o
+[363/590] c++ obj/third_party/connectedhomeip/src/app/clusters/network-identity-management-server/network-identity-management-server.NetworkIdentityManagementCluster.cpp.o
+[364/590] c++ obj/third_party/connectedhomeip/src/app/clusters/network-identity-management-server/network-identity-management-server.NetworkIdentityStorage.cpp.o
+[365/590] c++ obj/third_party/connectedhomeip/src/app/clusters/network-identity-management-server/network-identity-management-server.RawKeyNetworkIdentityKeystore.cpp.o
+[366/590] c++ obj/third_party/connectedhomeip/src/app/clusters/occupancy-sensor-server/occupancy-sensor-server.OccupancySensingCluster.cpp.o
+[367/590] c++ obj/third_party/connectedhomeip/src/app/clusters/on-off-server/on-off-server.OnOffCluster.cpp.o
+[368/590] c++ obj/third_party/connectedhomeip/src/app/clusters/on-off-server/on-off-server.OnOffLightingCluster.cpp.o
+[369/590] c++ obj/third_party/connectedhomeip/src/app/clusters/operational-credentials-server/operational-credentials-server.OperationalCredentialsCluster.cpp.o
+[370/590] c++ obj/third_party/connectedhomeip/src/app/clusters/operational-state-server/operational-state-server.OperationalStateCluster.cpp.o
+[371/590] c++ obj/third_party/connectedhomeip/src/app/clusters/operational-state-server/operational-state-server.OvenCavityOperationalStateCluster.cpp.o
+[372/590] c++ obj/third_party/connectedhomeip/src/app/clusters/operational-state-server/operational-state-server.RvcOperationalStateCluster.cpp.o
+[373/590] c++ obj/third_party/connectedhomeip/src/app/clusters/ota-provider/ota-provider.OTAProviderCluster.cpp.o
+[374/590] c++ obj/third_party/connectedhomeip/src/app/clusters/power-topology-server/power-topology-server.DefaultPowerTopologyCircuitNodeStorage.cpp.o
+[375/590] c++ obj/third_party/connectedhomeip/src/app/clusters/power-topology-server/power-topology-server.PowerTopologyCluster.cpp.o
+[376/590] c++ obj/third_party/connectedhomeip/src/app/clusters/pressure-measurement-server/pressure-measurement-server.PressureMeasurementCluster.cpp.o
+[377/590] c++ obj/third_party/connectedhomeip/src/app/clusters/proximity-ranging-server/proximity-ranging-server.ProximityRangingCluster.cpp.o
+[378/590] c++ obj/third_party/connectedhomeip/src/app/clusters/proximity-ranging-server/proximity-ranging-server.ProximityRangingDriver.cpp.o
+[379/590] c++ obj/third_party/connectedhomeip/src/app/clusters/refrigerator-alarm-server/refrigerator-alarm-server.RefrigeratorAlarmCluster.cpp.o
+[380/590] c++ obj/third_party/connectedhomeip/src/app/clusters/relative-humidity-measurement-server/relative-humidity-measurement-server.RelativeHumidityMeasurementCluster.cpp.o
+[381/590] c++ obj/third_party/connectedhomeip/src/app/clusters/resource-monitoring-server/resource-monitoring-server.MigrateResourceMonitoringServerStorage.cpp.o
+[382/590] c++ obj/third_party/connectedhomeip/src/app/clusters/resource-monitoring-server/resource-monitoring-server.ResourceMonitoringCluster.cpp.o
+[383/590] c++ obj/third_party/connectedhomeip/src/app/clusters/resource-monitoring-server/resource-monitoring-server.resource-monitoring-cluster-objects.cpp.o
+[384/590] c++ obj/third_party/connectedhomeip/src/app/clusters/scenes-server/scenes.ExtensionFieldSetsImpl.cpp.o
+[385/590] c++ obj/third_party/connectedhomeip/src/app/clusters/scenes-server/scenes.SceneHandlerImpl.cpp.o
+[386/590] c++ obj/third_party/connectedhomeip/src/app/clusters/scenes-server/scenes.SceneTableImpl.cpp.o
+[387/590] c++ obj/third_party/connectedhomeip/src/app/clusters/scenes-server/scenes-server.ScenesManagementCluster.cpp.o
+[388/590] c++ obj/third_party/connectedhomeip/src/app/clusters/service-area-server/service-area-server.ServiceAreaCluster.cpp.o
+[389/590] c++ obj/third_party/connectedhomeip/src/app/clusters/service-area-server/service-area-server.service-area-storage-delegate.cpp.o
+[390/590] c++ obj/third_party/connectedhomeip/src/app/clusters/smoke-co-alarm-server/smoke-co-alarm-server.SmokeCoAlarmCluster.cpp.o
+[391/590] c++ obj/third_party/connectedhomeip/src/app/clusters/software-diagnostics-server/software-diagnostics-server.SoftwareDiagnosticsCluster.cpp.o
+[392/590] c++ obj/third_party/connectedhomeip/src/app/clusters/soil-measurement-server/soil-measurement-server.SoilMeasurementCluster.cpp.o
+[393/590] c++ obj/third_party/connectedhomeip/src/app/clusters/switch-server/switch-server.SwitchCluster.cpp.o
+[394/590] c++ obj/third_party/connectedhomeip/src/app/clusters/temperature-control-server/temperature-control-server.TemperatureControlCluster.cpp.o
+[395/590] c++ obj/third_party/connectedhomeip/src/app/clusters/temperature-measurement-server/temperature-measurement-server.TemperatureMeasurementCluster.cpp.o
+[396/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.PresetStructWithOwnedMembers.cpp.o
+[397/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.Setpoint.cpp.o
+[398/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.SetpointAttributes.cpp.o
+[399/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.Setpoints.cpp.o
+[400/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.ThermostatCluster.cpp.o
+[401/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.ThermostatClusterAtomic.cpp.o
+[402/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.ThermostatClusterEvents.cpp.o
+[403/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.ThermostatClusterPresets.cpp.o
+[404/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.ThermostatClusterRead.cpp.o
+[405/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.ThermostatClusterSetpoints.cpp.o
+[406/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.ThermostatClusterSuggestions.cpp.o
+[407/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.ThermostatClusterWrite.cpp.o
+[408/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thermostat-server/thermostat-server.ThermostatSuggestionStructWithOwnedMembers.cpp.o
+[409/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thread-border-router-management-server/thread-border-router-management-server.ThreadBorderRouterManagementCluster.cpp.o
+[410/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thread-network-diagnostics-server/thread-network-diagnostics-server.DirectThreadNetworkDiagnosticsProvider.cpp.o
+[411/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thread-network-diagnostics-server/thread-network-diagnostics-server.ThreadNetworkDiagnosticsCluster.cpp.o
+[412/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thread-network-directory-server/thread-network-directory-server.DefaultThreadNetworkDirectoryStorage.cpp.o
+[413/590] c++ obj/third_party/connectedhomeip/src/app/clusters/thread-network-directory-server/thread-network-directory-server.ThreadNetworkDirectoryCluster.cpp.o
+[414/590] c++ obj/third_party/connectedhomeip/src/app/clusters/time-format-localization-server/time-format-localization-server.TimeFormatLocalizationCluster.cpp.o
+[415/590] c++ obj/third_party/connectedhomeip/src/app/clusters/time-synchronization-server/time-synchronization-server.DefaultTimeSyncDelegate.cpp.o
+[416/590] c++ obj/third_party/connectedhomeip/src/app/clusters/time-synchronization-server/time-synchronization-server.TimeSynchronizationCluster.cpp.o
+[417/590] c++ obj/third_party/connectedhomeip/src/app/clusters/tls-certificate-management-server/certificate-table.CertificateTableImpl.cpp.o
+[418/590] c++ obj/third_party/connectedhomeip/src/app/clusters/tls-certificate-management-server/tls-certificate-management-server.TLSCertificateManagementCluster.cpp.o
+[419/590] c++ obj/third_party/connectedhomeip/src/app/clusters/tls-client-management-server/tls-client-management-server.TLSClientManagementCluster.cpp.o
+[420/590] c++ obj/third_party/connectedhomeip/src/app/clusters/unit-localization-server/unit-localization-server.UnitLocalizationCluster.cpp.o
+[421/590] c++ obj/third_party/connectedhomeip/src/app/clusters/user-label-server/user-label-server.UserLabelCluster.cpp.o
+[422/590] c++ obj/third_party/connectedhomeip/src/app/clusters/valve-configuration-and-control-server/valve-configuration-and-control-server.ValveConfigurationAndControlCluster.cpp.o
+[423/590] c++ obj/third_party/connectedhomeip/src/app/clusters/water-heater-management-server/water-heater-management-server.Delegate.cpp.o
+[424/590] c++ obj/third_party/connectedhomeip/src/app/clusters/water-heater-management-server/water-heater-management-server.WaterHeaterManagementCluster.cpp.o
+[425/590] c++ obj/third_party/connectedhomeip/src/app/clusters/webrtc-transport-provider-server/webrtc-transport-provider-server.WebRTCTransportProviderCluster.cpp.o
+[426/590] c++ obj/third_party/connectedhomeip/src/app/clusters/webrtc-transport-requestor-server/webrtc-transport-requestor-server.WebRTCTransportRequestorCluster.cpp.o
+[427/590] c++ obj/third_party/connectedhomeip/src/app/clusters/wifi-network-diagnostics-server/wifi-network-diagnostics-server.WiFiNetworkDiagnosticsCluster.cpp.o
+[428/590] c++ obj/third_party/connectedhomeip/src/app/clusters/wifi-network-management-server/wifi-network-management-server.WiFiNetworkManagementCluster.cpp.o
+[429/590] c++ obj/third_party/connectedhomeip/src/app/clusters/zone-management-server/zone-management-server.ZoneManagementCluster.cpp.o
+[430/590] c++ obj/third_party/connectedhomeip/src/app/data-model-provider/data-model-provider.ActionReturnStatus.cpp.o
+[431/590] c++ obj/third_party/connectedhomeip/src/app/data-model-provider/data-model-provider.EventsGenerator.cpp.o
+[432/590] c++ obj/third_party/connectedhomeip/src/app/data-model-provider/data-model-provider.MetadataLookup.cpp.o
+[433/590] c++ obj/third_party/connectedhomeip/src/app/data-model-provider/data-model-provider.Provider.cpp.o
+[434/590] c++ obj/third_party/connectedhomeip/src/app/data-model-provider/data-model-provider.ProviderMetadataTree.cpp.o
+[435/590] c++ obj/third_party/connectedhomeip/src/app/persistence/default.DefaultAttributePersistenceProvider.cpp.o
+[436/590] c++ obj/third_party/connectedhomeip/src/app/persistence/migration.AttributePersistenceMigration.cpp.o
+[437/590] c++ obj/third_party/connectedhomeip/src/app/persistence/persistence.AttributePersistence.cpp.o
+[438/590] c++ obj/third_party/connectedhomeip/src/app/persistence/persistence.String.cpp.o
+[439/590] c++ obj/third_party/connectedhomeip/src/app/persistence/singleton.AttributePersistenceProviderInstance.cpp.o
+[440/590] c++ obj/third_party/connectedhomeip/src/app/server-cluster/registry.ServerClusterInterfaceRegistry.cpp.o
+[441/590] c++ obj/third_party/connectedhomeip/src/app/server-cluster/registry.SingleEndpointServerClusterRegistry.cpp.o
+[442/590] c++ obj/third_party/connectedhomeip/src/app/server-cluster/server-cluster.AttributeListBuilder.cpp.o
+[443/590] c++ obj/third_party/connectedhomeip/src/app/server-cluster/server-cluster.DefaultServerCluster.cpp.o
+[444/590] c++ obj/third_party/connectedhomeip/src/app/server-cluster/server-cluster.ServerClusterExtension.cpp.o
+[445/590] c++ obj/third_party/connectedhomeip/src/app/server-cluster/server-cluster.ServerClusterInterface.cpp.o
+[446/590] c++ obj/third_party/connectedhomeip/src/app/server/libCHIPAppServer.AclStorage.cpp.o
+[447/590] c++ obj/third_party/connectedhomeip/src/app/server/libCHIPAppServer.CommissioningWindowManager.cpp.o
+[448/590] c++ obj/third_party/connectedhomeip/src/app/server/libCHIPAppServer.DefaultAclStorage.cpp.o
+[449/590] c++ obj/third_party/connectedhomeip/src/app/server/libCHIPAppServer.Dnssd.cpp.o
+[450/590] c++ obj/third_party/connectedhomeip/src/app/server/libCHIPAppServer.EchoHandler.cpp.o
+[451/590] c++ obj/third_party/connectedhomeip/src/app/server/libCHIPAppServer.Server.cpp.o
+[452/590] c++ obj/third_party/connectedhomeip/src/app/tests/suites/credentials/dac_provider.TestHarnessDACProvider.cpp.o
+[453/590] c++ obj/third_party/connectedhomeip/src/app/util/callbacks.MatterCallbacks.cpp.o
+[454/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.AbstractDnssdDiscoveryController.cpp.o
+[455/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.AutoCommissioner.cpp.o
+[456/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.CHIPCommissionableNodeController.cpp.o
+[457/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.CHIPDeviceControllerFactory.cpp.o
+[458/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.CommissioneeDeviceProxy.cpp.o
+[459/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.CommissionerDiscoveryController.cpp.o
+[460/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.CommissioningDelegate.cpp.o
+[461/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.ExampleOperationalCredentialsIssuer.cpp.o
+[462/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.SetUpCodePairer.cpp.o
+[463/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.CHIPDeviceController.cpp.o
+[464/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.CommissioningWindowOpener.cpp.o
+[465/590] c++ obj/third_party/connectedhomeip/src/controller/libChipController.CurrentFabricRemover.cpp.o
+[466/590] c++ obj/third_party/connectedhomeip/src/credentials/libCredentials.CHIPCert.cpp.o
+[467/590] c++ obj/third_party/connectedhomeip/src/credentials/libCredentials.CHIPCertFromX509.cpp.o
+[468/590] c++ obj/third_party/connectedhomeip/src/credentials/libCredentials.CHIPCertToX509.cpp.o
+[469/590] c++ obj/third_party/connectedhomeip/src/credentials/libCredentials.CertificationDeclaration.cpp.o
+[470/590] c++ obj/third_party/connectedhomeip/src/credentials/libCredentials.DeviceAttestationConstructor.cpp.o
+[471/590] c++ obj/third_party/connectedhomeip/src/credentials/libCredentials.DeviceAttestationCredsProvider.cpp.o
+[472/590] c++ obj/third_party/connectedhomeip/src/credentials/libCredentials.FabricTable.cpp.o
+[473/590] c++ obj/third_party/connectedhomeip/src/credentials/libCredentials.GenerateChipX509Cert.cpp.o
+[474/590] c++ obj/third_party/connectedhomeip/src/credentials/libCredentials.GroupDataProviderImpl.cpp.o
+[475/590] c++ obj/third_party/connectedhomeip/src/credentials/libCredentials.LastKnownGoodTime.cpp.o
+[476/590] c++ obj/third_party/connectedhomeip/src/credentials/libCredentials.PersistentStorageOpCertStore.cpp.o
+[477/590] c++ obj/third_party/connectedhomeip/src/credentials/attestation_verifier/libCredentials.DeviceAttestationVerifier.cpp.o
+[478/590] c++ obj/third_party/connectedhomeip/src/credentials/examples/libCredentials.DeviceAttestationCredsExample.cpp.o
+[479/590] c++ obj/third_party/connectedhomeip/src/credentials/examples/libCredentials.ExampleDACs.cpp.o
+[480/590] c++ obj/third_party/connectedhomeip/src/credentials/examples/libCredentials.ExamplePAI.cpp.o
+[481/590] c++ obj/third_party/connectedhomeip/src/credentials/attestation_verifier/libDefaultAttestationVerifier.DacOnlyPartialAttestationVerifier.cpp.o
+[482/590] c++ obj/third_party/connectedhomeip/src/credentials/attestation_verifier/libDefaultAttestationVerifier.DefaultDeviceAttestationVerifier.cpp.o
+[483/590] c++ obj/third_party/connectedhomeip/src/credentials/jcm/jcm.TrustVerification.cpp.o
+[484/590] c++ obj/third_party/connectedhomeip/src/credentials/jcm/jcm.VendorIdVerificationClient.cpp.o
+[485/590] c++ obj/third_party/connectedhomeip/src/lib/address_resolve/address_resolve.AddressResolve.cpp.o
+[486/590] c++ obj/third_party/connectedhomeip/src/lib/address_resolve/address_resolve.AddressResolve_DefaultImpl.cpp.o
+[487/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/dnssd.Advertiser.cpp.o
+[488/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/dnssd.IPAddressSorter.cpp.o
+[489/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/dnssd.Resolver.cpp.o
+[490/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/dnssd.ResolverProxy.cpp.o
+[491/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/dnssd.TxtFields.cpp.o
+[492/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/dnssd.ActiveResolveAttempts.cpp.o
+[493/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/dnssd.Advertiser_ImplMinimalMdns.cpp.o
+[494/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/dnssd.IncrementalResolve.cpp.o
+[495/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/dnssd.MinimalMdnsServer.cpp.o
+[496/590] c++ obj/third_party/connectedhomeip/src/lib/dnssd/dnssd.Resolver_ImplMinimalMdns.cpp.o
+[497/590] c++ obj/third_party/connectedhomeip/src/messaging/libMessagingLayer.ApplicationExchangeDispatch.cpp.o
+[498/590] c++ obj/third_party/connectedhomeip/src/messaging/libMessagingLayer.ErrorCategory.cpp.o
+[499/590] c++ obj/third_party/connectedhomeip/src/messaging/libMessagingLayer.ExchangeContext.cpp.o
+[500/590] c++ obj/third_party/connectedhomeip/src/messaging/libMessagingLayer.ExchangeMessageDispatch.cpp.o
+[501/590] c++ obj/third_party/connectedhomeip/src/messaging/libMessagingLayer.ExchangeMgr.cpp.o
+[502/590] c++ obj/third_party/connectedhomeip/src/messaging/libMessagingLayer.ReliableMessageContext.cpp.o
+[503/590] c++ obj/third_party/connectedhomeip/src/messaging/libMessagingLayer.ReliableMessageMgr.cpp.o
+[504/590] c++ obj/third_party/connectedhomeip/src/messaging/libMessagingLayer.ReliableMessageProtocolConfig.cpp.o
+[505/590] c++ obj/third_party/connectedhomeip/src/protocols/libChipProtocols.Protocols.cpp.o
+[506/590] c++ obj/third_party/connectedhomeip/src/protocols/echo/libChipProtocols.EchoClient.cpp.o
+[507/590] c++ obj/third_party/connectedhomeip/src/protocols/echo/libChipProtocols.EchoServer.cpp.o
+[508/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/libChipProtocols.MessageCounterManager.cpp.o
+[509/590] c++ obj/third_party/connectedhomeip/src/protocols/user_directed_commissioning/libChipProtocols.UserDirectedCommissioningClient.cpp.o
+[510/590] c++ obj/third_party/connectedhomeip/src/protocols/user_directed_commissioning/libChipProtocols.UserDirectedCommissioningServer.cpp.o
+[511/590] c++ obj/third_party/connectedhomeip/src/protocols/bdx/libBdx.AsyncTransferFacilitator.cpp.o
+[512/590] c++ obj/third_party/connectedhomeip/src/protocols/bdx/libBdx.BdxMessages.cpp.o
+[513/590] c++ obj/third_party/connectedhomeip/src/protocols/bdx/libBdx.BdxTransferDiagnosticLog.cpp.o
+[514/590] c++ obj/third_party/connectedhomeip/src/protocols/bdx/libBdx.BdxTransferProxyDiagnosticLog.cpp.o
+[515/590] c++ obj/third_party/connectedhomeip/src/protocols/bdx/libBdx.BdxTransferServer.cpp.o
+[516/590] c++ obj/third_party/connectedhomeip/src/protocols/bdx/libBdx.BdxTransferSession.cpp.o
+[517/590] c++ obj/third_party/connectedhomeip/src/protocols/bdx/libBdx.BdxUri.cpp.o
+[518/590] c++ obj/third_party/connectedhomeip/src/protocols/bdx/libBdx.StatusCode.cpp.o
+[519/590] c++ obj/third_party/connectedhomeip/src/protocols/bdx/libBdx.TransferFacilitator.cpp.o
+[520/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/libSecureChannel.CASEDestinationId.cpp.o
+[521/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/libSecureChannel.CASEServer.cpp.o
+[522/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/libSecureChannel.CASESession.cpp.o
+[523/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/libSecureChannel.DefaultSessionResumptionStorage.cpp.o
+[524/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/libSecureChannel.PASESession.cpp.o
+[525/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/libSecureChannel.PairingSession.cpp.o
+[526/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/libSecureChannel.SessionEstablishmentExchangeDispatch.cpp.o
+[527/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/libSecureChannel.SimpleSessionResumptionStorage.cpp.o
+[528/590] c++ obj/third_party/connectedhomeip/src/protocols/secure_channel/libSecureChannel.UnsolicitedStatusHandler.cpp.o
+[529/590] c++ obj/third_party/connectedhomeip/src/tracing/tracing.registry_disabled.cpp.o
+[530/590] c++ obj/third_party/connectedhomeip/src/transport/libTransportLayer.CryptoContext.cpp.o
+[531/590] c++ obj/third_party/connectedhomeip/src/transport/libTransportLayer.GroupPeerMessageCounter.cpp.o
+[532/590] c++ obj/third_party/connectedhomeip/src/transport/libTransportLayer.SecureMessageCodec.cpp.o
+[533/590] c++ obj/third_party/connectedhomeip/src/transport/libTransportLayer.SecureSession.cpp.o
+[534/590] c++ obj/third_party/connectedhomeip/src/transport/libTransportLayer.SecureSessionTable.cpp.o
+[535/590] c++ obj/third_party/connectedhomeip/src/transport/libTransportLayer.Session.cpp.o
+[536/590] c++ obj/third_party/connectedhomeip/src/transport/libTransportLayer.SessionHolder.cpp.o
+[537/590] c++ obj/third_party/connectedhomeip/src/transport/libTransportLayer.SessionManager.cpp.o
+[538/590] c++ obj/third_party/connectedhomeip/src/transport/libTransportLayer.TransportMgrBase.cpp.o
+[539/590] c++ obj/third_party/connectedhomeip/src/transport/raw/libRawTransport.GroupcastTesting.cpp.o
+[540/590] c++ obj/third_party/connectedhomeip/src/transport/raw/libRawTransport.MessageHeader.cpp.o
+[541/590] c++ obj/third_party/connectedhomeip/src/transport/raw/libRawTransport.PeerAddress.cpp.o
+[542/590] c++ obj/third_party/connectedhomeip/src/transport/raw/libRawTransport.UDP.cpp.o
+[543/590] c++ obj/third_party/connectedhomeip/src/transport/raw/libRawTransport.TCP.cpp.o
+[544/590] c++ obj/third_party/connectedhomeip/third_party/jsoncpp/repo/src/lib_json/jsoncpp.json_reader.cpp.o
+[545/590] c++ obj/third_party/connectedhomeip/third_party/jsoncpp/repo/src/lib_json/jsoncpp.json_value.cpp.o
+[546/590] c++ obj/third_party/connectedhomeip/third_party/jsoncpp/repo/src/lib_json/jsoncpp.json_writer.cpp.o
+[547/590] c++ obj/third_party/connectedhomeip/third_party/nlfaultinjection/src/libnlfaultinjection.nlfaultinjection.cpp.o
+[548/590] ar libnlfaultinjection.a
+[549/590] ar libSupportLayer.a
+[550/590] ar libSystemLayer.a
+[551/590] ar libInetLayer.a
+[552/590] ar libChipCore.a
+[553/590] ar libASN1.a
+[554/590] ar libChipCrypto.a
+[555/590] ar default_policy.a
+[556/590] ar wire.a
+[557/590] ar reader.a
+[558/590] ar records.a
+[559/590] ar libInteractionModel.a
+[560/590] ar libClusterObjects.a
+[561/590] ar libSecureChannelTypes.a
+[562/590] ar libSetupPayload.a
+[563/590] ar Linux.a
+[564/590] ar libDeviceLayer.a
+[565/590] ar libMatterAllClustersDeviceInfoProviderExample.a
+[566/590] ar libMatterDeviceInfoProviderExample.a
+[567/590] ar responders.a
+[568/590] ar minimal_mdns.a
+[569/590] ar tracing.a
+[570/590] ar libCredentials.a
+[571/590] ar libaccess.a
+[572/590] ar libDefaultAttestationVerifier.a
+[573/590] ar dnssd.a
+[574/590] ar libRawTransport.a
+[575/590] ar libTransportLayer.a
+[576/590] ar libMessagingLayer.a
+[577/590] ar address_resolve.a
+[578/590] ar libSecureChannel.a
+[579/590] ar attribute-access.a
+[580/590] ar interaction-model.a
+[581/590] ar libCHIPDataModel.a
+[582/590] ar actions-server.a
+[583/590] ar media-file-management-server.a
+[584/590] ar service-area-server.a
+[585/590] ar libBdx.a
+[586/590] ar libChipProtocols.a
+[587/590] ar libCHIPAppServer.a
+[588/590] ar libChipController.a
+[589/590] ar libCHIP.a
+[590/590] ld ./matter-network-manager-app
+FAILED: matter-network-manager-app 
+aarch64-openwrt-linux-musl-g++ -O0 -fPIC -Werror -Wl,--fatal-warnings -Wl,-z,defs -fdiagnostics-color -L/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/lib -DPIC -fPIC -specs=/var/tmp/RG660MK_build/T930/openwrt/include/hardened-ld-pie.specs -znow -zrelro -lmbedcrypto -lmbedx509 -Wl,--gc-sections -pie -Wl,--as-needed @./matter-network-manager-app.rsp -o ./matter-network-manager-app
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: obj/third_party/connectedhomeip/src/crypto/cryptopal_mbedtls.CHIPCryptoPALmbedTLS.cpp.o: in function `chip::Crypto::HKDF_sha::HKDF_SHA256(unsigned char const*, unsigned long, unsigned char const*, unsigned long, unsigned char const*, unsigned long, unsigned char*, unsigned long)':
+/home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:298: undefined reference to `mbedtls_hkdf'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:298: undefined reference to `mbedtls_hkdf'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: obj/third_party/connectedhomeip/src/crypto/cryptopal_mbedtls.CHIPCryptoPALmbedTLS.cpp.o: in function `chip::Crypto::AES_CCM_encrypt(unsigned char const*, unsigned long, unsigned char const*, unsigned long, chip::Crypto::Aes128KeyHandle const&, unsigned char const*, unsigned long, unsigned char*, unsigned char*, unsigned long)':
+/home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:84: undefined reference to `mbedtls_ccm_init'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:84: undefined reference to `mbedtls_ccm_init'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:98: undefined reference to `mbedtls_ccm_setkey'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:98: undefined reference to `mbedtls_ccm_setkey'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:103: undefined reference to `mbedtls_ccm_encrypt_and_tag'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:103: undefined reference to `mbedtls_ccm_encrypt_and_tag'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:110: undefined reference to `mbedtls_ccm_free'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:110: undefined reference to `mbedtls_ccm_free'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: obj/third_party/connectedhomeip/src/crypto/cryptopal_mbedtls.CHIPCryptoPALmbedTLS.cpp.o: in function `chip::Crypto::AES_CCM_decrypt(unsigned char const*, unsigned long, unsigned char const*, unsigned long, unsigned char const*, unsigned long, chip::Crypto::Aes128KeyHandle const&, unsigned char const*, unsigned long, unsigned char*)':
+/home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:122: undefined reference to `mbedtls_ccm_init'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:122: undefined reference to `mbedtls_ccm_init'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:136: undefined reference to `mbedtls_ccm_setkey'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:136: undefined reference to `mbedtls_ccm_setkey'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:141: undefined reference to `mbedtls_ccm_auth_decrypt'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:141: undefined reference to `mbedtls_ccm_auth_decrypt'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:148: undefined reference to `mbedtls_ccm_free'
+/var/tmp/RG660MK_build/T930/mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/../lib/gcc/aarch64-openwrt-linux-musl/12.3.0/../../../../aarch64-openwrt-linux-musl/bin/ld: /home/jedyying/Downloads/connectedhomeip/out/openwrt/../../examples/network-manager-app/linux/third_party/connectedhomeip/src/crypto/CHIPCryptoPALmbedTLS.cpp:148: undefined reference to `mbedtls_ccm_free'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+make[2]: *** [Makefile:173: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/matter-netman-mbedtls/matter-netman-2025-10-29-8f221d80/.built] Error 1
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/feeds/matter/service/matter-netman'
+time: package/feeds/matter/matter-netman/mbedtls/compile#962.01#94.25#1513.98
+    ERROR: package/feeds/matter/matter-netman failed to build (build variant: mbedtls).
+make[1]: *** [package/Makefile:120: package/feeds/matter/matter-netman/compile] Error 1
+make[1]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt'
+make: *** [/var/tmp/RG660MK_build/T930/openwrt/include/toplevel.mk:270: package/feeds/matter/matter-netman/compile] Error 2

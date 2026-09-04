@@ -1,0 +1,5 @@
+RESULT=PASS
+reasons=none
+controller_scope=on-network_Matter_over_WiFi_or_Ethernet
+ble_commissioning=unavailable
+thread_border_router=unavailable

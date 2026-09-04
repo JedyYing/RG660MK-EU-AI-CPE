@@ -1,0 +1,679 @@
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/boot/kexec-tools/Makefile' has a dependency on 'liblzma', which does not exist
+WARNING: Makefile 'package/network/services/lldpd/Makefile' has a dependency on 'libnetsnmp', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/px5g-wolfssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/feeds/matter/python3-host-ssl/Makefile' has a build dependency on 'python3/host', which does not exist
+WARNING: Makefile 'package/utils/uencrypt/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/libs/ustream-ssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+make[2]: 'conf' is up to date.
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+make[1]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt'
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/mbedtls'
+rm -rf /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4
+/var/tmp/RG660MK_build/T930/openwrt/scripts/ipkg-remove libmbedtls /var/tmp/RG660MK_build/T930/openwrt/bin/packages/aarch64_cortex-a55_neon-vfpv4/base/libmbedtls12_2.28.4-1_aarch64_cortex-a55_neon-vfpv4.ipk
+removed '/var/tmp/RG660MK_build/T930/openwrt/bin/packages/aarch64_cortex-a55_neon-vfpv4/base/libmbedtls12_2.28.4-1_aarch64_cortex-a55_neon-vfpv4.ipk'
+rm -f /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/stamp/.mbedtls_installed
+rm -f /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/packages/mbedtls.list
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/mbedtls'
+time: package/libs/mbedtls/clean#0.14#0.30#0.59
+make[1]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt'
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/busybox/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/network/services/hostapd/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/boot/kexec-tools/Makefile' has a dependency on 'liblzma', which does not exist
+WARNING: Makefile 'package/network/services/lldpd/Makefile' has a dependency on 'libnetsnmp', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/policycoreutils/Makefile' has a build dependency on 'libpam', which does not exist
+WARNING: Makefile 'package/utils/px5g-wolfssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/feeds/matter/python3-host-ssl/Makefile' has a build dependency on 'python3/host', which does not exist
+WARNING: Makefile 'package/utils/uencrypt/Makefile' has a dependency on 'libwolfssl', which does not exist
+WARNING: Makefile 'package/libs/ustream-ssl/Makefile' has a dependency on 'libwolfssl', which does not exist
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+make[2]: 'conf' is up to date.
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/scripts/config'
+make[1]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt'
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/toolchain'
+echo "libc" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libgcc" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libatomic" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libstdcpp" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "libpthread" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+echo "librt" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/toolchain.default.install
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/toolchain'
+time: package/libs/toolchain/compile#0.08#0.18#0.36
+make[2]: Entering directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/mbedtls'
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.prepared_79ee368ecc4a57c18117318ec475c9a3_6664517399ebbbc92a37c5bb081b5c53_check
+. /var/tmp/RG660MK_build/T930/openwrt/include/shell.sh; /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/libdeflate-gzip -dc /var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-dl/mbedtls-2.28.4.tar.gz | tar -C /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.. -xf -
+[ ! -d ./src/ ] || cp -fpR ./src/. /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4
+
+Applying ./patches/100-x509-crt-verify-SAN-iPAddress.patch using plaintext: 
+patching file include/mbedtls/x509_crt.h
+patching file library/x509_crt.c
+
+Applying ./patches/101-remove-test.patch using plaintext: 
+patching file programs/CMakeLists.txt
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_ECP_DP_SECP192R1_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_ECP_DP_SECP224R1_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_ECP_DP_SECP256R1_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_ECP_DP_SECP384R1_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_ECP_DP_SECP521R1_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_ECP_DP_SECP192K1_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_ECP_DP_SECP224K1_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_ECP_DP_SECP256K1_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_ECP_DP_BP256R1_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_ECP_DP_BP384R1_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_ECP_DP_BP512R1_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_ECP_DP_CURVE25519_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_ECP_DP_CURVE448_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_AES_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_CAMELLIA_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_CCM_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_CMAC_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_DES_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_GCM_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_KEY_EXCHANGE_PSK_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_KEY_EXCHANGE_DHE_PSK_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_KEY_EXCHANGE_ECDHE_PSK_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_KEY_EXCHANGE_RSA_PSK_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_KEY_EXCHANGE_RSA_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_NIST_KW_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_RIPEMD160_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_RSA_NO_CRT 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_XTEA_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_CERTS_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_CIPHER_MODE_OFB 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_CIPHER_MODE_XTS 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_DEBUG_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_ENTROPY_FORCE_SHA256 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h set MBEDTLS_HKDF_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_PLATFORM_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_SELF_TEST 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_SSL_RENEGOTIATION 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_SSL_TRUNCATED_HMAC 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_VERSION_C 
+/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/scripts/config.py -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/include/mbedtls/config.h unset MBEDTLS_VERSION_FEATURES
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.prepared_79ee368ecc4a57c18117318ec475c9a3_6664517399ebbbc92a37c5bb081b5c53
+rm -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.configured_*
+rm -f /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/stamp/.mbedtls_installed
+mkdir -p /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4
+(cd /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4; CFLAGS="-pipe -fno-caller-saves -fno-plt -Wno-error=unused-label -Wno-error=vla -Wno-error=unused-function -Wno-error=address-of-packed-member -funwind-tables -fhonour-copts -Wno-error=unused-but-set-variable -Wno-error=unused-result -ffunction-sections -fdata-sections -Wformat -Werror=format-security -DPIC -fPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,now -Wl,-z,relro " CXXFLAGS="-pipe -fno-caller-saves -fno-plt -Wno-error=unused-label -Wno-error=vla -Wno-error=unused-function -Wno-error=address-of-packed-member -funwind-tables -fhonour-copts -Wno-error=unused-but-set-variable -Wno-error=unused-result -ffunction-sections -fdata-sections -Wformat -Werror=format-security -DPIC -fPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,now -Wl,-z,relro -ffunction-sections -fdata-sections " LDFLAGS="-L/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/lib -Wl,--gc-sections -DPIC -fPIC -specs=/var/tmp/RG660MK_build/T930/openwrt/include/hardened-ld-pie.specs -znow -zrelro " cmake -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_VERSION=1 -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG" -DCMAKE_C_COMPILER_LAUNCHER="" -DCMAKE_C_COMPILER="/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/aarch64-openwrt-linux-musl-gcc" -DCMAKE_CXX_COMPILER_LAUNCHER="" -DCMAKE_CXX_COMPILER="/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/aarch64-openwrt-linux-musl-g++" -DCMAKE_ASM_COMPILER_LAUNCHER="" -DCMAKE_ASM_COMPILER="/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/aarch64-openwrt-linux-musl-gcc" -DCMAKE_EXE_LINKER_FLAGS:STRING="-L/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/lib -Wl,--gc-sections -DPIC -fPIC -specs=/var/tmp/RG660MK_build/T930/openwrt/include/hardened-ld-pie.specs -znow -zrelro" -DCMAKE_MODULE_LINKER_FLAGS:STRING="-L/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/lib -Wl,--gc-sections -DPIC -fPIC -specs=/var/tmp/RG660MK_build/T930/openwrt/include/hardened-ld-pie.specs -znow -zrelro -Wl,-Bsymbolic-functions" -DCMAKE_SHARED_LINKER_FLAGS:STRING="-L/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/lib -Wl,--gc-sections -DPIC -fPIC -specs=/var/tmp/RG660MK_build/T930/openwrt/include/hardened-ld-pie.specs -znow -zrelro -Wl,-Bsymbolic-functions" -DCMAKE_AR="/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/aarch64-openwrt-linux-musl-gcc-ar" -DCMAKE_NM="/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/aarch64-openwrt-linux-musl-gcc-nm" -DCMAKE_RANLIB="/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/aarch64-openwrt-linux-musl-gcc-ranlib" -DCMAKE_FIND_ROOT_PATH="/var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/usr;/var/tmp/RG660MK_build/T930/openwrt/staging_dir/toolchain-aarch64-openwrt-linux-musl;"/var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl"" -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=BOTH -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY -DCMAKE_STRIP=: -DCMAKE_INSTALL_PREFIX=/usr -DDL_LIBRARY=/var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl -DCMAKE_PREFIX_PATH=/var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl -DCMAKE_SKIP_RPATH=TRUE -DCMAKE_EXPORT_PACKAGE_REGISTRY=FALSE -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=TRUE -DCMAKE_FIND_USE_PACKAGE_REGISTRY=FALSE -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=TRUE -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=FALSE -DCMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY=TRUE -DCMAKE_GENERATOR="Ninja" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DUSE_SHARED_MBEDTLS_LIBRARY:Bool=ON -DENABLE_TESTING:Bool=OFF -DENABLE_PROGRAMS:Bool=ON /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4 )
+-- The C compiler identification is GNU 12.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /var/tmp/RG660MK_build/T930/openwrt/../mtk/prebuilt/openwrt-toolchain/arm64-a55_neon-gcc-12.3.0_musl/bin/aarch64-openwrt-linux-musl-gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Found Python3: /var/tmp/RG660MK_build/T930/openwrt/staging_dir/hostpkg/bin/python3.11 (found version "3.11.6") found components: Interpreter 
+-- Performing Test C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS
+-- Performing Test C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS - Success
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Configuring done (2.6s)
+-- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_ASM_COMPILER
+    CMAKE_ASM_COMPILER_LAUNCHER
+    CMAKE_CXX_COMPILER
+    CMAKE_CXX_FLAGS_RELEASE
+    CMAKE_EXPORT_NO_PACKAGE_REGISTRY
+    CMAKE_EXPORT_PACKAGE_REGISTRY
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+    CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY
+    CMAKE_FIND_ROOT_PATH_MODE_LIBRARY
+    CMAKE_MODULE_LINKER_FLAGS
+    DL_LIBRARY
+
+
+-- Build files have been written to: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.configured_cd498d14fbbe6c30bf5e6b72900c2bf1
+rm -f /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.built
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.built_check
+MAKEFLAGS="--jobserver-auth=3,4" /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/ninja   -C /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4 
+ninja: Entering directory `/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4'
+[1/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/drivers/test_driver_key_management.c.o
+[2/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/drivers/test_driver_aead.c.o
+[3/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/drivers/test_driver_signature.c.o
+[4/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/drivers/test_driver_cipher.c.o
+[5/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/drivers/hash.c.o
+[6/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/drivers/test_driver_mac.c.o
+[7/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/asn1_helpers.c.o
+[8/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/drivers/platform_builtin_keys.c.o
+[9/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/drivers/test_driver_size.c.o
+[10/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/fake_external_rng_for_test.c.o
+[11/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/threading_helpers.c.o
+[12/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/random.c.o
+[13/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/psa_crypto_helpers.c.o
+[14/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/helpers.c.o
+[15/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/aria.c.o
+[16/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/aesni.c.o
+[17/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/arc4.c.o
+[18/317] Building C object CMakeFiles/mbedtls_test_helpers.dir/tests/src/test_helpers/ssl_helpers.c.o
+[19/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/asn1write.c.o
+[20/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/asn1parse.c.o
+[21/317] Building C object CMakeFiles/mbedtls_test.dir/tests/src/psa_exercise_key.c.o
+[22/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/aes.c.o
+[23/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/base64.c.o
+[24/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/camellia.c.o
+[25/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/blowfish.c.o
+[26/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/chachapoly.c.o
+[27/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/chacha20.c.o
+[28/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/ccm.c.o
+[29/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/cipher.c.o
+[30/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/cipher_wrap.c.o
+[31/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/cmac.c.o
+[32/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/dhm.c.o
+[33/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/constant_time.c.o
+[34/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/ctr_drbg.c.o
+[35/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/des.c.o
+[36/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/bignum.c.o
+[37/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/ecdh.c.o
+[38/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/ecjpake.c.o
+[39/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/entropy_poll.c.o
+[40/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/entropy.c.o
+[41/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/ecdsa.c.o
+[42/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/ecp_curves.c.o
+[43/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/havege.c.o
+[44/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/hkdf.c.o
+[45/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/hmac_drbg.c.o
+[46/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/md.c.o
+[47/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/gcm.c.o
+[48/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/error.c.o
+[49/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/md2.c.o
+[50/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/ecp.c.o
+[51/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/md4.c.o
+[52/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/memory_buffer_alloc.c.o
+[53/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/mps_reader.c.o
+[54/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/md5.c.o
+[55/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/mps_trace.c.o
+[56/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/padlock.c.o
+[57/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/nist_kw.c.o
+[58/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/oid.c.o
+[59/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/pem.c.o
+[60/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/pk.c.o
+[61/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/pkcs12.c.o
+[62/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/pk_wrap.c.o
+[63/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/pkcs5.c.o
+[64/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/platform.c.o
+[65/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/pkwrite.c.o
+[66/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/platform_util.c.o
+[67/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/pkparse.c.o
+[68/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/poly1305.c.o
+[69/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto_aead.c.o
+[70/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto_cipher.c.o
+[71/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto_client.c.o
+[72/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto_driver_wrappers.c.o
+[73/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto_ecp.c.o
+[74/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto_hash.c.o
+[75/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto_se.c.o
+[76/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto_rsa.c.o
+[77/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto_mac.c.o
+[78/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto_slot_management.c.o
+[79/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto_storage.c.o
+[80/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_its_file.c.o
+[81/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/ripemd160.c.o
+[82/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/rsa_internal.c.o
+[83/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/threading.c.o
+[84/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/psa_crypto.c.o
+[85/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/timing.c.o
+[86/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/sha1.c.o
+[87/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/sha512.c.o
+[88/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/sha256.c.o
+[89/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/version.c.o
+[90/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/version_features.c.o
+[91/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/xtea.c.o
+[92/317] Building C object library/CMakeFiles/mbedcrypto_static.dir/rsa.c.o
+[93/317] Building C object library/CMakeFiles/mbedx509_static.dir/pkcs11.c.o
+[94/317] Building C object library/CMakeFiles/mbedx509_static.dir/certs.c.o
+[95/317] Linking C static library library/libmbedcrypto.a
+[96/317] Building C object library/CMakeFiles/mbedx509_static.dir/x509_create.c.o
+[97/317] Building C object library/CMakeFiles/mbedtls_static.dir/debug.c.o
+[98/317] Building C object library/CMakeFiles/mbedx509_static.dir/x509write_csr.c.o
+[99/317] Building C object library/CMakeFiles/mbedx509_static.dir/x509.c.o
+[100/317] Building C object library/CMakeFiles/mbedx509_static.dir/x509_csr.c.o
+[101/317] Building C object library/CMakeFiles/mbedx509_static.dir/x509write_crt.c.o
+[102/317] Building C object library/CMakeFiles/mbedx509_static.dir/x509_crl.c.o
+[103/317] Building C object library/CMakeFiles/mbedtls_static.dir/net_sockets.c.o
+[104/317] Building C object library/CMakeFiles/mbedtls_static.dir/ssl_ciphersuites.c.o
+[105/317] Building C object library/CMakeFiles/mbedtls_static.dir/ssl_cache.c.o
+[106/317] Building C object library/CMakeFiles/mbedtls_static.dir/ssl_cookie.c.o
+[107/317] Building C object library/CMakeFiles/mbedx509_static.dir/x509_crt.c.o
+[108/317] Building C object library/CMakeFiles/mbedtls_static.dir/ssl_tls13_keys.c.o
+[109/317] Linking C static library library/libmbedx509.a
+[110/317] Building C object library/CMakeFiles/mbedtls_static.dir/ssl_cli.c.o
+[111/317] Building C object library/CMakeFiles/mbedtls_static.dir/ssl_ticket.c.o
+[112/317] Building C object library/CMakeFiles/mbedtls_static.dir/ssl_srv.c.o
+[113/317] Building C object library/CMakeFiles/mbedcrypto.dir/aes.c.o
+[114/317] Building C object library/CMakeFiles/mbedcrypto.dir/aesni.c.o
+[115/317] Building C object library/CMakeFiles/mbedtls_static.dir/ssl_msg.c.o
+[116/317] Building C object library/CMakeFiles/mbedcrypto.dir/aria.c.o
+[117/317] Building C object library/CMakeFiles/mbedcrypto.dir/arc4.c.o
+[118/317] Building C object library/CMakeFiles/mbedcrypto.dir/asn1parse.c.o
+[119/317] Building C object library/CMakeFiles/mbedcrypto.dir/base64.c.o
+[120/317] Building C object library/CMakeFiles/mbedcrypto.dir/asn1write.c.o
+[121/317] Building C object library/CMakeFiles/mbedcrypto.dir/camellia.c.o
+[122/317] Building C object library/CMakeFiles/mbedcrypto.dir/chachapoly.c.o
+[123/317] Building C object library/CMakeFiles/mbedcrypto.dir/ccm.c.o
+[124/317] Building C object library/CMakeFiles/mbedtls_static.dir/ssl_tls.c.o
+[125/317] Building C object library/CMakeFiles/mbedcrypto.dir/chacha20.c.o
+[126/317] Building C object library/CMakeFiles/mbedcrypto.dir/blowfish.c.o
+[127/317] Linking C static library library/libmbedtls.a
+[128/317] Building C object library/CMakeFiles/mbedcrypto.dir/cipher.c.o
+[129/317] Building C object library/CMakeFiles/mbedcrypto.dir/cipher_wrap.c.o
+[130/317] Building C object library/CMakeFiles/mbedcrypto.dir/bignum.c.o
+[131/317] Building C object library/CMakeFiles/mbedcrypto.dir/cmac.c.o
+[132/317] Building C object library/CMakeFiles/mbedcrypto.dir/ecdh.c.o
+[133/317] Building C object library/CMakeFiles/mbedcrypto.dir/ctr_drbg.c.o
+[134/317] Building C object library/CMakeFiles/mbedcrypto.dir/constant_time.c.o
+[135/317] Building C object library/CMakeFiles/mbedcrypto.dir/dhm.c.o
+[136/317] Building C object library/CMakeFiles/mbedcrypto.dir/des.c.o
+[137/317] Building C object library/CMakeFiles/mbedcrypto.dir/ecjpake.c.o
+[138/317] Building C object library/CMakeFiles/mbedcrypto.dir/ecdsa.c.o
+[139/317] Building C object library/CMakeFiles/mbedcrypto.dir/entropy_poll.c.o
+[140/317] Building C object library/CMakeFiles/mbedcrypto.dir/entropy.c.o
+[141/317] Building C object library/CMakeFiles/mbedcrypto.dir/gcm.c.o
+[142/317] Building C object library/CMakeFiles/mbedcrypto.dir/error.c.o
+[143/317] Building C object library/CMakeFiles/mbedcrypto.dir/ecp_curves.c.o
+[144/317] Building C object library/CMakeFiles/mbedcrypto.dir/havege.c.o
+[145/317] Building C object library/CMakeFiles/mbedcrypto.dir/hkdf.c.o
+[146/317] Building C object library/CMakeFiles/mbedcrypto.dir/md2.c.o
+[147/317] Building C object library/CMakeFiles/mbedcrypto.dir/hmac_drbg.c.o
+[148/317] Building C object library/CMakeFiles/mbedcrypto.dir/md4.c.o
+[149/317] Building C object library/CMakeFiles/mbedcrypto.dir/ecp.c.o
+[150/317] Building C object library/CMakeFiles/mbedcrypto.dir/md.c.o
+[151/317] Building C object library/CMakeFiles/mbedcrypto.dir/memory_buffer_alloc.c.o
+[152/317] Building C object library/CMakeFiles/mbedcrypto.dir/md5.c.o
+[153/317] Building C object library/CMakeFiles/mbedcrypto.dir/mps_reader.c.o
+[154/317] Building C object library/CMakeFiles/mbedcrypto.dir/mps_trace.c.o
+[155/317] Building C object library/CMakeFiles/mbedcrypto.dir/nist_kw.c.o
+[156/317] Building C object library/CMakeFiles/mbedcrypto.dir/padlock.c.o
+[157/317] Building C object library/CMakeFiles/mbedcrypto.dir/pem.c.o
+[158/317] Building C object library/CMakeFiles/mbedcrypto.dir/oid.c.o
+[159/317] Building C object library/CMakeFiles/mbedcrypto.dir/pk.c.o
+[160/317] Building C object library/CMakeFiles/mbedcrypto.dir/pk_wrap.c.o
+[161/317] Building C object library/CMakeFiles/mbedcrypto.dir/platform.c.o
+[162/317] Building C object library/CMakeFiles/mbedcrypto.dir/pkcs12.c.o
+[163/317] Building C object library/CMakeFiles/mbedcrypto.dir/platform_util.c.o
+[164/317] Building C object library/CMakeFiles/mbedcrypto.dir/pkcs5.c.o
+[165/317] Building C object library/CMakeFiles/mbedcrypto.dir/poly1305.c.o
+[166/317] Building C object library/CMakeFiles/mbedcrypto.dir/pkwrite.c.o
+[167/317] Building C object library/CMakeFiles/mbedcrypto.dir/pkparse.c.o
+[168/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto_client.c.o
+[169/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto_hash.c.o
+[170/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto_aead.c.o
+[171/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto_ecp.c.o
+[172/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto_cipher.c.o
+[173/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto_driver_wrappers.c.o
+[174/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto_mac.c.o
+[175/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto_se.c.o
+[176/317] Building C object library/CMakeFiles/mbedcrypto.dir/ripemd160.c.o
+[177/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto_storage.c.o
+[178/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_its_file.c.o
+[179/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto_rsa.c.o
+[180/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto_slot_management.c.o
+[181/317] Building C object library/CMakeFiles/mbedcrypto.dir/threading.c.o
+[182/317] Building C object library/CMakeFiles/mbedcrypto.dir/rsa_internal.c.o
+[183/317] Building C object library/CMakeFiles/mbedcrypto.dir/timing.c.o
+[184/317] Building C object library/CMakeFiles/mbedcrypto.dir/version.c.o
+[185/317] Building C object library/CMakeFiles/mbedcrypto.dir/rsa.c.o
+[186/317] Building C object library/CMakeFiles/mbedcrypto.dir/sha512.c.o
+[187/317] Building C object library/CMakeFiles/mbedcrypto.dir/sha256.c.o
+[188/317] Building C object library/CMakeFiles/mbedcrypto.dir/sha1.c.o
+[189/317] Building C object library/CMakeFiles/mbedcrypto.dir/psa_crypto.c.o
+[190/317] Building C object library/CMakeFiles/mbedcrypto.dir/version_features.c.o
+[191/317] Building C object library/CMakeFiles/mbedcrypto.dir/xtea.c.o
+[192/317] Building C object library/CMakeFiles/mbedx509.dir/certs.c.o
+[193/317] Building C object library/CMakeFiles/mbedx509.dir/pkcs11.c.o
+[194/317] Linking C shared library library/libmbedcrypto.so.2.28.4
+[195/317] Creating library symlink library/libmbedcrypto.so.7 library/libmbedcrypto.so
+[196/317] Building C object library/CMakeFiles/mbedx509.dir/x509_create.c.o
+[197/317] Building C object library/CMakeFiles/mbedtls.dir/debug.c.o
+[198/317] Building C object library/CMakeFiles/mbedx509.dir/x509_crl.c.o
+[199/317] Building C object library/CMakeFiles/mbedx509.dir/x509write_csr.c.o
+[200/317] Building C object library/CMakeFiles/mbedx509.dir/x509_csr.c.o
+[201/317] Building C object library/CMakeFiles/mbedx509.dir/x509.c.o
+[202/317] Building C object library/CMakeFiles/mbedx509.dir/x509write_crt.c.o
+[203/317] Building C object library/CMakeFiles/mbedtls.dir/ssl_cache.c.o
+[204/317] Building C object library/CMakeFiles/mbedtls.dir/ssl_ciphersuites.c.o
+[205/317] Building C object library/CMakeFiles/mbedtls.dir/ssl_cookie.c.o
+[206/317] Building C object library/CMakeFiles/mbedtls.dir/net_sockets.c.o
+[207/317] Building C object library/CMakeFiles/mbedx509.dir/x509_crt.c.o
+[208/317] Building C object library/CMakeFiles/mbedtls.dir/ssl_tls13_keys.c.o
+[209/317] Linking C shared library library/libmbedx509.so.2.28.4
+[210/317] Creating library symlink library/libmbedx509.so.1 library/libmbedx509.so
+[211/317] Building C object library/CMakeFiles/mbedtls.dir/ssl_cli.c.o
+[212/317] Building C object library/CMakeFiles/mbedtls.dir/ssl_ticket.c.o
+[213/317] Building C object library/CMakeFiles/mbedtls.dir/ssl_srv.c.o
+[214/317] Building C object programs/aes/CMakeFiles/crypt_and_hash.dir/crypt_and_hash.c.o
+[215/317] Linking C executable programs/aes/crypt_and_hash
+[216/317] Building C object library/CMakeFiles/mbedtls.dir/ssl_msg.c.o
+[217/317] Building C object programs/hash/CMakeFiles/generic_sum.dir/generic_sum.c.o
+[218/317] Building C object programs/hash/CMakeFiles/hello.dir/hello.c.o
+[219/317] Linking C executable programs/hash/generic_sum
+[220/317] Linking C executable programs/hash/hello
+[221/317] Building C object programs/pkey/CMakeFiles/dh_client.dir/dh_client.c.o
+[222/317] Building C object programs/pkey/CMakeFiles/dh_genprime.dir/dh_genprime.c.o
+[223/317] Linking C executable programs/pkey/dh_genprime
+[224/317] Building C object programs/pkey/CMakeFiles/dh_server.dir/dh_server.c.o
+[225/317] Building C object programs/pkey/CMakeFiles/ecdh_curve25519.dir/ecdh_curve25519.c.o
+[226/317] Linking C executable programs/pkey/ecdh_curve25519
+[227/317] Building C object programs/pkey/CMakeFiles/mpi_demo.dir/mpi_demo.c.o
+[228/317] Building C object programs/pkey/CMakeFiles/ecdsa.dir/ecdsa.c.o
+[229/317] Building C object programs/pkey/CMakeFiles/pk_encrypt.dir/pk_encrypt.c.o
+[230/317] Linking C executable programs/pkey/mpi_demo
+[231/317] Linking C executable programs/pkey/ecdsa
+[232/317] Building C object programs/pkey/CMakeFiles/key_app.dir/key_app.c.o
+[233/317] Linking C executable programs/pkey/pk_encrypt
+[234/317] Building C object programs/pkey/CMakeFiles/gen_key.dir/gen_key.c.o
+[235/317] Building C object programs/pkey/CMakeFiles/key_app_writer.dir/key_app_writer.c.o
+[236/317] Linking C executable programs/pkey/key_app
+[237/317] Building C object programs/pkey/CMakeFiles/pk_decrypt.dir/pk_decrypt.c.o
+[238/317] Linking C executable programs/pkey/gen_key
+[239/317] Building C object library/CMakeFiles/mbedtls.dir/ssl_tls.c.o
+[240/317] Linking C executable programs/pkey/key_app_writer
+[241/317] Linking C executable programs/pkey/pk_decrypt
+[242/317] Linking C shared library library/libmbedtls.so.2.28.4
+[243/317] Creating library symlink library/libmbedtls.so.14 library/libmbedtls.so
+[244/317] Linking C executable programs/pkey/dh_client
+[245/317] Linking C executable programs/pkey/dh_server
+[246/317] Building C object programs/pkey/CMakeFiles/pk_sign.dir/pk_sign.c.o
+[247/317] Linking C executable programs/pkey/pk_sign
+[248/317] Building C object programs/pkey/CMakeFiles/pk_verify.dir/pk_verify.c.o
+[249/317] Building C object programs/pkey/CMakeFiles/rsa_encrypt.dir/rsa_encrypt.c.o
+[250/317] Building C object programs/pkey/CMakeFiles/rsa_decrypt.dir/rsa_decrypt.c.o
+[251/317] Building C object programs/pkey/CMakeFiles/rsa_genkey.dir/rsa_genkey.c.o
+[252/317] Linking C executable programs/pkey/pk_verify
+[253/317] Linking C executable programs/pkey/rsa_encrypt
+[254/317] Linking C executable programs/pkey/rsa_decrypt
+[255/317] Linking C executable programs/pkey/rsa_genkey
+[256/317] Building C object programs/pkey/CMakeFiles/rsa_verify_pss.dir/rsa_verify_pss.c.o
+[257/317] Building C object programs/pkey/CMakeFiles/rsa_verify.dir/rsa_verify.c.o
+[258/317] Building C object programs/pkey/CMakeFiles/rsa_sign_pss.dir/rsa_sign_pss.c.o
+[259/317] Building C object programs/pkey/CMakeFiles/rsa_sign.dir/rsa_sign.c.o
+[260/317] Linking C executable programs/pkey/rsa_verify_pss
+[261/317] Linking C executable programs/pkey/rsa_verify
+[262/317] Linking C executable programs/pkey/rsa_sign_pss
+[263/317] Linking C executable programs/pkey/rsa_sign
+[264/317] Building C object programs/random/CMakeFiles/gen_random_havege.dir/gen_random_havege.c.o
+[265/317] Building C object programs/ssl/CMakeFiles/dtls_client.dir/dtls_client.c.o
+[266/317] Building C object programs/random/CMakeFiles/gen_entropy.dir/gen_entropy.c.o
+[267/317] Building C object programs/ssl/CMakeFiles/dtls_server.dir/dtls_server.c.o
+[268/317] Linking C executable programs/random/gen_random_havege
+[269/317] Building C object programs/random/CMakeFiles/gen_random_ctr_drbg.dir/gen_random_ctr_drbg.c.o
+[270/317] Linking C executable programs/ssl/dtls_client
+[271/317] Linking C executable programs/ssl/dtls_server
+[272/317] Linking C executable programs/random/gen_entropy
+[273/317] Linking C executable programs/random/gen_random_ctr_drbg
+[274/317] Building C object programs/psa/CMakeFiles/crypto_examples.dir/crypto_examples.c.o
+[275/317] Linking C executable programs/psa/crypto_examples
+[276/317] Building C object programs/psa/CMakeFiles/key_ladder_demo.dir/key_ladder_demo.c.o
+[277/317] Linking C executable programs/psa/key_ladder_demo
+[278/317] Building C object programs/ssl/CMakeFiles/mini_client.dir/mini_client.c.o
+[279/317] Linking C executable programs/ssl/mini_client
+[280/317] Building C object programs/ssl/CMakeFiles/ssl_client1.dir/ssl_client1.c.o
+[281/317] Building C object programs/ssl/CMakeFiles/ssl_fork_server.dir/ssl_fork_server.c.o
+[282/317] Linking C executable programs/ssl/ssl_client1
+[283/317] Linking C executable programs/ssl/ssl_fork_server
+[284/317] Building C object programs/ssl/CMakeFiles/ssl_client2.dir/ssl_test_lib.c.o
+[285/317] Building C object programs/psa/CMakeFiles/psa_constant_names.dir/psa_constant_names.c.o
+[286/317] Linking C executable programs/psa/psa_constant_names
+[287/317] Building C object programs/ssl/CMakeFiles/ssl_client2.dir/__/test/query_config.c.o
+[288/317] Building C object programs/ssl/CMakeFiles/ssl_mail_client.dir/ssl_mail_client.c.o
+[289/317] Building C object programs/ssl/CMakeFiles/ssl_context_info.dir/ssl_context_info.c.o
+[290/317] Linking C executable programs/ssl/ssl_mail_client
+[291/317] Building C object programs/ssl/CMakeFiles/ssl_server.dir/ssl_server.c.o
+[292/317] Building C object programs/ssl/CMakeFiles/ssl_pthread_server.dir/ssl_pthread_server.c.o
+[293/317] Linking C executable programs/ssl/ssl_context_info
+[294/317] Linking C executable programs/ssl/ssl_server
+[295/317] Building C object programs/ssl/CMakeFiles/ssl_server2.dir/ssl_test_lib.c.o
+[296/317] Linking C executable programs/ssl/ssl_pthread_server
+[297/317] Building C object programs/ssl/CMakeFiles/ssl_server2.dir/__/test/query_config.c.o
+[298/317] Building C object programs/util/CMakeFiles/strerror.dir/strerror.c.o
+[299/317] Building C object programs/ssl/CMakeFiles/ssl_client2.dir/ssl_client2.c.o
+[300/317] Building C object programs/util/CMakeFiles/pem2der.dir/pem2der.c.o
+[301/317] Linking C executable programs/util/strerror
+[302/317] Linking C executable programs/ssl/ssl_client2
+[303/317] Building C object programs/x509/CMakeFiles/cert_req.dir/cert_req.c.o
+[304/317] Building C object programs/x509/CMakeFiles/cert_app.dir/cert_app.c.o
+[305/317] Linking C executable programs/util/pem2der
+[306/317] Linking C executable programs/x509/cert_req
+[307/317] Linking C executable programs/x509/cert_app
+[308/317] Building C object programs/x509/CMakeFiles/cert_write.dir/cert_write.c.o
+[309/317] Linking C executable programs/x509/cert_write
+[310/317] Building C object programs/x509/CMakeFiles/crl_app.dir/crl_app.c.o
+[311/317] Building C object programs/x509/CMakeFiles/req_app.dir/req_app.c.o
+[312/317] Building C object programs/x509/CMakeFiles/load_roots.dir/load_roots.c.o
+[313/317] Linking C executable programs/x509/req_app
+[314/317] Linking C executable programs/x509/crl_app
+[315/317] Linking C executable programs/x509/load_roots
+[316/317] Building C object programs/ssl/CMakeFiles/ssl_server2.dir/ssl_server2.c.o
+[317/317] Linking C executable programs/ssl/ssl_server2
+DESTDIR="/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install" MAKEFLAGS="--jobserver-auth=3,4" /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/ninja   -C /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4 install
+ninja: Entering directory `/var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4'
+[0/1] Install the project...
+-- Install configuration: "Release"
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/aes.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/aesni.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/arc4.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/aria.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/asn1.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/asn1write.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/base64.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/bignum.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/blowfish.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/bn_mul.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/camellia.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ccm.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/certs.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/chacha20.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/chachapoly.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/check_config.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/cipher.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/cipher_internal.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/cmac.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/compat-1.3.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/config.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/config_psa.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/constant_time.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ctr_drbg.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/debug.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/des.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/dhm.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ecdh.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ecdsa.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ecjpake.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ecp.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ecp_internal.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/entropy.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/entropy_poll.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/error.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/gcm.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/havege.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/hkdf.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/hmac_drbg.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/md.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/md2.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/md4.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/md5.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/md_internal.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/memory_buffer_alloc.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/net.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/net_sockets.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/nist_kw.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/oid.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/padlock.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/pem.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/pk.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/pk_internal.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/pkcs11.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/pkcs12.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/pkcs5.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/platform.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/platform_time.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/platform_util.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/poly1305.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/psa_util.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ripemd160.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/rsa.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/rsa_internal.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/sha1.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/sha256.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/sha512.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ssl.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ssl_cache.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ssl_ciphersuites.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ssl_cookie.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ssl_internal.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/ssl_ticket.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/threading.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/timing.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/version.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/x509.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/x509_crl.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/x509_crt.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/x509_csr.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls/xtea.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_builtin_composites.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_builtin_primitives.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_compat.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_config.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_driver_common.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_driver_contexts_composites.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_driver_contexts_primitives.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_extra.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_platform.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_se_driver.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_sizes.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_struct.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_types.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/psa/crypto_values.h
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedcrypto.so.2.28.4
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedcrypto.so.7
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedcrypto.so
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedx509.so.2.28.4
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedx509.so.1
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedx509.so
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedtls.so.2.28.4
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedtls.so.14
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedtls.so
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedcrypto.a
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedx509.a
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/libmbedtls.a
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/crypt_and_hash
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/generic_sum
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/hello
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/dh_client
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/dh_server
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/dh_genprime
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/ecdh_curve25519
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/ecdsa
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/gen_key
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/key_app
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/key_app_writer
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/mpi_demo
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/pk_encrypt
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/pk_decrypt
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/pk_sign
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/pk_verify
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/rsa_decrypt
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/rsa_encrypt
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/rsa_genkey
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/rsa_sign
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/rsa_sign_pss
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/rsa_verify
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/rsa_verify_pss
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/crypto_examples
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/key_ladder_demo
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/psa_constant_names
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/key_ladder_demo.sh
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/gen_entropy
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/gen_random_ctr_drbg
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/gen_random_havege
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/dtls_client
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/dtls_server
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/mini_client
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/ssl_client1
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/ssl_client2
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/ssl_context_info
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/ssl_fork_server
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/ssl_mail_client
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/ssl_server
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/ssl_server2
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/ssl_pthread_server
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/pem2der
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/strerror
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/cert_app
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/cert_req
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/cert_write
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/crl_app
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/load_roots
+-- Installing: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/bin/req_app
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.built
+rm -rf /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.pkgdir/libmbedtls.installed /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.pkgdir/libmbedtls
+mkdir -p /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.pkgdir/libmbedtls
+install -d -m0755 /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.pkgdir/libmbedtls/usr/lib
+cp -fpR /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/lib*.so.* /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.pkgdir/libmbedtls/usr/lib/
+touch /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.pkgdir/libmbedtls.installed
+mkdir -p /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/root-gem6xxx/stamp
+echo '12' | cmp -s - /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libmbedtls.version || { echo '12' > /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/libmbedtls.version;  } 
+SHELL= flock /var/tmp/RG660MK_build/T930/openwrt/tmp/.root-copy.flock -c 'cp -fpR /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/.pkgdir/libmbedtls/. /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/root-gem6xxx/'
+touch /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/root-gem6xxx/stamp/.libmbedtls_installed
+mkdir -p /var/tmp/RG660MK_build/T930/openwrt/bin/targets/gem6xxx/evb6988_cpe_mt7992_emmc/packages /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-aarch64_cortex-a55_neon-vfpv4/libmbedtls/CONTROL /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo
+install -d -m0755 /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-aarch64_cortex-a55_neon-vfpv4/libmbedtls/usr/lib
+cp -fpR /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/lib*.so.* /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-aarch64_cortex-a55_neon-vfpv4/libmbedtls/usr/lib/
+find /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-aarch64_cortex-a55_neon-vfpv4/libmbedtls -name 'CVS' -o -name '.svn' -o -name '.#*' -o -name '*~'| xargs -r rm -rf
+export CROSS="aarch64-openwrt-linux-musl-"  NO_RENAME=1 ; NM="aarch64-openwrt-linux-musl-nm" STRIP="aarch64-openwrt-linux-musl-strip --strip-all" STRIP_KMOD="/var/tmp/RG660MK_build/T930/openwrt/scripts/strip-kmod.sh" PATCHELF="/var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/patchelf" /var/tmp/RG660MK_build/T930/openwrt/scripts/rstrip.sh /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-aarch64_cortex-a55_neon-vfpv4/libmbedtls
+rstrip.sh: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-aarch64_cortex-a55_neon-vfpv4/libmbedtls/usr/lib/libmbedcrypto.so.2.28.4: shared object
+rstrip.sh: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-aarch64_cortex-a55_neon-vfpv4/libmbedtls/usr/lib/libmbedx509.so.2.28.4: shared object
+rstrip.sh: /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-aarch64_cortex-a55_neon-vfpv4/libmbedtls/usr/lib/libmbedtls.so.2.28.4: shared object
+(cd /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-aarch64_cortex-a55_neon-vfpv4/libmbedtls/CONTROL; ( echo "$CONTROL"; printf "Description: "; echo "$DESCRIPTION" | sed -e 's,^[[:space:]]*, ,g'; ) > control; chmod 644 control; ( echo "#!/bin/sh"; echo "[ \"\${IPKG_NO_SCRIPT}\" = \"1\" ] && exit 0"; echo "[ -s "\${IPKG_INSTROOT}/lib/functions.sh" ] || exit 0"; echo ". \${IPKG_INSTROOT}/lib/functions.sh"; echo "default_postinst \$0 \$@"; ) > postinst; ( echo "#!/bin/sh"; echo "[ -s "\${IPKG_INSTROOT}/lib/functions.sh" ] || exit 0"; echo ". \${IPKG_INSTROOT}/lib/functions.sh"; echo "default_prerm \$0 \$@"; ) > prerm; chmod 0755 postinst prerm;  )
+install -d -m0755 /var/tmp/RG660MK_build/T930/openwrt/bin/packages/aarch64_cortex-a55_neon-vfpv4/base
+/var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/fakeroot /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/bash /var/tmp/RG660MK_build/T930/openwrt/scripts/ipkg-build -m "" /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-aarch64_cortex-a55_neon-vfpv4/libmbedtls /var/tmp/RG660MK_build/T930/openwrt/bin/packages/aarch64_cortex-a55_neon-vfpv4/base
+Packaged contents of /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-aarch64_cortex-a55_neon-vfpv4/libmbedtls into /var/tmp/RG660MK_build/T930/openwrt/bin/packages/aarch64_cortex-a55_neon-vfpv4/base/libmbedtls12_2.28.4-1_aarch64_cortex-a55_neon-vfpv4.ipk
+echo "libmbedtls" >> /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/pkginfo/mbedtls.default.install
+rm -rf /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls
+mkdir -p /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls/host /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/packages
+install -d -m0755 /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls/usr/include
+cp -fpR /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/include/mbedtls /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls/usr/include/
+install -d -m0755 /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls/usr/lib
+cp -fpR /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/lib*.so* /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls/usr/lib/
+cp -fpR /var/tmp/RG660MK_build/T930/openwrt/build_dir/target-aarch64-openwrt-linux-musl_musl/mbedtls-2.28.4/ipkg-install/usr/lib/lib*.a /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls/usr/lib/
+find /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls -name '*.la' | xargs -r rm -f; 
+if [ -f /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/packages/mbedtls.list ]; then /var/tmp/RG660MK_build/T930/openwrt/scripts/clean-package.sh "/var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/packages/mbedtls.list" "/var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl"; fi
+if [ -d /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls ]; then (cd /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls; find ./ > /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls.files); 	SHELL= flock /var/tmp/RG660MK_build/T930/openwrt/tmp/.staging-dir.flock -c ' mv /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls.files /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/packages/mbedtls.list && cp -fpR /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls/* /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/; '; fi
+rm -rf /var/tmp/RG660MK_build/T930/openwrt/tmp/stage-mbedtls
+touch /var/tmp/RG660MK_build/T930/openwrt/staging_dir/target-aarch64-openwrt-linux-musl_musl/stamp/.mbedtls_installed
+make[2]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt/package/libs/mbedtls'
+time: package/libs/mbedtls/compile#42.14#7.95#23.83
+make[1]: Leaving directory '/var/tmp/RG660MK_build/T930/openwrt'

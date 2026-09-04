@@ -1,0 +1,944 @@
+{
+  "metadata": {
+    "started_at": "2026-08-25T18:41:55+08:00",
+    "duration_requested_s": 180,
+    "interval_s": 1,
+    "target_mac": "e2:c6:40:26:70:5d",
+    "target_ip": "192.168.1.217",
+    "hostname": "HONOR-90",
+    "wifi_interface": "rai0",
+    "wan_interface": "ccmni2",
+    "associated_client_count_start": 1,
+    "ping_target": "223.5.5.5",
+    "capture_snaplen": 128,
+    "associated_client_count_end": 1,
+    "target_still_associated": true
+  },
+  "station": {
+    "sample_rows": 121,
+    "duration_s": 178.25,
+    "actual_interval_s": {
+      "count": 120,
+      "mean": 1.4854166666666666,
+      "min": 1.4699999999993452,
+      "max": 1.5200000000004366,
+      "p5": 1.4700000000002547,
+      "p50": 1.4899999999997817,
+      "p95": 1.5,
+      "stddev": 0.008356218575979795,
+      "cv": 0.005625504791683453
+    },
+    "downlink_mbps": {
+      "count": 120,
+      "mean": 1.050810474856682,
+      "min": 0.0,
+      "max": 11.081142857140938,
+      "p5": 0.0,
+      "p50": 0.7763165405404169,
+      "p95": 3.090340939595984,
+      "stddev": 1.4707714294466863,
+      "cv": 1.3996543283861744
+    },
+    "uplink_mbps": {
+      "count": 120,
+      "mean": 0.08300822843042059,
+      "min": 0.0,
+      "max": 0.5251413333333333,
+      "p5": 0.0,
+      "p50": 0.052574496644303005,
+      "p95": 0.2930598657716852,
+      "stddev": 0.09310295005979584,
+      "cv": 1.121611095914869
+    },
+    "wan_downlink_mbps": {
+      "count": 120,
+      "mean": 1.060404748585341,
+      "min": 0.00045100671140918677,
+      "max": 16.8747863945549,
+      "p5": 0.0008739027027026955,
+      "p50": 0.925491315315452,
+      "p95": 1.8404710624123282,
+      "stddev": 1.8488449133001392,
+      "cv": 1.7435275688520222
+    },
+    "downlink_5s_mbps": {
+      "count": 117,
+      "mean": 1.0670966572721061,
+      "min": 5.50054054053952e-05,
+      "max": 5.681836842953063,
+      "p5": 0.0008919795973154789,
+      "p50": 0.9433843809523517,
+      "p95": 3.5684521044512585,
+      "stddev": 1.061873030577109,
+      "cv": 0.9951048232984342
+    },
+    "signal_dbm": {
+      "count": 121,
+      "mean": -78.54545454545455,
+      "min": -83.0,
+      "max": -69.0,
+      "p5": -81.0,
+      "p50": -79.0,
+      "p95": -74.0,
+      "stddev": 2.1281272564944773,
+      "cv": null
+    },
+    "station_missing_samples": 0,
+    "counter_deltas": {
+      "sta_tx_retries": 7950,
+      "sta_tx_failed": 7950,
+      "wifi_tx_packets": 26314,
+      "wifi_rx_packets": 8151,
+      "wifi_tx_dropped": 7950,
+      "wifi_rx_dropped": 1717,
+      "wifi_tx_errors": 7950,
+      "wifi_rx_errors": 1717,
+      "wan_rx_packets": 20739,
+      "wan_tx_packets": 16252,
+      "wan_rx_dropped": 0,
+      "wan_tx_dropped": 0,
+      "wan_rx_errors": 0,
+      "wan_tx_errors": 0
+    }
+  },
+  "ip_probe": {
+    "transmitted": 180,
+    "received": 180,
+    "loss_percent": 0.0,
+    "rtt_ms": {
+      "count": 180,
+      "mean": 38.596666666666664,
+      "min": 12.5,
+      "max": 242.0,
+      "p5": 14.2,
+      "p50": 25.15,
+      "p95": 94.04500000000002,
+      "stddev": 30.766912061137656,
+      "cv": 0.7971390982244838,
+      "successive_jitter_ms": 27.693296089385477
+    },
+    "raw_summary_found": true
+  },
+  "pcap": {
+    "raw_packets": 6347,
+    "parsed_target_ip_packets": 6308,
+    "duplicate_tap_packets_removed": 23,
+    "duration_s": 178.25821805000305,
+    "protocol": {
+      "up": {
+        "udp": {
+          "packets": 861,
+          "bytes": 376969
+        },
+        "tcp": {
+          "packets": 2537,
+          "bytes": 263742
+        },
+        "other": {
+          "packets": 19,
+          "bytes": 1590
+        },
+        "udp_443_candidate": {
+          "packets": 46,
+          "bytes": 28013
+        }
+      },
+      "down": {
+        "udp": {
+          "packets": 757,
+          "bytes": 517617
+        },
+        "tcp": {
+          "packets": 2112,
+          "bytes": 1235379
+        },
+        "other": {
+          "packets": 22,
+          "bytes": 2138
+        },
+        "udp_443_candidate": {
+          "packets": 44,
+          "bytes": 20073
+        }
+      }
+    },
+    "tcp_flow_count": 336,
+    "tcp_data_packets": {
+      "up": 243,
+      "down": 1204
+    },
+    "tcp_rtt_ms": {
+      "count": 314,
+      "mean": 38.66390285977892,
+      "min": 12.204885482788086,
+      "max": 902.3070335388184,
+      "p5": 15.377891063690186,
+      "p50": 33.701539039611816,
+      "p95": 69.55406665802002,
+      "stddev": 52.04212971117358,
+      "cv": 1.3460133577283449,
+      "successive_jitter_ms": 14.6635652731021,
+      "method": "tcp_timestamp_echo",
+      "timestamp_sample_count": 314,
+      "ack_sample_count": 822
+    },
+    "target_retransmission_count": 30,
+    "target_retransmission_ratio": 0.02073255010366275,
+    "retransmission_events": [
+      {
+        "time_s": 41.90079402923584,
+        "flow_id": "9c9a44bb81",
+        "direction": "down",
+        "bytes": 959,
+        "delay_since_first_s": 0.010644912719726562,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 41.918769121170044,
+        "flow_id": "0f527fa0dd",
+        "direction": "down",
+        "bytes": 668,
+        "delay_since_first_s": 0.028329133987426758,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.04308819770813,
+        "flow_id": "428471b400",
+        "direction": "down",
+        "bytes": 1288,
+        "delay_since_first_s": 0.1539771556854248,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.043156147003174,
+        "flow_id": "428471b400",
+        "direction": "down",
+        "bytes": 1288,
+        "delay_since_first_s": 0.1539621353149414,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.04316210746765,
+        "flow_id": "428471b400",
+        "direction": "down",
+        "bytes": 1288,
+        "delay_since_first_s": 0.1539609432220459,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.04316520690918,
+        "flow_id": "428471b400",
+        "direction": "down",
+        "bytes": 1288,
+        "delay_since_first_s": 0.1539602279663086,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.1266930103302,
+        "flow_id": "b23dd42a8a",
+        "direction": "down",
+        "bytes": 1300,
+        "delay_since_first_s": 0.32094597816467285,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 42.13087010383606,
+        "flow_id": "0f527fa0dd",
+        "direction": "up",
+        "bytes": 314,
+        "delay_since_first_s": 0.32103395462036133,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 42.178930044174194,
+        "flow_id": "0f527fa0dd",
+        "direction": "up",
+        "bytes": 31,
+        "delay_since_first_s": 0.047720909118652344,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.53204703330994,
+        "flow_id": "a5150951a8",
+        "direction": "down",
+        "bytes": 1300,
+        "delay_since_first_s": 0.05221104621887207,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.545865058898926,
+        "flow_id": "a5150951a8",
+        "direction": "down",
+        "bytes": 1300,
+        "delay_since_first_s": 0.06491398811340332,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.54596304893494,
+        "flow_id": "a5150951a8",
+        "direction": "down",
+        "bytes": 1300,
+        "delay_since_first_s": 0.06499290466308594,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 46.61902904510498,
+        "flow_id": "cb960338c2",
+        "direction": "up",
+        "bytes": 448,
+        "delay_since_first_s": 0.04039597511291504,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 59.734781980514526,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 156,
+        "delay_since_first_s": 0.13264894485473633,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 61.06116199493408,
+        "flow_id": "f2fc16137a",
+        "direction": "down",
+        "bytes": 303,
+        "delay_since_first_s": 0.09141182899475098,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 62.90174412727356,
+        "flow_id": "090daf4f76",
+        "direction": "down",
+        "bytes": 49,
+        "delay_since_first_s": 0.039057016372680664,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 64.8489100933075,
+        "flow_id": "2cd8975d9a",
+        "direction": "down",
+        "bytes": 1106,
+        "delay_since_first_s": 0.08481788635253906,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 65.1002562046051,
+        "flow_id": "2cd8975d9a",
+        "direction": "down",
+        "bytes": 192,
+        "delay_since_first_s": 0.1394510269165039,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 65.70255303382874,
+        "flow_id": "a1c3dbb527",
+        "direction": "down",
+        "bytes": 351,
+        "delay_since_first_s": 0.00485992431640625,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 65.75667715072632,
+        "flow_id": "a1c3dbb527",
+        "direction": "down",
+        "bytes": 287,
+        "delay_since_first_s": 0.01995706558227539,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 89.35171508789062,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 349,
+        "delay_since_first_s": 0.13841700553894043,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 89.7272481918335,
+        "flow_id": "f6e2075acb",
+        "direction": "down",
+        "bytes": 1300,
+        "delay_since_first_s": 0.046427011489868164,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 93.5671980381012,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 225,
+        "delay_since_first_s": 0.3871438503265381,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 110.06725907325745,
+        "flow_id": "364e0b8435",
+        "direction": "down",
+        "bytes": 196,
+        "delay_since_first_s": 0.22307109832763672,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 121.08700609207153,
+        "flow_id": "4b42cc44b8",
+        "direction": "down",
+        "bytes": 351,
+        "delay_since_first_s": 0.0045850276947021484,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 121.15805315971375,
+        "flow_id": "4b42cc44b8",
+        "direction": "down",
+        "bytes": 287,
+        "delay_since_first_s": 0.022677183151245117,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 123.58278107643127,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 408,
+        "delay_since_first_s": 0.08888006210327148,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 144.80910110473633,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 158,
+        "delay_since_first_s": 0.29836606979370117,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 146.74487018585205,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 236,
+        "delay_since_first_s": 0.10269713401794434,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 164.25689816474915,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 213,
+        "delay_since_first_s": 0.07510900497436523,
+        "type": "fast_like_retransmission"
+      }
+    ],
+    "handshake_or_close_retransmission_count": 15,
+    "handshake_or_close_retransmission_events": [
+      {
+        "time_s": 42.13795304298401,
+        "flow_id": "9c9a44bb81",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.0069599151611328125,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 64.82704997062683,
+        "flow_id": "878beaba4d",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.10608386993408203,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 64.8422441482544,
+        "flow_id": "b26a7fb508",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.10823917388916016,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 64.84248304367065,
+        "flow_id": "af4252ebcb",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.1034860610961914,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 64.85181498527527,
+        "flow_id": "4dbd109252",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.1300208568572998,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 64.85293102264404,
+        "flow_id": "931a695597",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.12799382209777832,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 65.075119972229,
+        "flow_id": "e30d448905",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.09814786911010742,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 65.07693409919739,
+        "flow_id": "0fa0b5fa77",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.10697412490844727,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 65.22896814346313,
+        "flow_id": "dff446044a",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.06123208999633789,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 65.29211115837097,
+        "flow_id": "dff446044a",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.1243751049041748,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 65.79067707061768,
+        "flow_id": "a1c3dbb527",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.018959999084472656,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 82.90715217590332,
+        "flow_id": "090daf4f76",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.04296398162841797,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 121.19801306724548,
+        "flow_id": "4b42cc44b8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.021800994873046875,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 125.10382008552551,
+        "flow_id": "2cd8975d9a",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.061929941177368164,
+        "type": "handshake_or_close_retransmission"
+      },
+      {
+        "time_s": 168.17981719970703,
+        "flow_id": "e8215c95e6",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.056603193283081055,
+        "type": "handshake_or_close_retransmission"
+      }
+    ],
+    "zero_window_event_count": 0,
+    "terminal_zero_window_event_count": 0,
+    "remote_zero_window_event_count": 0,
+    "zero_window_events": [],
+    "direct_cwnd_observable": false,
+    "congestion_control_signal_count": 38,
+    "congestion_control_signals": [
+      {
+        "time_s": 41.90079402923584,
+        "flow_id": "9c9a44bb81",
+        "direction": "down",
+        "bytes": 959,
+        "delay_since_first_s": 0.010644912719726562,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 41.918769121170044,
+        "flow_id": "0f527fa0dd",
+        "direction": "down",
+        "bytes": 668,
+        "delay_since_first_s": 0.028329133987426758,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.04308819770813,
+        "flow_id": "428471b400",
+        "direction": "down",
+        "bytes": 1288,
+        "delay_since_first_s": 0.1539771556854248,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.043156147003174,
+        "flow_id": "428471b400",
+        "direction": "down",
+        "bytes": 1288,
+        "delay_since_first_s": 0.1539621353149414,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.04316210746765,
+        "flow_id": "428471b400",
+        "direction": "down",
+        "bytes": 1288,
+        "delay_since_first_s": 0.1539609432220459,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.04316520690918,
+        "flow_id": "428471b400",
+        "direction": "down",
+        "bytes": 1288,
+        "delay_since_first_s": 0.1539602279663086,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.1266930103302,
+        "flow_id": "b23dd42a8a",
+        "direction": "down",
+        "bytes": 1300,
+        "delay_since_first_s": 0.32094597816467285,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 42.13087010383606,
+        "flow_id": "0f527fa0dd",
+        "direction": "up",
+        "bytes": 314,
+        "delay_since_first_s": 0.32103395462036133,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 42.13135004043579,
+        "flow_id": "428471b400",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 42.13138198852539,
+        "flow_id": "0f527fa0dd",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 42.13795304298401,
+        "flow_id": "9c9a44bb81",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 42.178930044174194,
+        "flow_id": "0f527fa0dd",
+        "direction": "up",
+        "bytes": 31,
+        "delay_since_first_s": 0.047720909118652344,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.47428107261658,
+        "flow_id": "a5150951a8",
+        "direction": "down",
+        "bytes_in_flight_estimate": 5200,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 42.53204703330994,
+        "flow_id": "a5150951a8",
+        "direction": "down",
+        "bytes": 1300,
+        "delay_since_first_s": 0.05221104621887207,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.545865058898926,
+        "flow_id": "a5150951a8",
+        "direction": "down",
+        "bytes": 1300,
+        "delay_since_first_s": 0.06491398811340332,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 42.54596304893494,
+        "flow_id": "a5150951a8",
+        "direction": "down",
+        "bytes": 1300,
+        "delay_since_first_s": 0.06499290466308594,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 46.61902904510498,
+        "flow_id": "cb960338c2",
+        "direction": "up",
+        "bytes": 448,
+        "delay_since_first_s": 0.04039597511291504,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 48.014180183410645,
+        "flow_id": "a5150951a8",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 59.734781980514526,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 156,
+        "delay_since_first_s": 0.13264894485473633,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 59.92564511299133,
+        "flow_id": "b8fde16c7c",
+        "direction": "down",
+        "bytes_in_flight_estimate": 12880,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 61.06116199493408,
+        "flow_id": "f2fc16137a",
+        "direction": "down",
+        "bytes": 303,
+        "delay_since_first_s": 0.09141182899475098,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 62.90174412727356,
+        "flow_id": "090daf4f76",
+        "direction": "down",
+        "bytes": 49,
+        "delay_since_first_s": 0.039057016372680664,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 64.8489100933075,
+        "flow_id": "2cd8975d9a",
+        "direction": "down",
+        "bytes": 1106,
+        "delay_since_first_s": 0.08481788635253906,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 65.1002562046051,
+        "flow_id": "2cd8975d9a",
+        "direction": "down",
+        "bytes": 192,
+        "delay_since_first_s": 0.1394510269165039,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 65.70255303382874,
+        "flow_id": "a1c3dbb527",
+        "direction": "down",
+        "bytes": 351,
+        "delay_since_first_s": 0.00485992431640625,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 65.75667715072632,
+        "flow_id": "a1c3dbb527",
+        "direction": "down",
+        "bytes": 287,
+        "delay_since_first_s": 0.01995706558227539,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 84.75618505477905,
+        "flow_id": "364e0b8435",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 89.35171508789062,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 349,
+        "delay_since_first_s": 0.13841700553894043,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 89.70599317550659,
+        "flow_id": "f6e2075acb",
+        "direction": "down",
+        "bytes_in_flight_estimate": 31200,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 89.7272481918335,
+        "flow_id": "f6e2075acb",
+        "direction": "down",
+        "bytes": 1300,
+        "delay_since_first_s": 0.046427011489868164,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 93.5671980381012,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 225,
+        "delay_since_first_s": 0.3871438503265381,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 110.06725907325745,
+        "flow_id": "364e0b8435",
+        "direction": "down",
+        "bytes": 196,
+        "delay_since_first_s": 0.22307109832763672,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 121.08700609207153,
+        "flow_id": "4b42cc44b8",
+        "direction": "down",
+        "bytes": 351,
+        "delay_since_first_s": 0.0045850276947021484,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 121.15805315971375,
+        "flow_id": "4b42cc44b8",
+        "direction": "down",
+        "bytes": 287,
+        "delay_since_first_s": 0.022677183151245117,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 123.58278107643127,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 408,
+        "delay_since_first_s": 0.08888006210327148,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 144.80910110473633,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 158,
+        "delay_since_first_s": 0.29836606979370117,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 146.74487018585205,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 236,
+        "delay_since_first_s": 0.10269713401794434,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 164.25689816474915,
+        "flow_id": "cb960338c2",
+        "direction": "down",
+        "bytes": 213,
+        "delay_since_first_s": 0.07510900497436523,
+        "type": "fast_like_retransmission"
+      }
+    ]
+  },
+  "capture_log": {
+    "captured": null,
+    "received_by_filter": null,
+    "dropped_by_kernel": null
+  },
+  "kernel_counter_deltas": {
+    "Ip": {
+      "InAddrErrors": 0,
+      "InDiscards": 0,
+      "InHdrErrors": 0,
+      "OutDiscards": 0,
+      "OutNoRoutes": 0
+    },
+    "Tcp": {
+      "InErrs": 0,
+      "OutRsts": 0,
+      "RetransSegs": 0
+    },
+    "TcpExt": {
+      "TCPBacklogDrop": 0,
+      "TCPFastRetrans": 0,
+      "TCPFromZeroWindowAdv": 0,
+      "TCPLossProbes": 0,
+      "TCPRcvQDrop": 0,
+      "TCPTimeouts": 0,
+      "TCPToZeroWindowAdv": 0,
+      "TCPWantZeroWindowAdv": 0,
+      "TCPZeroWindowDrop": 0
+    }
+  },
+  "interface_counter_deltas": {
+    "br-lan": {
+      "rx_bytes": 595737,
+      "rx_dropped": 0,
+      "rx_errors": 0,
+      "rx_packets": 3428,
+      "tx_bytes": 1724161,
+      "tx_dropped": 0,
+      "tx_errors": 0,
+      "tx_packets": 2491
+    },
+    "ccmni2": {
+      "rx_bytes": 23803398,
+      "rx_dropped": 0,
+      "rx_errors": 0,
+      "rx_packets": 20891,
+      "tx_bytes": 1482786,
+      "tx_dropped": 0,
+      "tx_errors": 0,
+      "tx_packets": 16377
+    },
+    "rai0": {
+      "rx_bytes": 1866336,
+      "rx_dropped": 1725,
+      "rx_errors": 1725,
+      "rx_packets": 8231,
+      "tx_bytes": 23685856,
+      "tx_dropped": 7989,
+      "tx_errors": 7989,
+      "tx_packets": 26532
+    }
+  },
+  "qdisc_drop_deltas": {
+    "br-lan": 0,
+    "ccmni2": 0,
+    "rai0": 0
+  },
+  "fast_path_probe": {
+    "hardware_fast_path_confirmed": true,
+    "loaded_modules": [
+      "hw_nat",
+      "mtk_warp",
+      "mtk_wed",
+      "nf_flow_table",
+      "nft_flow_offload",
+      "tops"
+    ]
+  },
+  "capture_coverage": {
+    "pcap_down_bytes": 1755134,
+    "bridge_tx_bytes": 1724161,
+    "wifi_tx_bytes": 23685856,
+    "wan_rx_bytes": 23803398,
+    "pcap_vs_wifi_ratio": 0.07410050960370611,
+    "bridge_vs_wifi_ratio": 0.07279285156508593,
+    "wan_vs_wifi_ratio": 1.0049625396692439
+  }
+}

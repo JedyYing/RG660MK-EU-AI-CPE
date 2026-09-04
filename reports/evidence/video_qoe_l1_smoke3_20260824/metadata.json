@@ -1,0 +1,12 @@
+{
+  "started_at": "2026-08-25T10:02:22+08:00",
+  "duration_requested_s": 5,
+  "interval_s": 1,
+  "target_mac": "e2:c6:40:26:70:5d",
+  "target_ip": "192.168.1.217",
+  "hostname": "HONOR-90",
+  "wifi_interface": "rai0",
+  "associated_client_count_start": 1,
+  "ping_target": "223.5.5.5",
+  "capture_snaplen": 128
+}

@@ -1,0 +1,1138 @@
+{
+  "metadata": {
+    "started_at": "2026-08-25T10:35:21+08:00",
+    "duration_requested_s": 180,
+    "interval_s": 1,
+    "target_mac": "e2:c6:40:26:70:5d",
+    "target_ip": "192.168.1.217",
+    "hostname": "HONOR-90",
+    "wifi_interface": "rai0",
+    "associated_client_count_start": 1,
+    "ping_target": "223.5.5.5",
+    "capture_snaplen": 128,
+    "associated_client_count_end": 1,
+    "target_still_associated": true
+  },
+  "station": {
+    "sample_rows": 121,
+    "duration_s": 178.97000000000116,
+    "actual_interval_s": {
+      "count": 120,
+      "mean": 1.4914166666666764,
+      "min": 1.4700000000011642,
+      "max": 1.5200000000040745,
+      "p5": 1.4799999999959255,
+      "p50": 1.4900000000052387,
+      "p95": 1.5099999999947613,
+      "stddev": 0.00951278379557552,
+      "cv": 0.006378354223998743
+    },
+    "downlink_mbps": {
+      "count": 120,
+      "mean": 0.04302788620386226,
+      "min": 0.0003413333333333333,
+      "max": 0.5618346666666666,
+      "p5": 0.0003436241610726174,
+      "p50": 0.003608053691280101,
+      "p95": 0.39339812080782804,
+      "stddev": 0.12165917859856579,
+      "cv": 2.827449575890285
+    },
+    "uplink_mbps": {
+      "count": 120,
+      "mean": 0.0374981206840139,
+      "min": 0.0012026845637541608,
+      "max": 0.6314666666666666,
+      "p5": 0.0019027027027070055,
+      "p50": 0.009535570469765133,
+      "p95": 0.1723935135123821,
+      "stddev": 0.08812289070575927,
+      "cv": 2.350061525705409
+    },
+    "wan_downlink_mbps": {
+      "count": 120,
+      "mean": 0.043699032033790504,
+      "min": 0.0007682119205324665,
+      "max": 0.5746933333333334,
+      "p5": 0.001106040268462749,
+      "p50": 0.0032701070197861323,
+      "p95": 0.39289519317724675,
+      "stddev": 0.12349690645130894,
+      "cv": 2.8260787643033902
+    },
+    "downlink_5s_mbps": {
+      "count": 117,
+      "mean": 0.04359200607936393,
+      "min": 0.0012490738255023623,
+      "max": 0.20285955436231434,
+      "p5": 0.0017594118918921877,
+      "p50": 0.007345493333331744,
+      "p95": 0.17038962185380097,
+      "stddev": 0.05994107593180425,
+      "cv": 1.3750474300878717
+    },
+    "signal_dbm": {
+      "count": 121,
+      "mean": -60.97520661157025,
+      "min": -63.0,
+      "max": -59.0,
+      "p5": -62.0,
+      "p50": -61.0,
+      "p95": -60.0,
+      "stddev": 0.9745760673393674,
+      "cv": null
+    },
+    "station_missing_samples": 0,
+    "counter_deltas": {
+      "sta_tx_retries": 447,
+      "sta_tx_failed": 447,
+      "wifi_tx_packets": 2368,
+      "wifi_rx_packets": 3802,
+      "wifi_tx_dropped": 447,
+      "wifi_rx_dropped": 1775,
+      "wifi_tx_errors": 447,
+      "wifi_rx_errors": 1775,
+      "wan_rx_packets": 2356,
+      "wan_tx_packets": 3266,
+      "wan_rx_dropped": 0,
+      "wan_tx_dropped": 0,
+      "wan_rx_errors": 0,
+      "wan_tx_errors": 0
+    }
+  },
+  "ip_probe": {
+    "transmitted": 180,
+    "received": 180,
+    "loss_percent": 0.0,
+    "rtt_ms": {
+      "count": 180,
+      "mean": 51.14777777777778,
+      "min": 12.3,
+      "max": 108.0,
+      "p5": 14.375,
+      "p50": 49.75,
+      "p95": 98.61,
+      "stddev": 28.166929891384555,
+      "cv": 0.5506970413018073,
+      "successive_jitter_ms": 38.52960893854749
+    },
+    "raw_summary_found": true
+  },
+  "pcap": {
+    "raw_packets": 3997,
+    "parsed_target_ip_packets": 3935,
+    "duplicate_tap_packets_removed": 44,
+    "duration_s": 178.82786893844604,
+    "protocol": {
+      "up": {
+        "tcp": {
+          "packets": 1797,
+          "bytes": 171592
+        },
+        "other": {
+          "packets": 32,
+          "bytes": 17136
+        },
+        "udp": {
+          "packets": 652,
+          "bytes": 408744
+        },
+        "udp_443_candidate": {
+          "packets": 10,
+          "bytes": 960
+        }
+      },
+      "down": {
+        "tcp": {
+          "packets": 1147,
+          "bytes": 216705
+        },
+        "other": {
+          "packets": 29,
+          "bytes": 11000
+        },
+        "udp": {
+          "packets": 278,
+          "bytes": 57906
+        },
+        "udp_443_candidate": {
+          "packets": 8,
+          "bytes": 500
+        }
+      }
+    },
+    "tcp_flow_count": 395,
+    "tcp_data_packets": {
+      "up": 923,
+      "down": 913
+    },
+    "tcp_rtt_ms": {
+      "count": 190,
+      "mean": 31.14845125298751,
+      "min": 11.673927307128906,
+      "max": 87.5539779663086,
+      "p5": 16.580259799957275,
+      "p50": 28.4196138381958,
+      "p95": 47.97731637954713,
+      "stddev": 11.471222009650226,
+      "cv": 0.36827583870803204,
+      "successive_jitter_ms": 9.41710875778602,
+      "method": "tcp_timestamp_echo",
+      "timestamp_sample_count": 190,
+      "ack_sample_count": 710
+    },
+    "target_retransmission_count": 49,
+    "target_retransmission_ratio": 0.026688453159041396,
+    "retransmission_events": [
+      {
+        "time_s": 2.314373016357422,
+        "flow_id": "0a0faec331",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.0316309928894043,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 2.615356922149658,
+        "flow_id": "0283e7d2cc",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.04764199256896973,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 2.757351875305176,
+        "flow_id": "6f6c6fc8a9",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.22809195518493652,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 4.939125061035156,
+        "flow_id": "eec90520fd",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.17296409606933594,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 7.080513954162598,
+        "flow_id": "596a4c4335",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.07278990745544434,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 7.0805840492248535,
+        "flow_id": "165990f069",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.07294917106628418,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 17.13720989227295,
+        "flow_id": "165990f069",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.24382281303405762,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 17.137266874313354,
+        "flow_id": "596a4c4335",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.24385595321655273,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 17.360624074935913,
+        "flow_id": "165990f069",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.4672369956970215,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 17.360660076141357,
+        "flow_id": "596a4c4335",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.46724915504455566,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 17.85832405090332,
+        "flow_id": "596a4c4335",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.9649131298065186,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 17.858340978622437,
+        "flow_id": "165990f069",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.9649538993835449,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 18.80696201324463,
+        "flow_id": "165990f069",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.9135749340057373,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 18.80699396133423,
+        "flow_id": "596a4c4335",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.9135830402374268,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 29.405319929122925,
+        "flow_id": "47cf9d8287",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.05070900917053223,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 31.300044059753418,
+        "flow_id": "2b6f18f375",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.1452770233154297,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 36.32525396347046,
+        "flow_id": "4d7d99b1cc",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.09411096572875977,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 65.05463886260986,
+        "flow_id": "58fa961571",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.12785983085632324,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 67.52613997459412,
+        "flow_id": "7e2bdb9410",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.23132610321044922,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.62377500534058,
+        "flow_id": "683591c63b",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.3289511203765869,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.62373399734497,
+        "flow_id": "6aaa406150",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.32889604568481445,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.74385499954224,
+        "flow_id": "7e2bdb9410",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.44904112815856934,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.84782290458679,
+        "flow_id": "04d2577947",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.5529918670654297,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.94395995140076,
+        "flow_id": "683591c63b",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.6491360664367676,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.98262405395508,
+        "flow_id": "6aaa406150",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.6877861022949219,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 68.19996500015259,
+        "flow_id": "7e2bdb9410",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.9051511287689209,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 68.39294004440308,
+        "flow_id": "04d2577947",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.0981090068817139,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 68.58576798439026,
+        "flow_id": "683591c63b",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.2909440994262695,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 68.64700508117676,
+        "flow_id": "6aaa406150",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.3521671295166016,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 69.14546799659729,
+        "flow_id": "7e2bdb9410",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.850654125213623,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 69.22000694274902,
+        "flow_id": "494ffc5565",
+        "direction": "down",
+        "bytes": 49,
+        "delay_since_first_s": 0.030159950256347656,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 69.48033690452576,
+        "flow_id": "04d2577947",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 2.1855058670043945,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 69.83596706390381,
+        "flow_id": "683591c63b",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 2.5411431789398193,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 69.95972204208374,
+        "flow_id": "6aaa406150",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 2.664884090423584,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 71.92605495452881,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.4210519790649414,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 72.34450197219849,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.8394989967346191,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 73.23852896690369,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 1.7335259914398193,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 74.84855389595032,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 3.34355092048645,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 75.55428099632263,
+        "flow_id": "4542917354",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.30429697036743164,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 76.12617087364197,
+        "flow_id": "4542917354",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.8761868476867676,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 78.17643690109253,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 6.671433925628662,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 81.7162458896637,
+        "flow_id": "f6fd6a0263",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.3017079830169678,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 82.22854900360107,
+        "flow_id": "f6fd6a0263",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.8140110969543457,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 85.1510260105133,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 13.646023035049438,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 95.1656699180603,
+        "flow_id": "c56c316579",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.08370184898376465,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 96.02540993690491,
+        "flow_id": "0e3ab86e89",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.12613296508789062,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 100.78750586509705,
+        "flow_id": "60fe44b254",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.10980796813964844,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 130.36128091812134,
+        "flow_id": "2d5859cb21",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.09375500679016113,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 160.8406479358673,
+        "flow_id": "aaf60483e0",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.1057119369506836,
+        "type": "fast_like_retransmission"
+      }
+    ],
+    "zero_window_event_count": 7,
+    "zero_window_events": [
+      {
+        "time_s": 24.28806185722351,
+        "flow_id": "457283c99e",
+        "direction": "down"
+      },
+      {
+        "time_s": 24.293906927108765,
+        "flow_id": "48227daf08",
+        "direction": "down"
+      },
+      {
+        "time_s": 24.294829845428467,
+        "flow_id": "7edee09f94",
+        "direction": "down"
+      },
+      {
+        "time_s": 68.95098495483398,
+        "flow_id": "494ffc5565",
+        "direction": "down"
+      },
+      {
+        "time_s": 104.36843991279602,
+        "flow_id": "9e0d8469f8",
+        "direction": "down"
+      },
+      {
+        "time_s": 104.37502408027649,
+        "flow_id": "71bbc5f3ba",
+        "direction": "down"
+      },
+      {
+        "time_s": 104.37508296966553,
+        "flow_id": "6eba888e56",
+        "direction": "down"
+      }
+    ],
+    "direct_cwnd_observable": false,
+    "congestion_control_signal_count": 57,
+    "congestion_control_signals": [
+      {
+        "time_s": 2.314373016357422,
+        "flow_id": "0a0faec331",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.0316309928894043,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 2.615356922149658,
+        "flow_id": "0283e7d2cc",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.04764199256896973,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 2.757351875305176,
+        "flow_id": "6f6c6fc8a9",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.22809195518493652,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 4.939125061035156,
+        "flow_id": "eec90520fd",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.17296409606933594,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 7.080513954162598,
+        "flow_id": "596a4c4335",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.07278990745544434,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 7.0805840492248535,
+        "flow_id": "165990f069",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.07294917106628418,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 17.13720989227295,
+        "flow_id": "165990f069",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.24382281303405762,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 17.137266874313354,
+        "flow_id": "596a4c4335",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.24385595321655273,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 17.360624074935913,
+        "flow_id": "165990f069",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.4672369956970215,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 17.360624074935913,
+        "flow_id": "165990f069",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 17.360660076141357,
+        "flow_id": "596a4c4335",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.46724915504455566,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 17.360660076141357,
+        "flow_id": "596a4c4335",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 17.85832405090332,
+        "flow_id": "596a4c4335",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.9649131298065186,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 17.858340978622437,
+        "flow_id": "165990f069",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.9649538993835449,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 18.80696201324463,
+        "flow_id": "165990f069",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.9135749340057373,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 18.80699396133423,
+        "flow_id": "596a4c4335",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.9135830402374268,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 29.405319929122925,
+        "flow_id": "47cf9d8287",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.05070900917053223,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 31.300044059753418,
+        "flow_id": "2b6f18f375",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.1452770233154297,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 36.32525396347046,
+        "flow_id": "4d7d99b1cc",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.09411096572875977,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 65.05463886260986,
+        "flow_id": "58fa961571",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.12785983085632324,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 67.52613997459412,
+        "flow_id": "7e2bdb9410",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.23132610321044922,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.62377500534058,
+        "flow_id": "683591c63b",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.3289511203765869,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.62373399734497,
+        "flow_id": "6aaa406150",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.32889604568481445,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.74385499954224,
+        "flow_id": "7e2bdb9410",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.44904112815856934,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.84782290458679,
+        "flow_id": "04d2577947",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.5529918670654297,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.94395995140076,
+        "flow_id": "683591c63b",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.6491360664367676,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 67.98262405395508,
+        "flow_id": "6aaa406150",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.6877861022949219,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 68.19996500015259,
+        "flow_id": "7e2bdb9410",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.9051511287689209,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 68.19996500015259,
+        "flow_id": "7e2bdb9410",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 68.39294004440308,
+        "flow_id": "04d2577947",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.0981090068817139,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 68.58576798439026,
+        "flow_id": "683591c63b",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.2909440994262695,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 68.58576798439026,
+        "flow_id": "683591c63b",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 68.64700508117676,
+        "flow_id": "6aaa406150",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.3521671295166016,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 68.64700508117676,
+        "flow_id": "6aaa406150",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 69.14546799659729,
+        "flow_id": "7e2bdb9410",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 1.850654125213623,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 69.22000694274902,
+        "flow_id": "494ffc5565",
+        "direction": "down",
+        "bytes": 49,
+        "delay_since_first_s": 0.030159950256347656,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 69.48033690452576,
+        "flow_id": "04d2577947",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 2.1855058670043945,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 69.48033690452576,
+        "flow_id": "04d2577947",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 69.83596706390381,
+        "flow_id": "683591c63b",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 2.5411431789398193,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 69.95972204208374,
+        "flow_id": "6aaa406150",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 2.664884090423584,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 71.92605495452881,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.4210519790649414,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 72.34450197219849,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.8394989967346191,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 73.23852896690369,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 1.7335259914398193,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 74.84855389595032,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 3.34355092048645,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 75.55428099632263,
+        "flow_id": "4542917354",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.30429697036743164,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 76.12617087364197,
+        "flow_id": "4542917354",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.8761868476867676,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 78.17643690109253,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 6.671433925628662,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 81.7162458896637,
+        "flow_id": "f6fd6a0263",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.3017079830169678,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 82.22854900360107,
+        "flow_id": "f6fd6a0263",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.8140110969543457,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 85.1510260105133,
+        "flow_id": "c0118da0f8",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 13.646023035049438,
+        "type": "timeout_like_retransmission"
+      },
+      {
+        "time_s": 95.1656699180603,
+        "flow_id": "c56c316579",
+        "direction": "up",
+        "bytes": 0,
+        "delay_since_first_s": 0.08370184898376465,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 96.02540993690491,
+        "flow_id": "0e3ab86e89",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.12613296508789062,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 100.78750586509705,
+        "flow_id": "60fe44b254",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.10980796813964844,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 130.36128091812134,
+        "flow_id": "2d5859cb21",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.09375500679016113,
+        "type": "fast_like_retransmission"
+      },
+      {
+        "time_s": 137.89706993103027,
+        "flow_id": "4542917354",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 147.8932590484619,
+        "flow_id": "f6fd6a0263",
+        "direction": "down",
+        "bytes_in_flight_estimate": 0,
+        "type": "three_duplicate_acks"
+      },
+      {
+        "time_s": 160.8406479358673,
+        "flow_id": "aaf60483e0",
+        "direction": "down",
+        "bytes": 0,
+        "delay_since_first_s": 0.1057119369506836,
+        "type": "fast_like_retransmission"
+      }
+    ]
+  },
+  "capture_log": {
+    "captured": null,
+    "received_by_filter": null,
+    "dropped_by_kernel": null
+  },
+  "kernel_counter_deltas": {
+    "Ip": {
+      "InAddrErrors": 0,
+      "InDiscards": 0,
+      "InHdrErrors": 0,
+      "OutDiscards": 0,
+      "OutNoRoutes": 0
+    },
+    "Tcp": {
+      "InErrs": 0,
+      "OutRsts": 0,
+      "RetransSegs": 0
+    },
+    "TcpExt": {
+      "TCPBacklogDrop": 0,
+      "TCPFastRetrans": 0,
+      "TCPFromZeroWindowAdv": 0,
+      "TCPLossProbes": 0,
+      "TCPRcvQDrop": 0,
+      "TCPTimeouts": 0,
+      "TCPToZeroWindowAdv": 0,
+      "TCPWantZeroWindowAdv": 0,
+      "TCPZeroWindowDrop": 0
+    }
+  },
+  "interface_counter_deltas": {
+    "br-lan": {
+      "rx_bytes": 567484,
+      "rx_dropped": 0,
+      "rx_errors": 0,
+      "rx_packets": 2299,
+      "tx_bytes": 284459,
+      "tx_dropped": 0,
+      "tx_errors": 0,
+      "tx_packets": 1436
+    },
+    "ccmni3": {
+      "rx_bytes": 978569,
+      "rx_dropped": 0,
+      "rx_errors": 0,
+      "rx_packets": 2363,
+      "tx_bytes": 639128,
+      "tx_dropped": 0,
+      "tx_errors": 0,
+      "tx_packets": 3272
+    },
+    "rai0": {
+      "rx_bytes": 840352,
+      "rx_dropped": 1795,
+      "rx_errors": 1795,
+      "rx_packets": 3809,
+      "tx_bytes": 964064,
+      "tx_dropped": 447,
+      "tx_errors": 447,
+      "tx_packets": 2371
+    }
+  },
+  "qdisc_drop_deltas": {
+    "br-lan": 0,
+    "ccmni3": 0,
+    "rai0": 0
+  }
+}

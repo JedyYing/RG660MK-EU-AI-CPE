@@ -1,0 +1,6 @@
+device_tree_dr_mode=otg
+device_tree_maximum_speed=super-speed-plus
+runtime_role=unavailable
+host_bus_speeds=none
+RESULT=BLOCKED
+DECISION=Controller capability is declared, but active Host plus >=5000M is not proven. Do not switch role blindly. Establish RJ45/serial management and confirm carrier-board routing first.

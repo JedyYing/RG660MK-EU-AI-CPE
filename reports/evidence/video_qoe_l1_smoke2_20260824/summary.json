@@ -1,0 +1,223 @@
+{
+  "metadata": {
+    "started_at": "2026-08-25T09:57:50+08:00",
+    "duration_requested_s": 5,
+    "interval_s": 1,
+    "target_mac": "e2:c6:40:26:70:5d",
+    "target_ip": "192.168.1.217",
+    "hostname": "HONOR-90",
+    "wifi_interface": "rai0",
+    "associated_client_count_start": 1,
+    "ping_target": "223.5.5.5",
+    "capture_snaplen": 128,
+    "associated_client_count_end": 1,
+    "target_still_associated": true
+  },
+  "station": {
+    "sample_rows": 4,
+    "duration_s": 4.440000000002328,
+    "actual_interval_s": {
+      "count": 3,
+      "mean": 1.480000000000776,
+      "min": 1.4700000000011642,
+      "max": 1.4900000000052387,
+      "p5": 1.4710000000006402,
+      "p50": 1.4799999999959255,
+      "p95": 1.4890000000043073,
+      "stddev": 0.008164965810940682,
+      "cv": 0.005516868791173244
+    },
+    "downlink_mbps": {
+      "count": 3,
+      "mean": 0.0009786481180532427,
+      "min": 0.0005224489795914231,
+      "max": 0.0012108108108141444,
+      "p5": 0.0005904725380076969,
+      "p50": 0.0012026845637541608,
+      "p95": 0.0012099981861081461,
+      "stddev": 0.0003225985631532373,
+      "cv": 0.32963693201082367
+    },
+    "uplink_mbps": {
+      "count": 3,
+      "mean": 0.0012096762424657003,
+      "min": 0.0008707482993190384,
+      "max": 0.0013837837837875934,
+      "p5": 0.0009211231338161815,
+      "p50": 0.0013744966442904695,
+      "p95": 0.001382855069837881,
+      "stddev": 0.0002396882360125753,
+      "cv": 0.19814246787554937
+    },
+    "wan_downlink_mbps": {
+      "count": 3,
+      "mean": 0.0014140268744282838,
+      "min": 0.0009081081081106082,
+      "max": 0.001980952380950812,
+      "p5": 0.0009525993107218904,
+      "p50": 0.001353020134223431,
+      "p95": 0.0019181591562780738,
+      "stddev": 0.00044010610478559465,
+      "cv": 0.3112430978113746
+    },
+    "downlink_5s_mbps": {
+      "count": 0,
+      "mean": null,
+      "min": null,
+      "max": null,
+      "p5": null,
+      "p50": null,
+      "p95": null,
+      "stddev": null,
+      "cv": null
+    },
+    "signal_dbm": {
+      "count": 4,
+      "mean": -70.0,
+      "min": -70.0,
+      "max": -70.0,
+      "p5": -70.0,
+      "p50": -70.0,
+      "p95": -70.0,
+      "stddev": 0.0,
+      "cv": null
+    },
+    "station_missing_samples": 0,
+    "counter_deltas": {
+      "sta_tx_retries": 0,
+      "sta_tx_failed": 0,
+      "wifi_tx_packets": 5,
+      "wifi_rx_packets": 13,
+      "wifi_tx_dropped": 0,
+      "wifi_rx_dropped": 10,
+      "wifi_tx_errors": 0,
+      "wifi_rx_errors": 10,
+      "wan_rx_packets": 8,
+      "wan_tx_packets": 6,
+      "wan_rx_dropped": 0,
+      "wan_tx_dropped": 0,
+      "wan_rx_errors": 0,
+      "wan_tx_errors": 0
+    }
+  },
+  "ip_probe": {
+    "transmitted": 5,
+    "received": 5,
+    "loss_percent": 0.0,
+    "rtt_ms": {
+      "count": 5,
+      "mean": 65.94,
+      "min": 45.4,
+      "max": 89.1,
+      "p5": 45.92,
+      "p50": 58.5,
+      "p95": 89.02,
+      "stddev": 19.253529546553274,
+      "cv": 0.29198558608664354,
+      "successive_jitter_ms": 27.0
+    },
+    "raw_summary_found": true
+  },
+  "pcap": {
+    "raw_packets": 0,
+    "parsed_target_ip_packets": 0,
+    "duplicate_tap_packets_removed": 0,
+    "duration_s": 0.0,
+    "protocol": {},
+    "tcp_flow_count": 0,
+    "tcp_data_packets": {
+      "up": 0,
+      "down": 0
+    },
+    "tcp_rtt_ms": {
+      "count": 0,
+      "mean": null,
+      "min": null,
+      "max": null,
+      "p5": null,
+      "p50": null,
+      "p95": null,
+      "stddev": null,
+      "cv": null,
+      "successive_jitter_ms": null,
+      "method": "tcp_ack_or_handshake",
+      "timestamp_sample_count": 0,
+      "ack_sample_count": 0
+    },
+    "target_retransmission_count": 0,
+    "target_retransmission_ratio": null,
+    "retransmission_events": [],
+    "zero_window_event_count": 0,
+    "zero_window_events": [],
+    "direct_cwnd_observable": false,
+    "congestion_control_signal_count": 0,
+    "congestion_control_signals": []
+  },
+  "capture_log": {
+    "captured": null,
+    "received_by_filter": null,
+    "dropped_by_kernel": null
+  },
+  "kernel_counter_deltas": {
+    "Ip": {
+      "InAddrErrors": 0,
+      "InDiscards": 0,
+      "InHdrErrors": 0,
+      "OutDiscards": 0,
+      "OutNoRoutes": 0
+    },
+    "Tcp": {
+      "InErrs": 0,
+      "OutRsts": 0,
+      "RetransSegs": 0
+    },
+    "TcpExt": {
+      "TCPBacklogDrop": 0,
+      "TCPFastRetrans": 0,
+      "TCPFromZeroWindowAdv": 0,
+      "TCPLossProbes": 0,
+      "TCPRcvQDrop": 0,
+      "TCPTimeouts": 0,
+      "TCPToZeroWindowAdv": 0,
+      "TCPWantZeroWindowAdv": 0,
+      "TCPZeroWindowDrop": 0
+    }
+  },
+  "interface_counter_deltas": {
+    "br-lan": {
+      "rx_bytes": 232,
+      "rx_dropped": 0,
+      "rx_errors": 0,
+      "rx_packets": 3,
+      "tx_bytes": 564,
+      "tx_dropped": 0,
+      "tx_errors": 0,
+      "tx_packets": 4
+    },
+    "ccmni3": {
+      "rx_bytes": 1052,
+      "rx_dropped": 0,
+      "rx_errors": 0,
+      "rx_packets": 10,
+      "tx_bytes": 694,
+      "tx_dropped": 0,
+      "tx_errors": 0,
+      "tx_packets": 8
+    },
+    "rai0": {
+      "rx_bytes": 672,
+      "rx_dropped": 12,
+      "rx_errors": 12,
+      "rx_packets": 13,
+      "tx_bytes": 544,
+      "tx_dropped": 0,
+      "tx_errors": 0,
+      "tx_packets": 6
+    }
+  },
+  "qdisc_drop_deltas": {
+    "br-lan": 0,
+    "ccmni3": 0,
+    "rai0": 0
+  }
+}

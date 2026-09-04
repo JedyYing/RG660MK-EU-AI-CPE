@@ -1,0 +1,229 @@
+===== SYSTEM =====
+uid=0(root) gid=0(root) groups=1004,1007,1011,1015,1028,3001,3002,3003,3006 context=system_u:system_r:init_t
+Linux OpenWrt 5.15.134 #0 SMP Mon Oct 9 21:45:35 2023 aarch64 GNU/Linux
+aarch64
+NAME="OpenWrt"
+VERSION="23.05.0"
+ID="openwrt"
+ID_LIKE="lede openwrt"
+PRETTY_NAME="OpenWrt 23.05.0"
+VERSION_ID="23.05.0"
+HOME_URL="https://openwrt.org/"
+BUG_URL="https://bugs.openwrt.org/"
+SUPPORT_URL="https://forum.openwrt.org/"
+BUILD_ID="r23497-6637af95aa"
+OPENWRT_BOARD="gem6xxx/evb6988_cpe_mt7992_emmc"
+OPENWRT_ARCH="aarch64_cortex-a55_neon-vfpv4"
+OPENWRT_TAINTS="no-all busybox"
+OPENWRT_DEVICE_MANUFACTURER="OpenWrt"
+OPENWRT_DEVICE_MANUFACTURER_URL="https://openwrt.org/"
+OPENWRT_DEVICE_PRODUCT="Generic"
+OPENWRT_DEVICE_REVISION="v0"
+OPENWRT_RELEASE="OpenWrt 23.05.0 r23497-6637af95aa"
+Permissive
+===== USB DEVICE TREE =====
+--- /sys/firmware/devicetree/base/usb-phy
+status=disabled
+compatible=mediatek,fpga-u3phy
+--- /sys/firmware/devicetree/base/usb-phy0@115a0000
+compatible=mediatek,xsphy
+--- /sys/firmware/devicetree/base/usb@11591000
+dr_mode=otg
+maximum-speed=super-speed-plus
+compatible=mediatek,mtu3
+--- /proc/device-tree/usb-phy
+status=disabled
+compatible=mediatek,fpga-u3phy
+--- /proc/device-tree/usb-phy0@115a0000
+compatible=mediatek,xsphy
+--- /proc/device-tree/usb@11591000
+dr_mode=otg
+maximum-speed=super-speed-plus
+compatible=mediatek,mtu3
+===== USB ROLE =====
+===== USB HOST BUSES =====
+===== ENUMERATED USB DEVICES =====
+===== UDC/GADGET =====
+--- /sys/class/udc/11591000.usb
+state=configured
+current_speed=high-speed
+maximum_speed=super-speed-plus
+===== CONTROLLERS =====
+/sys/bus/platform/drivers/disable_unused/disable_unused:disable-unused-pd-ssusb_u3phy
+/sys/bus/platform/drivers/disable_unused/disable_unused:disable-unused-pd-ssusb_u2phy
+/sys/bus/platform/drivers/disable_unused/disable_unused:disable-unused-pd-ssusb_top
+/sys/bus/platform/drivers/clk-mt6988-usb_d/11591000.syscon
+/sys/bus/platform/drivers/clk-mt6988-usb_sif/11593e00.syscon
+/sys/bus/platform/drivers/mtu3/11591000.usb
+/sys/bus/platform/drivers/mtk-xsphy/115ab000.usb-phy0
+===== KERNEL LOG =====
+[    5.601623] swapper/0: probe of disable_unused:disable-unused-pd-ssusb_top returned 0 after 72 usecs
+[    5.601693] swapper/0: probe of disable_unused:disable-unused-pd-ssusb_u2phy returned 0 after 61 usecs
+[    5.602396] swapper/0: probe of disable_unused:disable-unused-pd-ssusb_u3phy returned 0 after 59 usecs
+[   39.117141] kmodloader: calling  init_module+0x0/0x1000 [usb_net] @ 2068
+[   39.119408] kmodloader: 2.31 U_ETHER LOG,gether_init, MTK_USB_NET_HWNAT_SUPPORT
+[   39.120335] kmodloader: initcall init_module+0x0/0x1000 [usb_net] returned 0 after 3099 usecs
+[   40.165776] S10usb.init: Start USB
+[   40.224362] S10usb.init: Start adbd_usb
+[   40.240527] S10usb.init: usb.init start_service() done
+[   40.378223] adbd_usb: read descriptors
+[   40.378238] adbd_usb: read strings
+[   41.263751] restart_usb.sh: [usb_init] Force USB Device Mode
+[   41.263872] restart_usb.sh: mtu3 11591000.usb: store mode 3 op_mode 1
+[   41.263884] restart_usb.sh: mtu3 11591000.usb: ssusb_set_mode device
+[   41.264109] kworker/1:1: mtu3 11591000.usb: ssusb_mode_sw_work_v2: none to device
+[   41.264126] kworker/1:1: mtu3 11591000.usb: port on (6)
+[   41.264192] kworker/1:1: mtu3 11591000.usb: ssusb_clks_enable
+[   41.265047] kworker/1:1: mtk-xsphy 115ab000.usb-phy0: u2_phy_instance_power_on(0)
+[   41.266482] kworker/1:1: mtk-xsphy 115ab000.usb-phy0: u3_phy_instance_power_on(1)
+[   41.266502] kworker/1:1: mtk-xsphy 115ab000.usb-phy0: u2_phy_instance_set_mode mode(6), submode(0)
+[   41.266641] kworker/1:1: mtu3 11591000.usb: disable accept_lgo
+[   42.266254] restart_usb.sh: 1.01 RNDIS LOG,rndis_bind,
+[   42.267324] restart_usb.sh: rndis0: HOST MAC xx:xx:xx:xx:xx:f4
+[   42.267370] restart_usb.sh: rndis0: MAC xx:xx:xx:xx:xx:a2
+[   42.267373] restart_usb.sh: 2.31 rndis0 U_ETHER LOG,gether_register_netdev, hwnat_register()
+[   42.268444] restart_usb.sh: ppe_dev_reg_handler, (3)rndis0 - succeed. needed_headroom:18
+[   42.268449] restart_usb.sh: 2.31 rndis0 U_ETHER LOG,hwnat_register, hwnat_link_num=4
+[   42.269445] restart_usb.sh: configfs-gadget gadget: RNDIS: super speed IN/ep1in OUT/ep1out NOTIFY/ep2in
+[   42.269490] restart_usb.sh: mtu3 11591000.usb: USB3_EN = 1
+[   42.269495] restart_usb.sh: mtu3 11591000.usb: gadget (super-speed-plus) pullup D+
+[   42.269499] restart_usb.sh: mtu3 11591000.usb: remove cdp-block property
+[   42.270237] restart_usb.sh: usb.init done
+[   42.531422] irq/260-1159100: mtu3 11591000.usb: === LINK[1] ===
+[   42.531443] irq/260-1159100: mtu3 11591000.usb: gadget RESET
+[   42.648693] irq/260-1159100: mtu3 11591000.usb: gadget RESET
+[   42.774926] irq/260-1159100: mtu3 11591000.usb: mtu3_ep_enable ep2in maxp:8 interval:9 burst:0 slot:0
+[   42.775943] irq/260-1159100: 2.31 rndis0 U_ETHER LOG,gether_connect, speed=3 (USB_SPEED_SUPER=5)
+[   42.777050] irq/260-1159100: mtu3 11591000.usb: mtu3_ep_enable ep1in maxp:512 interval:0 burst:0 slot:2
+[   42.777064] irq/260-1159100: mtu3 11591000.usb: mtu3_ep_enable ep1out maxp:512 interval:0 burst:0 slot:2
+[   42.781091] irq/260-1159100: mtu3 11591000.usb: mtu3_ep_enable ep2out maxp:512 interval:0 burst:0 slot:2
+[   42.781109] irq/260-1159100: mtu3 11591000.usb: mtu3_ep_enable ep3in maxp:512 interval:0 burst:0 slot:2
+[   42.781133] irq/260-1159100: mtu3 11591000.usb: mtu3_ep_enable ep5in maxp:10 interval:9 burst:0 slot:0
+[   42.781148] irq/260-1159100: mtu3 11591000.usb: mtu3_ep_enable ep4in maxp:512 interval:0 burst:0 slot:2
+[   42.781162] irq/260-1159100: mtu3 11591000.usb: mtu3_ep_enable ep3out maxp:512 interval:0 burst:0 slot:2
+[   42.781181] irq/260-1159100: mtu3 11591000.usb: mtu3_ep_enable ep7in maxp:10 interval:9 burst:0 slot:0
+[   42.781195] irq/260-1159100: mtu3 11591000.usb: mtu3_ep_enable ep6in maxp:512 interval:0 burst:0 slot:2
+[   42.781208] irq/260-1159100: mtu3 11591000.usb: mtu3_ep_enable ep4out maxp:512 interval:0 burst:0 slot:2
+[   50.848909] hostapd: WiFi@NOTICE.AP,bssinfo_feature_decision() 672: wdev(0) is legacy bss, func_idx=0, ROLE=0
+[   51.355439] hostapd: WiFi@NOTICE.AP,bssinfo_feature_decision() 672: wdev(0) is legacy bss, func_idx=0, ROLE=0
+[   52.570490] hostapd: WiFi@NOTICE.AP,bssinfo_feature_decision() 672: wdev(0) is legacy bss, func_idx=0, ROLE=0
+[   52.867795] hostapd: WiFi@NOTICE.AP,bssinfo_feature_decision() 672: wdev(0) is legacy bss, func_idx=0, ROLE=0
+[   53.423343] wapp: 7992@NOTICE.PROTO,BN1,cfg80211_drv_vndr_easymesh() 768: bandIdx = 1 ,DevOwnRole 0x0
+[   53.423425] wapp: 7992@NOTICE.PROTO,BN1,cfg80211_drv_vndr_easymesh() 768: bandIdx = 1 ,DevOwnRole 0x20
+[   53.425970] wapp: 7992@NOTICE.PROTO,BN0,cfg80211_drv_vndr_easymesh() 768: bandIdx = 0 ,DevOwnRole 0x0
+[   53.426046] wapp: 7992@NOTICE.PROTO,BN0,cfg80211_drv_vndr_easymesh() 768: bandIdx = 0 ,DevOwnRole 0x20
+[   55.720149] wapp: 7992@NOTICE.PROTO,BN1,cfg80211_drv_vndr_easymesh() 768: bandIdx = 1 ,DevOwnRole 0x0
+[   55.720224] wapp: 7992@NOTICE.PROTO,BN1,cfg80211_drv_vndr_easymesh() 768: bandIdx = 1 ,DevOwnRole 0x20
+[   55.723125] wapp: 7992@NOTICE.PROTO,BN0,cfg80211_drv_vndr_easymesh() 768: bandIdx = 0 ,DevOwnRole 0x0
+[   55.723200] wapp: 7992@NOTICE.PROTO,BN0,cfg80211_drv_vndr_easymesh() 768: bandIdx = 0 ,DevOwnRole 0x20
+===== NETWORK/STORAGE/RESOURCE =====
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0             UP             
+eth1             DOWN           
+ccmni0           DOWN           
+ccmni1           DOWN           
+ccmni2           UNKNOWN        10.65.86.54/29 2408:840d:ab20:4fc3:18cf:26d:fb4:8eb8/128 
+ccmni3           DOWN           
+ccmni4           DOWN           
+ccmni5           DOWN           
+ccmni6           DOWN           
+ccmni7           DOWN           
+ccmni8           DOWN           
+ccmni9           DOWN           
+ccmni10          DOWN           
+ccmni11          DOWN           
+ccmni12          DOWN           
+ccmni13          DOWN           
+ccmni14          DOWN           
+ccmni15          DOWN           
+ccmni16          DOWN           
+ccmni17          DOWN           
+ccmni18          DOWN           
+ccmni19          DOWN           
+ccmni20          DOWN           
+tunl0@NONE       DOWN           
+ip_vti0@NONE     DOWN           
+ip6tnl0@NONE     DOWN           
+gre0@NONE        DOWN           
+gretap0@NONE     DOWN           
+erspan0@NONE     DOWN           
+ip6gre0@NONE     DOWN           
+ra0              UP             
+rai0             UP             
+rndis0           DOWN           
+br-lan           UP             192.168.1.1/24 2408:840d:ab20:4fc3::1/64 fd7d:c840:7681::1/60 fe80::e868:e8ff:fe53:6a31/64 
+apcli0           DOWN           
+ra1              DOWN           
+apclii0          DOWN           
+default via 10.65.86.53 dev ccmni2 proto static src 10.65.86.54 
+10.65.86.48/29 dev ccmni2 proto kernel scope link src 10.65.86.54 
+192.168.1.0/24 dev br-lan proto kernel scope link src 192.168.1.1 
+0:	from all lookup local
+32766:	from all lookup main
+32767:	from all lookup default
+Filesystem           Type            Size      Used Available Use% Mounted on
+/dev/root            squashfs       41.8M     41.8M         0 100% /rom
+/dev/mmcblk0p23      ext4           21.4M    598.0K     19.1M   3% /overlay
+overlayfs:/overlay   overlay        21.4M    598.0K     19.1M   3% /
+/dev/block/nvcfg     ext4           10.1M     47.0K      9.2M   0% /mnt/vendor/nvcfg
+/dev/block/nvdata    ext4           65.9M     14.4M     46.2M  24% /mnt/vendor/nvdata
+/dev/block/protect1  ext4            6.4M    328.0K      5.6M   5% /mnt/vendor/protect_f
+/dev/block/protect2  ext4            6.4M    178.0K      5.7M   3% /mnt/vendor/protect_s
+/dev/block/mcf       ext4            6.4M      2.4M      3.5M  41% /vendor/etc/mdota
+/dev/block/user_data ext4            2.7G    588.5M      2.0G  22% /data
+MemTotal:        1492444 kB
+MemFree:          724072 kB
+MemAvailable:     959496 kB
+Buffers:           25920 kB
+Cached:           194008 kB
+SwapCached:            0 kB
+Active:           300140 kB
+Inactive:         155080 kB
+Active(anon):     235468 kB
+Inactive(anon):      192 kB
+Active(file):      64672 kB
+Inactive(file):   154888 kB
+Unevictable:         368 kB
+Mlocked:               0 kB
+SwapTotal:             0 kB
+SwapFree:              0 kB
+Dirty:                80 kB
+Writeback:             0 kB
+AnonPages:        235624 kB
+Mapped:            50488 kB
+processor	: 0
+BogoMIPS	: 26.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x2
+CPU part	: 0xd05
+CPU revision	: 0
+
+processor	: 1
+BogoMIPS	: 26.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x2
+CPU part	: 0xd05
+CPU revision	: 0
+
+processor	: 2
+BogoMIPS	: 26.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x2
+CPU part	: 0xd05
+CPU revision	: 0
+
+processor	: 3
+BogoMIPS	: 26.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x2
+CPU part	: 0xd05
+CPU revision	: 0
+

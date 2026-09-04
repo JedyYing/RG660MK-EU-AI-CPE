@@ -1,0 +1,74 @@
+{
+  "listen": "127.0.0.1",
+  "port": 8765,
+  "request_timeout_ms": 15000,
+  "max_request_bytes": 2097152,
+  "auth_token_file": "/data/ai_cpe/demo/data/api-token",
+  "media_roots": [
+    "/data/ai_cpe/demo/media"
+  ],
+  "runtime": {
+    "backend": "command",
+    "enabled": false,
+    "command": [
+      "/data/ai_cpe/demo/ai_runtime/vision_runner"
+    ],
+    "max_output_bytes": 2097152,
+    "reason": "Enable only after Gate 0 and Gate 3 pass and the Hailo runner is installed"
+  },
+  "models": {
+    "detect": {
+      "family": "yolo",
+      "path": "/data/ai_cpe/demo/ai_models/yolo_detect.hef"
+    },
+    "face_detect": {
+      "family": "yolo-face",
+      "path": "/data/ai_cpe/demo/ai_models/yolo_face.hef"
+    },
+    "face_embed": {
+      "family": "arcface-or-mobilefacenet",
+      "path": "/data/ai_cpe/demo/ai_models/face_embed.hef"
+    },
+    "pose": {
+      "family": "yolo-pose-coco17",
+      "path": "/data/ai_cpe/demo/ai_models/yolo_pose.hef"
+    },
+    "asr": null,
+    "kws": null,
+    "tts": null
+  },
+  "face_recognition": {
+    "gallery_path": "/data/ai_cpe/demo/data/face-gallery.json",
+    "similarity_threshold": 0.52,
+    "max_identities": 100,
+    "max_templates_per_identity": 5
+  },
+  "posture": {
+    "keypoint_confidence": 0.35,
+    "sitting_hip_angle_deg": [
+      55,
+      135
+    ],
+    "sitting_knee_angle_deg": [
+      45,
+      135
+    ],
+    "standing_min_angle_deg": 145
+  },
+  "resource_limits": {
+    "max_parallel_inference": 1,
+    "max_http_clients": 4,
+    "max_input_file_bytes": 20971520,
+    "staging_dir": "/data/ai_cpe/demo/run/staging",
+    "max_camera_width": 1280,
+    "max_camera_height": 720,
+    "max_camera_fps": 15,
+    "memory_high_mb": 420,
+    "memory_max_mb": 520
+  },
+  "fallback": {
+    "keep_hermes_running": true,
+    "keep_cpe_network_untouched": true,
+    "cloud_vision_requires_explicit_enable": true
+  }
+}

@@ -1,0 +1,115 @@
+===== ARCH/VERSION =====
+aarch64
+Hermes Agent v0.19.0 (2026.7.20)
+Install directory: /data/ai_cpe/hermes/venv/lib/python3.12/site-packages
+Install method: pip
+Python: 3.12.14
+OpenAI SDK: 2.24.0
+Up to date
+===== PROCESS/GATEWAY =====
+ 8694 root      3116 S    /bin/sh -c export HOME=/data/ai_cpe/hermes/home HERMES_HOME=/data/ai_cpe/hermes/.hermes PATH=/data/ai_cpe
+12701 root      324m S    {hermes} /data/ai_cpe/hermes/venv/bin/python3.12 /data/ai_cpe/hermes/venv/bin/hermes gateway run
+✓ Gateway is running (PID: 12701)
+  (Running manually, not as a system service)
+
+To install as a service:
+  hermes gateway install
+  sudo hermes gateway install --system
+===== CONFIG SUMMARY (NO SECRET VALUES) =====
+
+[36m┌─────────────────────────────────────────────────────────┐[0m
+[36m│                 ⚕ Hermes Agent Status                  │[0m
+[36m└─────────────────────────────────────────────────────────┘[0m
+
+[36m[1m◆ Environment[0m
+  Project:      /data/ai_cpe/hermes/venv/lib/python3.12/site-packages
+  Python:       3.12.14
+  .env file:    [32m✓[0m exists
+  Model:        deepseek-v4-pro
+  Provider:     custom:phicotek
+
+[36m[1m◆ API Keys[0m
+  OpenRouter    [31m✗[0m [2m(not set)[0m
+  OpenAI        [31m✗[0m [2m(not set)[0m
+  Google / Gemini  [31m✗[0m [2m(not set)[0m
+  DeepSeek      [31m✗[0m [2m(not set)[0m
+  xAI / Grok    [31m✗[0m [2m(not set)[0m
+  NVIDIA NIM    [31m✗[0m [2m(not set)[0m
+  Z.AI / GLM    [31m✗[0m [2m(not set)[0m
+  Kimi          [31m✗[0m [2m(not set)[0m
+  StepFun Step Plan  [31m✗[0m [2m(not set)[0m
+  MiniMax       [31m✗[0m [2m(not set)[0m
+  MiniMax-CN    [31m✗[0m [2m(not set)[0m
+  DeepInfra     [31m✗[0m [2m(not set)[0m
+  Firecrawl     [31m✗[0m [2m(not set)[0m
+  Tavily        [31m✗[0m [2m(not set)[0m
+  Browser Use   [31m✗[0m [2m(not set)[0m
+  Browserbase   [31m✗[0m [2m(not set)[0m
+  FAL           [31m✗[0m [2m(not set)[0m
+  ElevenLabs    [31m✗[0m [2m(not set)[0m
+  GitHub        [31m✗[0m [2m(not set)[0m
+  Anthropic     [31m✗[0m [2m(not set)[0m
+
+[36m[1m◆ Auth Providers[0m
+  Nous Portal   [31m✗[0m not logged in (run: hermes portal)
+  OpenAI Codex  [31m✗[0m not logged in (run: hermes model)
+    Auth file:  /data/ai_cpe/hermes/.hermes/auth.json
+    Error:      No Codex credentials stored. Run `hermes auth` to authenticate.
+  Qwen OAuth    [31m✗[0m not logged in (run: qwen auth qwen-oauth)
+    Auth file:  /data/ai_cpe/hermes/home/.qwen/oauth_creds.json
+    Error:      Qwen CLI credentials not found. Run 'qwen auth qwen-oauth' first.
+  MiniMax OAuth  [31m✗[0m not logged in (run: hermes auth add minimax-oauth)
+  xAI OAuth     [31m✗[0m not logged in (run: hermes auth add xai-oauth)
+    Auth file:  /data/ai_cpe/hermes/.hermes/auth.json
+    Error:      No xAI OAuth credentials stored. Select xAI Grok OAuth (SuperGrok / Premium+) in `hermes model`.
+
+[36m[1m◆ API-Key Providers[0m
+  Z.AI / GLM       [31m✗[0m not configured (run: hermes model)
+  Kimi / Moonshot  [31m✗[0m not configured (run: hermes model)
+  StepFun Step Plan [31m✗[0m not configured (run: hermes model)
+  MiniMax          [31m✗[0m not configured (run: hermes model)
+  MiniMax (China)  [31m✗[0m not configured (run: hermes model)
+  DeepInfra        [31m✗[0m not configured (run: hermes model)
+
+[36m[1m◆ Terminal Backend[0m
+  Backend:      local
+  Sudo:         [31m✗[0m disabled
+
+[36m[1m◆ Messaging Platforms[0m
+  Telegram      [31m✗[0m not configured
+  Discord       [31m✗[0m not configured
+  WhatsApp      [31m✗[0m not configured
+  Signal        [31m✗[0m not configured
+  Slack         [31m✗[0m not configured
+  Email         [31m✗[0m not configured
+  SMS           [31m✗[0m not configured
+  DingTalk      [31m✗[0m not configured
+  Feishu        [32m✓[0m configured
+  WeCom         [31m✗[0m not configured
+  WeCom Callback  [31m✗[0m not configured
+  Weixin        [31m✗[0m not configured
+  BlueBubbles   [31m✗[0m not configured
+  QQBot         [31m✗[0m not configured
+  Yuanbao       [31m✗[0m not configured
+
+[36m[1m◆ Gateway Service[0m
+  Status:       [32m✓[0m running
+  Manager:      manual process
+  PID(s):       12701
+
+[36m[1m◆ Scheduled Jobs[0m
+  Jobs:         0
+
+[36m[1m◆ Sessions[0m
+  Active:       1 session(s)
+
+[2m────────────────────────────────────────────────────────────[0m
+[2m  Run 'hermes doctor' for detailed diagnostics[0m
+[2m  Run 'hermes setup' to configure[0m
+
+===== RESOURCE BEFORE =====
+MemTotal:        1492444 kB
+MemAvailable:     837192 kB
+SwapTotal:             0 kB
+API call failed after 3 retries: HTTP 429: 额度超限[TOTAL 总额]，累计 300.9552584 超上限 300.0000 ￥
+cli_rc=0 latency_s=24

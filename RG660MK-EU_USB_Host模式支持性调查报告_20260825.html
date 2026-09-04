@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>RG660MK-EU USB Host 模式支持性调查报告</title>
+<style>
+@page { size: A4; margin: 17mm 16mm 18mm 16mm; }
+* { box-sizing: border-box; }
+body { font-family: "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; color:#172033; font-size:10.2pt; line-height:1.58; margin:0; }
+h1,h2,h3 { color:#102a43; page-break-after:avoid; }
+h1 { font-size:25pt; line-height:1.25; margin:0 0 10mm; }
+h2 { font-size:16pt; border-bottom:2px solid #2f6f9f; padding-bottom:2mm; margin:8mm 0 4mm; }
+h3 { font-size:12.5pt; margin:5mm 0 2mm; }
+p { margin:2mm 0; }
+ul,ol { margin:2mm 0 3mm 6mm; padding-left:5mm; }
+li { margin:1mm 0; }
+table { border-collapse:collapse; width:100%; margin:3mm 0 5mm; font-size:9.1pt; page-break-inside:auto; }
+th,td { border:1px solid #9fb3c8; padding:2.1mm 2.4mm; vertical-align:top; }
+th { background:#eaf2f8; color:#102a43; font-weight:700; }
+tr { page-break-inside:avoid; }
+code,pre { font-family:"Noto Sans Mono CJK SC", "DejaVu Sans Mono", monospace; }
+code { background:#eef2f6; padding:0 .8mm; border-radius:1mm; }
+pre { white-space:pre-wrap; overflow-wrap:anywhere; background:#f5f7fa; border-left:3px solid #486581; padding:3mm; font-size:8.2pt; line-height:1.45; margin:2mm 0 4mm; page-break-inside:avoid; }
+a { color:#0b5cab; text-decoration:none; overflow-wrap:anywhere; }
+.cover { min-height:252mm; display:flex; flex-direction:column; justify-content:center; page-break-after:always; }
+.cover .tag { color:#2f6f9f; font-size:12pt; letter-spacing:1px; margin-bottom:5mm; }
+.cover .verdict { border-left:5px solid #137333; background:#e6f4ea; padding:5mm; margin:8mm 0; font-size:13pt; font-weight:700; }
+.cover .meta { margin-top:12mm; color:#486581; }
+.callout { border-left:4px solid #f0a202; background:#fff8e6; padding:3mm 4mm; margin:4mm 0; }
+.pass { color:#137333; font-weight:700; }
+.blocked { color:#b06000; font-weight:700; }
+.no { color:#b3261e; font-weight:700; }
+.small { font-size:8.5pt; color:#52667a; }
+.badge { display:inline-block; padding:.4mm 2mm; border-radius:3mm; font-size:8pt; font-weight:700; background:#e6f4ea; color:#137333; }
+.badge-warn { background:#fff3cd; color:#8a5700; }
+.badge-no { background:#fce8e6; color:#b3261e; }
+.break-before { page-break-before:always; }
+.toc p { margin:1.2mm 0; }
+.footer-note { border-top:1px solid #bcccdc; padding-top:3mm; margin-top:8mm; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="tag">实机只读调查 · 证据分层判定</div>
+  <h1>RG660MK-EU<br>USB Host 模式支持性调查报告</h1>
+  <div class="verdict">结论：本机所连接 RG660MK-EU 的控制器、内核和板级设备树具备 USB Host/双角色支持，置信度高；但采样时它明确运行在 USB Device 模式，Host 运行态及外设稳定性尚未实测通过。</div>
+  <table>
+    <tr><th>问题口径</th><th>判定</th></tr>
+    <tr><td>“该模组/当前固件是否具备 USB Host 能力？”</td><td class="pass">是（高置信）</td></tr>
+    <tr><td>“当前 PC—模组连接中，模组是否是 USB Host？”</td><td class="no">否；PC 是 Host，模组是 Device</td></tr>
+    <tr><td>“当前外露 Type-C/USB 口能否直接、稳定地带 USB 算力棒？”</td><td class="blocked">尚未证明（BLOCKED）</td></tr>
+  </table>
+  <div class="meta">
+    <p>被测设备：Quectel RG660MK-EU，USB VID:PID <code>2c7c:0710</code></p>
+    <p>设备序列号：<code>0123456789ABCDEF</code></p>
+    <p>调查日期：2026-08-25（CST, UTC+08:00）</p>
+    <p>输出目录：<code>/home/jedyying/Documents/RG660MKEU_AI_CPE</code></p>
+  </div>
+</section>
+
+<section class="toc">
+<h2>目录</h2>
+<p>1. 执行摘要与最终判定</p>
+<p>2. 调查对象、范围与方法</p>
+<p>3. 证据矩阵</p>
+<p>4. 关键证据分析</p>
+<p>5. 反证、矛盾与未决风险</p>
+<p>6. 严谨判定逻辑</p>
+<p>7. 安全验证方案与验收标准</p>
+<p>8. 原始证据摘录与复核命令</p>
+<p>9. 资料来源与证据边界</p>
+</section>
+
+<h2>1. 执行摘要与最终判定</h2>
+<h3>1.1 一句话结论</h3>
+<p><strong>RG660MK-EU 在本机现有固件和载板描述下支持 USB Host/USB 双角色能力；但当前端口处于 Device 模式，不能据此宣称 USB Host 已经可用，更不能宣称 USB 算力棒链路已通过。</strong></p>
+
+<h3>1.2 为什么可以判定“具备 Host 能力”</h3>
+<ol>
+  <li>被测模组内核设备树把实际绑定的控制器 <code>usb@11591000</code> 声明为 <code>dr_mode=otg</code>，并声明 <code>maximum-speed=super-speed-plus</code>、<code>mediatek,usb3-drd</code> 和 <code>usb-role-switch</code>。</li>
+  <li>同一控制器节点下存在 <code>compatible=mediatek,mtk-xhci</code> 的 xHCI Host 子节点。xHCI 是 Host 控制器路径，不是纯 Gadget 路径。</li>
+  <li>运行内核配置为 <code>CONFIG_USB_MTU3_DUAL_ROLE=y</code>、<code>CONFIG_USB_XHCI_HCD=y</code>、<code>CONFIG_USB_ROLE_SWITCH=y</code>；没有选择 Host-only 或 Gadget-only，而是明确选择双角色。</li>
+  <li>板级设备树存在固定 5 V <code>vbus</code> regulator，且控制器存在 VBUS consumer 关系；这表明固件为 Host 供电路径建模，而非只有 Device 受电路径。</li>
+  <li>设备树包含状态为 <code>okay</code> 的 TI <code>HD3SS3220</code> Type-C DRP/SuperSpeed MUX 节点，并通过 endpoint 与 USB 控制器相连。TI 官方将该器件定义为 Type-C 双角色端口控制器。</li>
+  <li>Linux 5.15 上游 MTU3 驱动的 Kconfig、设备树 binding 和驱动实现与上述实机配置相互印证：Dual Role 同时启用 Host/Gadget；Host 基于 xHCI；切入 Host 时切换端口并启用 VBUS。</li>
+</ol>
+
+<h3>1.3 为什么不能判定“当前 Host 已可用”</h3>
+<ul>
+  <li>模组运行态文件 <code>/sys/devices/platform/11591000.usb/role_mode</code> 返回 <code>device</code>。</li>
+  <li>UDC 为 <code>configured</code>，当前速度 <code>high-speed</code>；本机通过 ADB/RNDIS/ACM 把模组当作 USB 外设。</li>
+  <li>模组侧没有 Host root bus，也没有任何下游 USB 设备 VID:PID/速度记录。</li>
+  <li>5 V VBUS regulator 当前为 <code>disabled</code>、<code>num_users=0</code>，与 Device 角色一致。</li>
+  <li><code>HD3SS3220</code> I²C 节点当前没有绑定驱动，且 <code>/sys/class/typec</code> 没有端口对象；自动角色检测/切换链路仍有风险。</li>
+  <li>未在带外管理、有源 Hub 和测试外设条件下执行 Host 切换。贸然切换很可能中断当前 ADB 管理链路。</li>
+</ul>
+
+<div class="callout"><strong>最终状态标签：</strong><br>
+能力层：<span class="pass">SUPPORTED（支持）</span>；当前运行态：<span class="no">DEVICE（非 Host）</span>；实际外设验收：<span class="blocked">BLOCKED（待受控实测）</span>。</div>
+
+<h2>2. 调查对象、范围与方法</h2>
+<h3>2.1 对象识别</h3>
+<table>
+<tr><th>项目</th><th>实测值</th><th>意义</th></tr>
+<tr><td>USB 身份</td><td><code>2c7c:0710</code>，Quectel RG660MK-EU</td><td>确认本次命令对应目标模组，而非同机其他 USB 设备。</td></tr>
+<tr><td>ADB 身份</td><td><code>0123456789ABCDEF</code>，状态 <code>device</code></td><td>可从模组内部进行只读调查。</td></tr>
+<tr><td>系统</td><td>OpenWrt 23.05.0，Linux 5.15.134，aarch64</td><td>限定结论适用于当前固件镜像。</td></tr>
+<tr><td>板型</td><td><code>gem6xxx/evb6988_cpe_mt7992_emmc</code></td><td>说明调查对象是当前 CPE/EVB 组合，不应无条件外推到所有 RG660MK 载板。</td></tr>
+</table>
+
+<h3>2.2 调查原则</h3>
+<ul>
+  <li>仅执行只读命令；未写 USB role、未开 VBUS、未重启 USB、未刷机、未修改网络。</li>
+  <li>把“控制器/固件能力”“板级供电与 Type-C 设计”“当前运行角色”“外设业务可用性”分成四层，不跨层推断。</li>
+  <li>优先采用运行中设备的 sysfs、Device Tree、内核配置和 USB 枚举作为一手证据；项目历史日志作交叉验证；上游 Linux/TI 文档仅用于解释属性语义。</li>
+  <li>公开检索未找到可核验的 RG660MK-EU 官方 Hardware Design/产品规格 PDF，因此不以销售网页替代官方引脚和电气规范。</li>
+</ul>
+
+<h3>2.3 未执行的高风险动作</h3>
+<p>本次没有切换为 Host。原因是当前 ADB 依赖同一 USB Device 通道；如果角色切换生效，ADB/RNDIS/ACM 预计会立即断开。没有 RJ45/串口带外管理时强行切换，会造成失联且无法采集 Host 侧证据。该限制属于测试安全边界，不属于“模组不支持 Host”的证据。</p>
+
+<h2>3. 证据矩阵</h2>
+<table>
+<tr><th>ID</th><th>证据</th><th>观测</th><th>支持的命题</th><th>强度</th></tr>
+<tr><td>E1</td><td>Ubuntu <code>lsusb</code>/<code>lsusb -t</code></td><td>RG660MK-EU 为 <code>2c7c:0710</code>；当前挂在 PC USB 2.0 root hub，480M；接口由 RNDIS、ADB/usbfs、CDC ACM 驱动。</td><td>当前 PC 是 Host、模组是 Device；不能当作模组 Host 证据。</td><td><span class="badge">直接运行态</span></td></tr>
+<tr><td>E2</td><td>Ubuntu 历史 kernel journal</td><td>2026-08-22、08-24 多次出现 RG660MK-EU “new SuperSpeed USB device”。</td><td>当前 PC-facing 物理路径和模组 Device 控制器曾达到 SuperSpeed；不证明反向 Host。</td><td><span class="badge">直接历史运行态</span></td></tr>
+<tr><td>E3</td><td>模组 <code>role_mode</code> 与 UDC</td><td><code>role_mode=device</code>；UDC <code>configured</code>，current <code>high-speed</code>，max <code>super-speed-plus</code>。</td><td>采样时明确为 Device/Gadget；控制器最高能力高于当前会话速度。</td><td><span class="badge">直接运行态</span></td></tr>
+<tr><td>E4</td><td>模组 Host sysfs</td><td>无 <code>/sys/bus/usb/devices/usb*/speed</code>，无下游 VID:PID。</td><td>当前没有活动 Host root bus 或下游设备。</td><td><span class="badge">直接运行态</span></td></tr>
+<tr><td>E5</td><td>实机 Device Tree</td><td><code>dr_mode=otg</code>、<code>maximum-speed=super-speed-plus</code>、<code>mediatek,usb3-drd</code>、<code>usb-role-switch</code>、xHCI 子节点。</td><td>控制器和固件按 USB3 双角色/Host 路径配置。</td><td><span class="badge">一手配置证据</span></td></tr>
+<tr><td>E6</td><td>实机内核配置</td><td><code>USB_MTU3_DUAL_ROLE=y</code>、<code>USB_XHCI_HCD=y</code>、<code>USB_ROLE_SWITCH=y</code>。</td><td>Host 功能未被内核裁掉，双角色和 xHCI Host 已编入。</td><td><span class="badge">一手构建证据</span></td></tr>
+<tr><td>E7</td><td>实机 VBUS regulator</td><td><code>vbus</code>、5,000,000 µV；控制器是 consumer；当前 disabled/0 users。</td><td>板级固件描述了 5 V Host 供电控制；当前没有输出。</td><td><span class="badge">一手板级配置</span></td></tr>
+<tr><td>E8</td><td>实机 Type-C 节点</td><td><code>ti,hd3ss3220</code>、<code>status=okay</code>，endpoint 与 USB 控制器相连。</td><td>设计意图包含 Type-C DRP/SuperSpeed 方向控制。</td><td><span class="badge-warn badge">配置存在，驱动未绑定</span></td></tr>
+<tr><td>E9</td><td>Linux 5.15 上游源码</td><td>MTU3 Dual Role 同时启用 Host/Gadget；Host 基于 xHCI；切 Host 时开启 VBUS。</td><td>解释 E5/E6 的语义并形成独立交叉证据。</td><td><span class="badge">权威语义证据</span></td></tr>
+<tr><td>E10</td><td>既有 Gate 0 原始日志</td><td>2026-08-24 同样记录 OTG/SS+、UDC configured、高速，Host/外设为空。</td><td>当前调查与前一日独立盘点一致，不是单次偶然输出。</td><td><span class="badge">重复性证据</span></td></tr>
+</table>
+
+<h2>4. 关键证据分析</h2>
+<h3>4.1 当前链路为何不是“模组 Host”</h3>
+<pre>Bus 001 Device 017: ID 2c7c:0710 Quectel RG660MK-EU
+/:  Bus 01 ... Driver=xhci_hcd/12p, 480M
+    |__ Port 5: Dev 17 ... Driver=rndis_host, 480M
+    |__ Port 5: Dev 17 ... Driver=cdc_acm, 480M
+    |__ Port 5: Dev 17 ... Driver=usbfs, 480M
+
+模组内部：
+role_mode=device
+UDC state=configured
+UDC current_speed=high-speed
+Host buses=NONE
+Enumerated downstream devices=NONE</pre>
+<p><code>rndis_host</code> 是 Ubuntu PC 上的驱动名称，其中的 “host” 指 PC 作为 Host 驱动 RNDIS 外设，不表示 RG660MK-EU 是 Host。PC 侧 root hub、模组侧 UDC configured、模组侧 <code>role_mode=device</code> 三项形成方向一致的直接证据。</p>
+
+<h3>4.2 Device Tree 不只是“泛泛的 OTG 字样”</h3>
+<pre>/proc/device-tree/usb@11591000
+  compatible=mediatek,mtu3
+  dr_mode=otg
+  maximum-speed=super-speed-plus
+  mediatek,usb3-drd   (flag)
+  usb-role-switch     (flag)
+  mediatek,force-vbus (flag)
+
+/proc/device-tree/usb@11591000/xhci0@11590000
+  compatible=mediatek,mtk-xhci</pre>
+<p>这组属性共同指向双角色 Host 实现，而非仅仅一个可疑字符串：<code>dr_mode=otg</code> 指定双角色；<code>mediatek,usb3-drd</code> 指示 USB3 端口参与 dual-role；<code>usb-role-switch</code> 指示角色切换框架；xHCI 子节点是 Host 控制器实例。Linux 5.15 MTU3 binding 明确说明 Host 基于 xHCI，并规定在 Host 模式启用时应有 xHCI 子节点。</p>
+
+<h3>4.3 内核不是 Gadget-only</h3>
+<pre>CONFIG_USB_SUPPORT=y
+CONFIG_USB_XHCI_HCD=y
+CONFIG_USB_MTU3=y
+# CONFIG_USB_MTU3_HOST is not set
+# CONFIG_USB_MTU3_GADGET is not set
+CONFIG_USB_MTU3_DUAL_ROLE=y
+CONFIG_USB_GADGET=y
+CONFIG_USB_ROLE_SWITCH=y
+CONFIG_TYPEC=y
+CONFIG_TYPEC_HD3SS3220=y</pre>
+<p>“Host-only 未选中”不能解释为“不支持 Host”。MTU3 的三个模式是互斥选择：Host-only、Gadget-only、Dual Role。当前明确选择 <code>DUAL_ROLE</code>；Linux Kconfig 对该项的定义是 Host 与 Gadget 两种功能均启用。因此，内核能力层判定为 Host-capable 是成立的。</p>
+
+<h3>4.4 VBUS 供电路径的意义与限制</h3>
+<pre>DT: /proc/device-tree/vbus_regulator
+  compatible=regulator-fixed
+  regulator-name=vbus
+  regulator-min-microvolt=5000000
+  regulator-max-microvolt=5000000
+  enable-active-high
+
+Runtime:
+  name=vbus
+  type=voltage
+  microvolts=5000000
+  state=disabled
+  num_users=0</pre>
+<p>USB Host 不仅要发起总线事务，还通常需要向下游提供 VBUS。实机固件已建立 5 V regulator 及控制器 consumer 关系，支持“板级设计考虑了 Host VBUS 控制”的判断。当前 VBUS 关闭是 Device 模式的正常表现，但尚未验证切 Host 后 GPIO、5 V 电源、限流和过流保护是否真实工作，也没有测量可供电电流。因此不能由该节点推导“可直接给 NPU 供电”。</p>
+
+<h3>4.5 Type-C 双角色设计与当前异常点</h3>
+<pre>Device Tree:
+  /i2c@10f90000/hd3ss3220@47
+  compatible=ti,hd3ss3220
+  status=okay
+  endpoint &lt;--&gt; usb@11591000/port/endpoint@2
+
+Runtime:
+  /sys/bus/i2c/devices/4-0047 存在
+  driver link: UNBOUND
+  /sys/class/typec: 无端口对象</pre>
+<p>TI 官方资料将 HD3SS3220 定义为 USB Type-C DRP 控制器和 SuperSpeed 2:1 MUX，支持最高 10 Gbps。因此节点设计意图与 USB 双角色一致。但本次没有驱动绑定，自动 CC 检测、方向 MUX 和 Host/Device 角色通知是否工作不能确认。这是当前从“具备 Host 能力”走向“可稳定使用 Host”的主要风险点之一。</p>
+
+<h3>4.6 SuperSpeed 证据应如何解释</h3>
+<p>Ubuntu 历史 kernel journal 多次记录同一 VID:PID/序列号以 <code>new SuperSpeed USB device</code> 枚举，证明模组作为 Device 时，至少在此前连接条件下，USB3 物理链路曾经成立。当前采样则是 480M，说明速度会受线缆、插口方向、连接状态、MUX 或启动状态影响。该历史记录不能替代“模组作为 Host 时下游设备达到 5000M/10000M”的证据。</p>
+
+<h2>5. 反证、矛盾与未决风险</h2>
+<table>
+<tr><th>现象</th><th>是否反驳 Host 支持</th><th>正确解释</th></tr>
+<tr><td>当前 <code>role_mode=device</code></td><td>否</td><td>反驳“当前正在 Host”，不反驳双角色控制器可切 Host。</td></tr>
+<tr><td><code>CONFIG_USB_OTG</code> 未启用</td><td>不足以反驳</td><td>本平台的角色切换由 MTU3 DRD 与 USB_ROLE_SWITCH 路径实现；决定性配置是 <code>USB_MTU3_DUAL_ROLE=y</code>。</td></tr>
+<tr><td>无 Host root bus</td><td>反驳当前 Host</td><td>当前为 Device，xHCI Host 未处于活动枚举态；这正是为什么运行态验收仍为 BLOCKED。</td></tr>
+<tr><td>VBUS disabled</td><td>反驳当前 Host 供电</td><td>与 Device 角色一致；尚需受控切换后测量 5 V、电流与保护。</td></tr>
+<tr><td>HD3SS3220 未绑定</td><td>不反驳控制器能力，但降低可用性置信度</td><td>可能导致自动角色/方向切换不工作；必须查固件驱动绑定或采用厂商支持的切换方式。</td></tr>
+<tr><td>当前仅 480M</td><td>不反驳最高速率能力</td><td>UDC 的 <code>maximum_speed=super-speed-plus</code> 且历史曾以 SuperSpeed 枚举；当前会话速度不等于控制器上限。</td></tr>
+<tr><td>未找到 RG660MK-EU 官方 Hardware Design</td><td>形成文档缺口</td><td>实机配置证据很强，但无法独立核验模块引脚、电气限值、推荐 VBUS/CC 设计和厂商支持边界。</td></tr>
+</table>
+
+<h3>5.1 不得作出的过度结论</h3>
+<ul>
+  <li>不得把 <code>super-speed-plus</code> 的 DT 上限直接写成“当前 Host 10 Gbps 已通过”。</li>
+  <li>不得把 PC 上的 <code>rndis_host</code> 驱动名写成“RG660MK-EU 正在 Host”。</li>
+  <li>不得把 5 V regulator 节点写成“供电能力足以驱动算力棒”；电流能力和瞬态尚未测量。</li>
+  <li>不得把 HD3SS3220 的器件规格直接当作整个载板端到端 10 Gbps 保证，特别是该节点当前未绑定驱动。</li>
+  <li>不得宣称所有 RG660MK-EU 产品形态都支持同样接口；本报告只覆盖此序列号、此固件和此 CPE/EVB 载板。</li>
+</ul>
+
+<h2>6. 严谨判定逻辑</h2>
+<h3>6.1 分层判定</h3>
+<table>
+<tr><th>层级</th><th>判据</th><th>本次结果</th></tr>
+<tr><td>A. 控制器/IP 能力</td><td>OTG/DRD、Host 控制器、USB PHY/最高速率声明</td><td class="pass">PASS：MTU3 OTG + USB3 DRD + xHCI</td></tr>
+<tr><td>B. 内核功能</td><td>Host、双角色、role switch 已编译且控制器绑定</td><td class="pass">PASS：DUAL_ROLE + XHCI + ROLE_SWITCH；MTU3 已绑定</td></tr>
+<tr><td>C. 板级设计意图</td><td>VBUS、Type-C CC/MUX、endpoint 路径存在</td><td class="pass">基本支持：5 V VBUS + HD3SS3220 节点；但 Type-C 驱动未绑定</td></tr>
+<tr><td>D. 当前 Host 运行态</td><td><code>role=host</code>、xHCI root hub、Host dmesg</td><td class="no">FAIL（当前不是 Host）：明确为 device，无 root bus</td></tr>
+<tr><td>E. 外设与稳定性</td><td>下游 VID:PID、速度、供电、30 min 稳定、热插拔恢复</td><td class="blocked">BLOCKED：未执行</td></tr>
+</table>
+
+<h3>6.2 对用户问题的最终回答</h3>
+<p>若“支持 USB Host 模式”指<strong>模组控制器、当前内核和当前板级固件是否包含 Host 能力</strong>，答案是<strong>支持</strong>，证据达到高置信。</p>
+<p>若“支持”指<strong>当前连接方式下已经处于 Host，或可马上连接 USB 算力棒投入使用</strong>，答案是<strong>尚不成立</strong>：当前明确为 Device，Type-C role 控制链存在未绑定风险，且没有任何下游枚举、VBUS 实测或稳定性证据。</p>
+
+<h2>7. 安全验证方案与验收标准</h2>
+<h3>7.1 前置条件</h3>
+<ol>
+  <li>先建立不依赖该 USB 口的 RJ45 SSH 或 DB9/UART 控制台，并验证断开 USB 后仍可登录。</li>
+  <li>取得当前载板原理图/端口图和 RG660MK-EU 官方 Hardware Design，确认目标连接器、VBUS GPIO、CC、SuperSpeed TX/RX、限流和过流保护。</li>
+  <li>确认 Quectel/固件供应方支持的 role 切换接口。不要猜测 sysfs 写法；本次可见 <code>role_mode</code> 为只读。</li>
+  <li>使用有独立电源的 USB 3.x Hub，避免由模组直接承担算力棒启动浪涌。</li>
+</ol>
+
+<h3>7.2 建议测试顺序</h3>
+<ol>
+  <li>记录 Device 模式基线：role、UDC、VBUS 电压、ADB、网络。</li>
+  <li>通过厂商确认的方法切 Host；从带外控制台观察 xHCI、root hub、VBUS 和 dmesg。</li>
+  <li>先接低风险 USB 2.0 U 盘/键盘验证基础枚举，再接 USB 3.x U 盘验证 SuperSpeed。</li>
+  <li>最后通过有源 Hub 接算力棒；记录准确 VID:PID、设备节点、自身 speed、驱动绑定和 Runtime 识别。</li>
+  <li>连续运行至少 30 分钟，覆盖冷插、热插、拔插恢复；检查 reset/disconnect、供电跌落、OOM、watchdog 和 CPE 网络回归。</li>
+</ol>
+
+<h3>7.3 Host 运行态 PASS 标准</h3>
+<table>
+<tr><th>测试项</th><th>PASS 条件</th></tr>
+<tr><td>角色</td><td>模组侧可复核为 Host；UDC 不再承担当前数据通道。</td></tr>
+<tr><td>Host 控制器</td><td>出现 xHCI Host root hub 和对应 <code>/sys/bus/usb/devices/usb*/speed</code>。</td></tr>
+<tr><td>VBUS</td><td>连接器实测约 5 V，空载/负载正常，限流与过流保护符合载板规范。</td></tr>
+<tr><td>USB 3.x</td><td>目标外设自身 sysfs <code>speed</code> 至少 5000M；不能只看 root bus 上限。</td></tr>
+<tr><td>算力棒</td><td>准确 VID:PID、产品名、驱动绑定和 Runtime 均可复核。</td></tr>
+<tr><td>稳定性</td><td>30 分钟无反复 reset/disconnect，无异常掉电，热插拔可恢复。</td></tr>
+<tr><td>业务回归</td><td>5G/WAN/LAN/Hermes 等 CPE 主业务无不可接受回归。</td></tr>
+</table>
+
+<h2 class="break-before">8. 原始证据摘录与复核命令</h2>
+<h3>8.1 Ubuntu 主机侧</h3>
+<pre>$ lsusb
+Bus 001 Device 017: ID 2c7c:0710 Quectel Wireless Solutions Co., Ltd. RG660MK-EU
+
+$ adb devices -l
+0123456789ABCDEF  device  usb:1-5
+
+$ cat /sys/bus/usb/devices/1-5/speed
+480
+
+$ cat /sys/bus/usb/devices/1-5/product
+RG660MK-EU</pre>
+
+<h3>8.2 模组当前角色与 Host 枚举</h3>
+<pre>$ adb shell 'cat /sys/devices/platform/11591000.usb/role_mode'
+device
+
+$ adb shell 'for d in /sys/class/udc/*; do cat $d/state $d/current_speed $d/maximum_speed; done'
+configured
+high-speed
+super-speed-plus
+
+$ adb shell 'for f in /sys/bus/usb/devices/usb*/speed; do [ -r "$f" ] && cat "$f"; done'
+# 无输出
+
+$ adb shell 'for d in /sys/bus/usb/devices/*; do [ -r "$d/idVendor" ] && ...; done'
+# 无下游设备输出</pre>
+
+<h3>8.3 内核配置</h3>
+<pre>$ adb shell 'zcat /proc/config.gz | grep -E "CONFIG_USB_(XHCI_HCD|MTU3|ROLE_SWITCH|GADGET)"'
+CONFIG_USB_XHCI_HCD=y
+CONFIG_USB_MTU3=y
+# CONFIG_USB_MTU3_HOST is not set
+# CONFIG_USB_MTU3_GADGET is not set
+CONFIG_USB_MTU3_DUAL_ROLE=y
+CONFIG_USB_GADGET=y
+CONFIG_USB_ROLE_SWITCH=y</pre>
+
+<h3>8.4 VBUS 与 Type-C</h3>
+<pre>$ adb shell 'cat /sys/class/regulator/regulator.5/name \
+ /sys/class/regulator/regulator.5/state \
+ /sys/class/regulator/regulator.5/num_users \
+ /sys/class/regulator/regulator.5/microvolts'
+vbus
+disabled
+0
+5000000
+
+$ adb shell 'readlink /sys/bus/i2c/devices/4-0047/driver || echo UNBOUND'
+UNBOUND</pre>
+
+<h3>8.5 既有本地证据</h3>
+<ul>
+  <li><code>/home/jedyying/Documents/基于SDR的语义通信实验平台/AI_CPE_Demo/reports/evidence/gate0_20260824_validation/raw.log</code>：设备树、UDC、Host 空结果原始记录。</li>
+  <li><code>/home/jedyying/Documents/基于SDR的语义通信实验平台/AI_CPE_Demo/reports/GATE0_REPORT.md</code>：2026-08-24 只读盘点和 BLOCKED 判定。</li>
+  <li><code>/home/jedyying/Documents/基于SDR的语义通信实验平台/AI_CPE_Demo/scripts/gate0_inventory.sh</code>：原始探针和判定逻辑。</li>
+  <li><code>/home/jedyying/Documents/基于SDR的语义通信实验平台/AI_CPE_Demo/RG660MK-EU_AI_CPE_Hermes_USB算力棒移植实施文档_V2.2.md</code>：Host/SuperSpeed/算力棒 Gate 标准。</li>
+</ul>
+
+<h2>9. 资料来源与证据边界</h2>
+<h3>9.1 权威技术资料</h3>
+<ol>
+  <li>Linux v5.15 MTU3 Kconfig：<a href="https://raw.githubusercontent.com/torvalds/linux/v5.15/drivers/usb/mtu3/Kconfig">https://raw.githubusercontent.com/torvalds/linux/v5.15/drivers/usb/mtu3/Kconfig</a></li>
+  <li>Linux v5.15 MediaTek MTU3 Device Tree binding：<a href="https://raw.githubusercontent.com/torvalds/linux/v5.15/Documentation/devicetree/bindings/usb/mediatek,mtu3.yaml">https://raw.githubusercontent.com/torvalds/linux/v5.15/Documentation/devicetree/bindings/usb/mediatek,mtu3.yaml</a></li>
+  <li>Linux v5.15 MTU3 platform/role 实现：<a href="https://raw.githubusercontent.com/torvalds/linux/v5.15/drivers/usb/mtu3/mtu3_plat.c">mtu3_plat.c</a>、<a href="https://raw.githubusercontent.com/torvalds/linux/v5.15/drivers/usb/mtu3/mtu3_dr.c">mtu3_dr.c</a>、<a href="https://raw.githubusercontent.com/torvalds/linux/v5.15/drivers/usb/mtu3/mtu3_host.c">mtu3_host.c</a></li>
+  <li>Texas Instruments HD3SS3220 官方资料：<a href="https://www.ti.com/product/HD3SS3220">https://www.ti.com/product/HD3SS3220</a>；<a href="https://www.ti.com/document-viewer/lit/html/SLLSES1D/GUID-C33CE464-BFE5-4480-BCF5-FE199BB83CA0">官方 datasheet 页面</a></li>
+  <li>Quectel RG660MK/T930 平台官方新闻（仅用于型号/平台背景，不用于证明 USB Host）：<a href="https://www.quectel.com/news-and-pr/wifi-8-5g-a-intelligent-cpe-reference-design-mwc26/">Quectel 官方页面</a></li>
+</ol>
+
+<h3>9.2 资料缺口声明</h3>
+<p>截至报告编制时，公开检索及本地资料中没有找到可核验的 <strong>RG660MK-EU 官方 Hardware Design、产品规格书、当前 CPE 载板原理图</strong>。因此，本报告的“支持 Host”主要依据当前实机固件/内核/设备树证据，而不是厂商电气规格承诺。以下事项仍需官方资料确认：Host 对应引脚、目标连接器、VBUS 最大电流、CC/ID 逻辑、过流保护、推荐切换接口、USB 3.x 速率等级及固件支持边界。</p>
+
+<h3>9.3 证据有效期</h3>
+<p>结论绑定于设备 <code>0123456789ABCDEF</code>、OpenWrt 23.05.0/Linux 5.15.134 和 2026-08-25 的载板/固件状态。固件升级、设备树变更、载板改版或接口复用后应重新调查。</p>
+
+<div class="footer-note small">
+<p><strong>合规说明：</strong>外部资料仅作语义核对，报告内容均为归纳和改述，没有大段复制来源文本。Content was rephrased for compliance with licensing restrictions.</p>
+<p><strong>报告判定：</strong>SUPPORTED at capability level / DEVICE at current runtime / BLOCKED for peripheral acceptance.</p>
+</div>
+</body>
+</html>

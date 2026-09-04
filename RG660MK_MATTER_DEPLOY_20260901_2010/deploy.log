@@ -1,0 +1,2 @@
+lrwxrwxrwx 1 jedyying jedyying 19  9月  1 14:46 /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/python -> /usr/bin/python3.10
+lrwxrwxrwx 1 jedyying jedyying 19  9月  1 14:46 /var/tmp/RG660MK_build/T930/openwrt/staging_dir/host/bin/python3 -> /usr/bin/python3.10
