@@ -1,6 +1,6 @@
 # RG660MK 智能音箱语音助手（voice-assistant）
 
-RG660MK AI CPE 上的离线语音对话助手：唤醒词 → 录音 → whisper 本地 ASR → 三路分流 → TTS 播报。可语音控制 Tuya 灯泡、查询时间/天气、调用摄像头拍照，复杂问题投递给边缘 Hermes Agent。
+RG660MK AI CPE 上的离线语音对话助手：唤醒词 → 录音 → whisper 本地 ASR → 三路分流 → TTS 播报。可语音控制 Tuya 灯泡、查询时间/天气、拍照/上传 Immich、人脸检测、坐姿检测，复杂问题投递给边缘 Hermes Agent。
 
 ## 系统拓扑
 
@@ -15,9 +15,10 @@ whisper.cpp (ggml-base.bin) 本地转写  ← 唯一 ASR，离线
   │
   ▼
 三路分流 (voice_assistant.py)
-  ├─ 时间/日期         → 本地即刻回答（不调 LLM）
-  ├─ 天气/灯泡/拍照    → 本地关键词 → 工具执行（wttr.in / Tuya / C270）
-  └─ 复杂问题          → 投递 hermes chat -q（边缘完整 Agent）
+  ├─ 时间/日期            → 本地即刻回答（不调 LLM）
+  ├─ 天气/灯泡/拍照/上传/人脸/坐姿 → 本地关键词 + 工具执行
+  ├─ LLM 函数调用兜底       → 关键词没匹配（被误听）时，用 LLM function calling 理解意图
+  └─ 复杂问题             → 投递 hermes chat -q（边缘完整 Agent）
   │
   ▼
 TTS: edge-tts(mp3) → mpg123 → aplay → 绿联 CM564 3.5mm 耳机口 (plughw:2,0)
@@ -30,53 +31,56 @@ TTS: edge-tts(mp3) → mpg123 → aplay → 绿联 CM564 3.5mm 耳机口 (plughw
 | 绿联 UGREEN CM564 | card2 (`plughw:2,0`) | **麦克风 + 放音** | USB 音箱+内置麦克风一体机；无内置喇叭，音频从 3.5mm 耳机口出；内置 mic 信号弱，需软件 ×4 增益；USB **full-speed**（12Mbps）|
 | Logitech C270 | card1 (`plughw:1,0`) | 摄像头拍照 + 备用麦克风 | USB **high-speed**；拍照用 `rg660mk_c270_snapshot` |
 
-- 录音设备 `REC_DEV` 默认 `plughw:2,0`（CM564 内置 mic）；放音 `PLAY_DEV` 默认 `plughw:2,0`（CM564 耳机口）。
-- 硬件增益：`amixer -c 2 cset numid=6 255`（Mic Capture Volume 拉满）。
-- 环境噪声基线：raw RMS≈29~43，×4 增益后 ≈172，唤醒判定阈值 `RMS_THRESHOLD=200`。
+- 录音 `REC_DEV` 默认 `plughw:2,0`；放音 `PLAY_DEV` 默认 `plughw:2,0`。
+- 硬件增益：`amixer -c 2 cset numid=6 255`。环境噪声 RMS≈29~43，×4 增益后 ≈172，阈值 `RMS_THRESHOLD=200`。
+- ⚠️ C270 麦克风（plughw:1,0）识别更差（连「你好」都听不出），不要切换过去。
 
 ## 组件与设备路径
 
 | 组件 | 路径 | 说明 |
 |------|------|------|
 | `voice_assistant.py` | `/data/ai_cpe/voice_assistant.py` | 主程序（venv python 3.11）|
+| `vision_control.py` | `/data/ai_cpe/vision_control.py` | 人脸检测/坐姿检测（拍照+pose 推理）|
 | `bulb_control.py` | `/data/ai_cpe/bulb_control.py` | Tuya 灯泡控制（纯 stdlib）|
-| `tts_say.py` | `/data/ai_cpe/tts_say.py` | 独立 TTS 播报工具 |
-| `netdiag.py` | `/data/ai_cpe/netdiag.py` | 网络诊断工具 |
+| `tts_say.py` / `netdiag.py` | `/data/ai_cpe/` | 独立 TTS / 网络诊断 |
 | whisper-cli | `/data/ai_cpe/whisper/whisper-cli` | whisper.cpp 1.9.3 |
-| 模型 | `/data/ai_cpe/whisper/models/ggml-base.bin` | base 141MB |
-| mpg123 | `/data/ai_cpe/bin/mpg123` | mp3 解码（交叉编译）|
+| 模型 | `/data/ai_cpe/whisper/models/ggml-base.bin` | base 141MB（~9.6s/5s 片段）|
 | C270 拍照 | `/data/ai_cpe/hermes/home/diag/rg660mk_c270_snapshot` | libuvc 静态工具 |
+| 一条龙上传 | `/data/ai_cpe/hermes/home/photo_pipeline.py` | 拍照→YOLO→上传 Immich |
+| vision_runner | `/data/ai_cpe/demo/bin/vision_runner` | NCNN 推理（detect + pose）|
 | procd init | `/etc/init.d/voice_assistant` | 开机自启 + respawn |
 
-## 三路分流逻辑
+## 三路分流逻辑（`route(text)`）
 
-`route(text)` 按本地关键词优先级分流，不依赖 LLM 判断：
+按本地关键词优先级分流；**关键词没命中时先走 LLM 函数调用兜底（抗误听），再转 Hermes**：
 
-1. **时间/日期**：命中 `几点/时间/日期/几号/星期/今天/现在/什么时候` → 本地 `get_time_now()`。
-2. **天气**：命中 `天气/气温/温度/下雨/下雪/几度/冷不冷/热不热` → 提取城市 → `wttr.in`。
-3. **灯泡**：命中 `灯` → `开`→on / `关`→off / 否则 status → `bulb_control.py`。
-4. **拍照**：命中 `拍照/照相/拍一张/拍个照/拍个照片` → C270 snapshot。
-5. **兜底**：以上都不中 → 投递 `hermes chat -q`（边缘 Agent），先播「请稍等」。
+1. **时间/日期**：`几点/时间/日期/几号/星期/今天/现在/什么时候` → 本地 `get_time_now()`。
+2. **天气**：`天气/气温/温度/下雨/下雪/几度/冷不冷/热不热` → 提取城市 → `wttr.in`。
+3. **灯泡**：`灯` → `开`→on / `关`→off → `bulb_control.py`。
+4. **拍照**：`拍照/照相/拍一张/拍个照/拍个照片`
+   - 含 `上传/传到/服务器/immich/相册/同步/保存` → `photo_pipeline.py` 一条龙（拍照→检测→传 Immich）
+   - 否则 → 简单快拍 `rg660mk_c270_snapshot`
+5. **人脸/坐姿检测**（`vision_control.py`）：
+   - `坐姿/姿势/体态` → 坐姿检测
+   - `人脸/脸检测/脸识别` → 人脸检测
+   - **`检测/检查` 兜底** → 默认人脸检测（因为「人脸」「坐姿」名词常被误听成「冷凉」「人年」等，但「检测」两字稳定）
+6. **LLM 函数调用兜底**：以上都没命中 → `llm_tools()` 用 function calling 理解意图（工具：get_weather / control_bulb / take_photo / detect_face / detect_posture）。
+7. **复杂问题** → `hermes chat -q`（先播「请稍等」）。
 
-> 说明：代码里也保留了 LLM function-calling 路径（`llm_tools`，天气/灯泡/拍照走工具 LLM），但当前 `route()` 实际走的是上面的本地关键词分流，更快更稳。
+> 「拍照上传」这类**有现成脚本的确定任务不要走 Hermes**——Hermes 在边缘设备跑完整 agent 要 2.5 分钟+，本地 photo_pipeline 几秒完成。
 
-## 唤醒词与 ASR
+## 唤醒与持续对话
 
-- 唤醒词：**「你好小皮」**（含容错「下皮/小屁/小pipi」等）。
-- **关键调试结论（2026-09-10）**：whisper base 在这块弱麦上把「小皮」的尾音「皮」**可靠地误听**成「夏丁/下爹」等（p 声母丢失 → d），导致按「皮」字匹配唤醒词经常失败、用户要反复说。
-  - 修复：唤醒判定增加 `"你好" in text` 作为触发词 —— whisper 每次都能正确识别「你好」，不依赖不可靠的「皮」尾音。
-- 唤醒后播「在呢，请说」，进入 24s 活跃监听窗口（`ACTIVE_TIMEOUT`），连续静音超时则播「我先休息了」回到待机。
+- 唤醒词「你好小皮」，**实际触发词是「你好」**——whisper 把「小皮」尾音可靠地误听成「夏丁/下爹/夏皮」（p→d 声母丢失），只有「你好」两字稳定识别，所以按「你好」触发。
+- **持续对话模式**：唤醒一次后一直保持对话，连续下指令不用重复唤醒；只有说「再见/休息/睡觉/退下/拜拜/晚安」才回「好的，再见」回到待机（无静音超时）。
+- whisper 的噪音幻觉输出（`( ˘ω˘ )`、`( 字幕:J Chong )` 等带括号的）在 transcribe() 里直接过滤，避免掉进 Hermes 卡 3 分钟。
 
 ## 灯泡控制（Tuya 云 OpenAPI）
 
-- MOES 灯泡 devId `6cef15216413d61f09c6u3`，走 Tuya 云 OpenAPI（新版签名算法）。
-- 签名与错误码排查详见 skill `tuya-smart-devices`（`references/tuya-openapi-signing.md`）。
-- 凭据在 `/data/hermes/.hermes/.env` 的 `TUYA_ACCESS_ID` / `TUYA_ACCESS_SECRET`。
-- 开关指令实测 ~1.3s 发出。
+- MOES 灯泡 devId `6cef15216413d61f09c6u3`，Tuya 云 OpenAPI（新版签名）。
+- 凭据在 `/data/hermes/.hermes/.env`（`TUYA_ACCESS_ID`/`TUYA_ACCESS_SECRET`）。开关实测 ~1.3s。
 
 ## 部署（procd）
-
-`/etc/init.d/voice_assistant`：
 
 ```sh
 procd_set_param command /data/hermes/venv/bin/python /data/ai_cpe/voice_assistant.py
@@ -84,20 +88,21 @@ procd_set_param env HOME=/data/hermes/home LD_LIBRARY_PATH=/data/ai_cpe/whisper/
 procd_set_param respawn
 ```
 
-- 用 venv 的 python（有 edge_tts 等三方依赖）；`LD_LIBRARY_PATH` 指向 whisper 的 `libggml*.so`。
-- 重启只能走 `/etc/init.d/voice_assistant restart`（procd 自动 respawn，手动 nohup 会起第二个实例抢音频设备）。
-- 日志：`logread | grep 'python['`（`[listen]`=待机监听转写、`[said]`=活跃期命令、`[reply]`=回复、`>>> WAKE`=唤醒命中）。
+- 重启只能 `/etc/init.d/voice_assistant restart`（procd 自动 respawn，手动 nohup 会双实例抢音频）。
+- 日志：`logread | grep 'python['`（`[listen]`=待机转写、`>>> WAKE`=唤醒、`[said]`=命令、`[reply]`=回复、`[tool]`=工具执行）。
 
 ## 关键调试记录（2026-09-10）
 
-1. **「把灯关掉 3 分钟无响应」根因**：不是灯泡/路由问题（bulb off 实测 1.3s、路由正确），而是**唤醒词「小皮」被 whisper 误听成「夏丁/下爹」**，唤醒不触发，用户反复说 + 每段转写慢（~24s）累积成 3~6 分钟。
-2. **麦克风方向**：切到 C270（`plughw:1,0`）反而更差（连「你好」都识别不出，全是 `( ˘ω˘ )`/`( 無法 動作 )` 噪音幻觉）；CM564 至少稳定识别「你好」。最终保留 CM564。
-3. **USB 音频设备异常态**：长乱码 TTS 播放会拖垮 CM564 USB 音频（唤醒后误听/无响应），复位修复：
-   `rmmod snd_usb_audio` → `modprobe snd-usb-audio` → `amixer -c 2 cset numid=6 255`。已在 `speak()` 加长度截断（>120 字符）+ 乱码过滤，防止再次长播报。
-4. **whisper 速度**：base 模型在 4×A55 上 ~24s/5s 片段；q5_1/tiny 量化提速有限（~19s，瓶颈不在模型大小），暂未换模型。
+1. **「把灯关掉」3 分钟无响应**：根因是唤醒词「小皮」被误听成「夏丁/下爹」，唤醒不触发。改为「你好」触发词。
+2. **麦克风方向**：C270（plughw:1,0）识别更差（连「你好」都听不出）；CM564 稳定识别「你好」，保留 CM564。
+3. **「拍照上传」卡 Hermes**：Hermes 在边缘设备跑完整 agent 要 2.5 分钟+。改为本地 `photo_pipeline.py` 一条龙（几秒完成）。
+4. **「人脸/坐姿检测」被误听**：whisper 把「人脸」听成「冷凉」、把「坐姿」听成「嗯」。加「检测」兜底 + 强化 LLM 提示词后，`做冷凉检测` 也能正确路由到人脸检测。
+5. **USB 音频异常态**：长乱码 TTS 会拖垮 CM564 USB 音频，复位修复：`rmmod snd_usb_audio` → `modprobe snd-usb-audio` → `amixer -c 2 cset numid=6 255`。`speak()` 已加长度截断（>120）+ 乱码过滤。
+6. **whisper 速度**：base 模型干净环境下 ~9.6s/5s 片段（之前测的 24s 是被并发进程干扰）。tiny-q5_1 只快 ~15%（瓶颈在频谱计算而非模型大小），暂未换模型。
 
 ## 已知问题 / 待办
 
-- whisper base ~24s/段，交互仍有明显延迟；若要提速需从音频长度（缩短 `LISTEN_SECS`）或流水线（录音与转写并行）入手，而非仅换模型。
-- 唤醒词「你好」触发较宽，可能被环境「你好」误触发（家庭场景可接受，待观察）。
-- 拍照结果（`/tmp/RG660MK_C270.jpg`）尚未接入人脸/坐姿检测后的自然语言回执，目前仅播「拍照完成」。
+- whisper base ~9.6s/段，唤醒/命令仍有明显延迟；提速方向：缩短录音窗口（5s→3s）或录音与转写流水线并行，而非换模型。
+- 拍照上传的「检测到 N 个人」计数偶有 YOLO 误检（2 人 vs 1 人），已从播报中移除计数。
+- 「坐姿检测」个别发音会被 whisper 完全漏听（转成「嗯」/空），属语音识别固有问题。
+- 人脸检测无专用模型（`face_detect=null`），用 pose 关键点（鼻子+眼睛）近似判断人脸可见性。

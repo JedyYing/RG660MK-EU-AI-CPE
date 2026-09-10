@@ -18,6 +18,8 @@ MODEL = "/data/ai_cpe/whisper/models/ggml-base.bin"
 MPG123 = "/data/ai_cpe/bin/mpg123"
 BULB = "/data/ai_cpe/bulb_control.py"
 SNAPSHOT = "/data/ai_cpe/hermes/home/diag/rg660mk_c270_snapshot"
+VISION = "/data/ai_cpe/vision_control.py"
+PIPELINE = "/data/ai_cpe/hermes/home/photo_pipeline.py"
 REC_DEV = os.environ.get("REC_DEV", "plughw:2,0")
 PLAY_DEV = os.environ.get("PLAY_DEV", "plughw:2,0")
 
@@ -37,7 +39,9 @@ EXIT_WORDS = ["休息", "睡觉", "退下", "再见", "拜拜", "晚安"]
 TIME_KEYS = ["几点", "时间", "日期", "几号", "星期", "今天", "现在", "什么时候"]
 
 SYSTEM_PROMPT = ("你是小皮，智能音箱助手。回答简洁口语化。"
-                 "查天气、控制灯泡、拍照时务必调用对应工具获取真实信息。")
+                 "查天气、控制灯泡、拍照、人脸检测、坐姿检测时务必调用对应工具获取真实信息。"
+                 "注意：语音转写可能不准（如'人脸'可能被听成'冷凉/人年/人联'，'坐姿'可能被听成'作子/坐支'），"
+                 "遇到'XX检测/检查'类命令时，优先判断用户是要人脸检测还是坐姿检测，调用 detect_face 或 detect_posture 工具。")
 
 TOOLS = [
     {"type": "function", "function": {
@@ -55,6 +59,14 @@ TOOLS = [
     {"type": "function", "function": {
         "name": "take_photo",
         "description": "用摄像头拍照",
+        "parameters": {"type": "object", "properties": {}, "required": []}}},
+    {"type": "function", "function": {
+        "name": "detect_face",
+        "description": "打开摄像头做人脸检测，判断画面里是否有人脸",
+        "parameters": {"type": "object", "properties": {}, "required": []}}},
+    {"type": "function", "function": {
+        "name": "detect_posture",
+        "description": "打开摄像头做坐姿检测，分析坐姿是否良好",
         "parameters": {"type": "object", "properties": {}, "required": []}}},
 ]
 
@@ -136,7 +148,8 @@ def transcribe(path):
             if not line:
                 continue
             if line.startswith(("whisper_", "main:", "system_info:", "read_audio",
-                                "whisper_print", "ggml_", "CPU", "processing")):
+                                "whisper_print", "ggml_", "CPU", "processing",
+                                "[BLANK_AUDIO]", "(")):
                 continue
             return to_simplified(line)
         return ""
@@ -170,6 +183,18 @@ def execute_tool(name, args):
         elif name == "take_photo":
             r = subprocess.run([SNAPSHOT], capture_output=True, text=True, timeout=30)
             return "拍照完成，" + (r.stdout or "").strip()
+        elif name == "detect_face":
+            r = subprocess.run(["python3", VISION, "face"], capture_output=True, text=True, timeout=60)
+            return (r.stdout or r.stderr).strip() or "人脸检测完成"
+        elif name == "detect_posture":
+            r = subprocess.run(["python3", VISION, "posture"], capture_output=True, text=True, timeout=60)
+            return (r.stdout or r.stderr).strip() or "坐姿检测完成"
+        elif name == "photo_upload":
+            r = subprocess.run(["python3", PIPELINE], capture_output=True, text=True, timeout=90)
+            out = (r.stdout or r.stderr).strip()
+            if r.returncode == 0 and "[FAIL]" not in out:
+                return "拍照并上传到服务器完成"
+            return "拍照上传失败"
     except Exception as e:
         return "工具执行失败: %s" % e
     return "未知工具"
@@ -280,10 +305,26 @@ def route(text):
     if "灯" in text:
         action = "on" if "开" in text else ("off" if "关" in text else "status")
         return execute_tool("control_bulb", {"action": action}), False
-    # 4. 拍照：本地关键词
+    # 4. 拍照：本地关键词（含上传/服务器等复合需求则走一条龙 photo_pipeline 上传）
     if any(k in text for k in ["拍照", "照相", "拍一张", "拍个照", "拍个照片"]):
+        if any(k in text for k in ["上传", "传到", "服务器", "immich", "相册", "同步", "保存"]):
+            return execute_tool("photo_upload", {}), False
         return execute_tool("take_photo", {}), False
-    # 5. 复杂问题：转 Hermes
+    # 4b. 人脸检测 / 坐姿检测
+    if any(k in text for k in ["坐姿", "姿势", "体态"]):
+        return execute_tool("detect_posture", {}), False
+    if any(k in text for k in ["人脸", "脸检测", "脸识别"]):
+        return execute_tool("detect_face", {}), False
+    # "检测/检查"兜底：名词被误听（如"人脸"→"冷凉"）时默认人脸检测
+    if any(k in text for k in ["检测", "檢查", "检查"]):
+        return execute_tool("detect_face", {}), False
+    # 5. 未命中本地关键词：先试 LLM 函数调用（抗误听，如"人脸"被听成"人年"），失败再转 Hermes
+    try:
+        reply, used_tool = llm_tools(text)
+        if used_tool:
+            return reply, False
+    except Exception:
+        pass
     return None, True
 
 
@@ -299,16 +340,10 @@ def main():
         if "你好" in text or any(w in text for w in WAKE_WORDS) or any(c in text for c in ["皮", "吉", "批", "屁", "披"]):
             print(">>> WAKE", flush=True)
             speak("在呢，请说")
-            silent_accum = 0
             while True:
                 record(LISTEN_SECS)
                 if rms("/tmp/voice_rec.wav") < RMS_THRESHOLD:
-                    silent_accum += LISTEN_SECS
-                    if silent_accum >= ACTIVE_TIMEOUT:
-                        speak("我先休息了")
-                        break
                     continue
-                silent_accum = 0
                 t = transcribe("/tmp/voice_rec.wav")
                 print("[said] %r" % t, flush=True)
                 if not t:
