@@ -1,0 +1,12 @@
+#!/bin/sh
+# vision_runner_wrapper.sh - 根据 operation 分发到不同 runner
+# 读取 stdin JSON，检查 operation 字段，调用对应的 binary
+
+INPUT=$(cat)
+OPERATION=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('operation',''))" 2>/dev/null)
+
+if [ "$OPERATION" = "face" ]; then
+    echo "$INPUT" | /data/ai_cpe/demo/ai_runtime/face/face_runner
+else
+    echo "$INPUT" | /data/ai_cpe/demo/bin/vision_runner
+fi
