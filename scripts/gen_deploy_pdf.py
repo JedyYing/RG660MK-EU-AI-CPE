@@ -54,91 +54,71 @@ story = []
 story.append(P('RG660MK 人脸识别 + Home Assistant 接入', title))
 story.append(P('部署文档', title))
 story.append(Spacer(1, 3))
-story.append(P('生成时间 2026-09-10 · 目标设备 RG660MK-EU（OpenWrt CPE）', subtitle))
+story.append(P('生成时间 2026-09-11 · 目标设备 RG660MK-EU（OpenWrt CPE）', subtitle))
 story.append(Spacer(1, 5))
 story.append(HRFlowable(width='100%', thickness=1.2, color=colors.HexColor('#1a1a2e')))
 
-# 一、结论摘要
 story.append(P('一、结论摘要', h1))
 story.append(make_table([
-    ['功能', '代码状态', '阻塞点', '能否直接部署'],
-    ['人脸识别（身份识别）', '代码已全部就绪', '缺 2 个 NCNN 模型 + vision_runner 未实现 face 操作', '否（需改 C++ + 建模）'],
-    ['Home Assistant 接入', '仅设计', '无 HA 实例 + 无 MQTT broker', '否（需外部环境）'],
-], [36*mm, 40*mm, 66*mm, 26*mm]))
+    ['功能', '部署状态', '实现方式', '备注'],
+    ['人脸识别（身份识别）', '已部署', 'Immich 云人脸识别（InsightFace buffalo_s）', '复用本机 Immich，无需本地模型'],
+    ['Home Assistant 接入', '未接入', 'MQTT Discovery（设计就绪）', '缺 HA 实例 + MQTT broker'],
+], [36*mm, 20*mm, 62*mm, 50*mm]))
 story.append(Spacer(1, 4))
-story.append(P('两个功能都属于「需要新建模型 / 外部基础设施」的工程，不是把现成代码部署过去就能跑通的。', body))
+story.append(P('人脸识别已落地：走本机 Immich 的人脸识别（原本就启用 buffalo_s 模型），RG660MK 拍照→上传→查身份，识别到的人名通过语音播报。Home Assistant 仍需外部环境。', body))
 
-# 二、人脸识别
-story.append(P('二、人脸识别（身份识别）', h1))
+story.append(P('二、人脸识别（身份识别）—— 已部署（Immich 方案）', h1))
+story.append(P('2.1 为什么用 Immich 而不是本地模型', h2))
+story.append(B('RG660MK 本地做人脸 embedding 需新建 NCNN 模型 + 改 vision_runner（C++ 交叉编译），工程量大。'))
+story.append(B('SG560D 原项目的人脸识别本就是走 Immich 云平台（进展总览第 12 项）。'))
+story.append(B('本机 Immich 2.7.5 已启用 facialRecognition（模型 buffalo_s，minScore 0.7），已识别 2 个人。'))
+story.append(B('RG660MK 已有 Immich 上传链路（photo_pipeline.py），复用即可。'))
 
-story.append(P('2.1 已完成的部分（代码层 100% 就绪）', h2))
+story.append(P('2.2 实现', h2))
+story.append(P('新增 face_recognize.py（部署在 /data/ai_cpe/face_recognize.py）：', body))
+story.append(C('C270 拍照 → 上传 Immich(/api/assets) → 等 ML 异步识别(~6~8s) → 查 asset.people → 返回人名'))
+story.append(B('已识别的人命名：PUT /api/people/{id} {"name":"应金栋"}（已命名 1 人）。'))
+story.append(B('无人/未识别 → 返回「没有识别到人脸」。'))
+
+story.append(P('2.3 已接入的调用入口', h2))
 story.append(make_table([
-    ['组件', '位置', '状态'],
-    ['人脸识别服务', 'ai_service.py', 'Gallery 匹配（余弦相似度，阈值 0.52）、_identify_faces()、match/add/remove 全实现'],
-    ['图库管理', 'face_gallery.py', 'enroll（录入人脸）/ remove / list 命令'],
-    ['CLI 客户端', 'hermes_ai_tool.py', 'face 动作（POST /vision/face）'],
-    ['配置', 'ai-service.json', 'face_recognition 段已配好，但 face_detect: null、face_embed: null'],
-], [28*mm, 40*mm, 100*mm]))
+    ['入口', '方式'],
+    ['语音助手', '说「人脸识别 / 识别一下 / 这是谁」→ face_recognize.py'],
+    ['Hermes', 'rg660mk-device-control skill 新增「人脸识别（身份）」'],
+], [30*mm, 138*mm]))
 
-story.append(P('2.2 阻塞点（两个，都需新建）', h2))
-story.append(B('vision_runner 未实现 face 操作 —— ai_runtime/src/vision_runner.cpp 第 596 行：'))
-story.append(C('if (operation != "detect" && operation != "pose")'))
-story.append(C('    throw JsonError("operation must be detect or pose");'))
-story.append(P('目前只支持 YOLO 的 detect（COCO 80 类）和 pose（17 关键点）。人脸识别需新增 face_detect（RetinaFace / YOLOv5-face，输出人脸框）和 face_embed（MobileFaceNet / ArcFace，输出 128~512 维 embedding），并实现对应后处理，再用工具链交叉编译 aarch64。', body))
-story.append(B('两个 NCNN 模型缺失 —— face_detect 和 face_embed 均未配置模型文件（.param + .bin）。'))
+story.append(P('2.4 实测', h2))
+story.append(C('python3 face_recognize.py  →  识别到 1 个人：应金栋'))
 
-story.append(P('2.3 下一步路线（建议顺序）', h2))
-for i, t in enumerate([
-    '选型人脸检测模型（优先 RetinaFace-mobilenet，NCNN 生态成熟）',
-    '选型人脸 embedding 模型（优先 MobileFaceNet，128 维，轻量）',
-    '转 NCNN 格式（onnx2ncnn），放入 /data/ai_cpe/demo/ai_models/',
-    '改 vision_runner.cpp：新增 face 操作 + 两个模型前向 + 后处理',
-    '交叉编译（见 quectel-module-deployment skill 的交叉编译坑）',
-    '回填 ai-service.json 的 face_detect / face_embed 模型路径',
-    '用 face_gallery.py enroll 录入人脸；通过 hermes_ai_tool.py face 验证身份识别',
-], 1):
-    story.append(B('%d. %s' % (i, t)))
-
-# 三、Home Assistant
-story.append(P('三、Home Assistant 接入', h1))
-
-story.append(P('3.1 现状', h2))
+story.append(P('三、Home Assistant 接入 —— 未接入（方案就绪）', h1))
+story.append(P('3.1 现状与阻塞', h2))
 story.append(B('本机（192.168.1.244）无 Home Assistant 实例（端口 8123 关闭）。'))
-story.append(B('本机无 MQTT broker：仅装 mosquitto-clients（客户端），未装 broker 守护进程 mosquitto（安装需 sudo）。'))
-story.append(B('RG660MK 已有 Tuya 云（灯泡）、Matter 等设备接入，但未接入 HA。'))
+story.append(B('本机无 MQTT broker：仅装 mosquitto-clients，未装 broker 守护进程（安装需 sudo）。'))
 
 story.append(P('3.2 推荐方案：MQTT Discovery', h2))
-story.append(P('HA 生态标准接入方式是 MQTT，RG660MK 作为 MQTT 客户端把设备通过 MQTT Discovery 暴露给 HA：', body))
 story.append(C('RG660MK ──(MQTT pub/sub)──> MQTT broker (mosquitto) <── Home Assistant'))
-story.append(B('灯泡 → homeassistant/light/rg660mk_bulb/config（Discovery）+ state/command 主题'))
-story.append(B('摄像头/传感器 → 类似方式'))
+story.append(B('灯泡 → homeassistant/light/rg660mk_bulb/config + state/command 主题。'))
 
-story.append(P('3.3 阻塞点', h2))
-story.append(B('需一台运行中的 MQTT broker（本机 sudo apt install mosquitto，或 docker eclipse-mosquitto）。'))
-story.append(B('需一个 Home Assistant 实例（本机 docker 或独立设备）+ MQTT integration。'))
-
-story.append(P('3.4 下一步路线', h2))
+story.append(P('3.3 下一步路线', h2))
 for i, t in enumerate([
-    '部署 MQTT broker（本机 apt 装 mosquitto 或 docker 起 eclipse-mosquitto）',
-    'RG660MK 上写 MQTT 发布脚本（paho-mqtt 或纯 stdlib 最小 MQTT 客户端），发布灯泡/设备状态',
+    '部署 MQTT broker（本机 apt 装 mosquitto 或 docker eclipse-mosquitto）',
+    'RG660MK 写 MQTT 发布脚本（paho-mqtt 或纯 stdlib 最小 MQTT 客户端）',
     '部署 Home Assistant 实例，配置 MQTT integration，自动发现 RG660MK 设备',
     '双向：HA 下发开关 → MQTT → RG660MK → bulb_control.py',
 ], 1):
     story.append(B('%d. %s' % (i, t)))
 
-# 四、Hermes 交接状态
 story.append(P('四、Hermes 交接状态', h1))
 story.append(make_table([
     ['能力', 'Hermes 是否可调', '说明'],
-    ['人脸识别身份', '接口已接、模型缺失', 'hermes_ai_tool.py face 已接入 rg660mk-device-control skill，但缺模型返回错误'],
+    ['人脸识别身份', '可调', 'face_recognize.py 已接入 skill，语音+Hermes 均可触发'],
     ['Home Assistant', '未接', '需先有 broker + HA 实例'],
 ], [40*mm, 48*mm, 80*mm]))
 
-# 五、结论
 story.append(P('五、结论', h1))
-story.append(B('人脸识别的代码链路已 100% 就绪，唯一缺口是「2 个 NCNN 模型 + vision_runner 的 face 操作 C++ 实现」。'))
-story.append(B('Home Assistant 接入方案明确（MQTT Discovery），缺口是「broker + HA 实例」两个外部环境。'))
-story.append(B('两者都不属于一键部署，需要新建模型/环境。本项目四大块里，除这两项外的 17 个功能点已全部落地。'))
+story.append(B('人脸识别（身份识别）已通过 Immich 方案落地，语音 + Hermes 均可调用，无需本地模型。'))
+story.append(B('Home Assistant 接入仍卡在外部环境（HA 实例 + MQTT broker），方案已明确（MQTT Discovery）。'))
+story.append(B('至此，原 SG560D 项目 19 个功能点中，除 Home Assistant 外已全部落地（含人脸识别）。'))
 
 story.append(Spacer(1, 8))
 story.append(HRFlowable(width='100%', thickness=0.8, color=colors.HexColor('#c5ccd6')))

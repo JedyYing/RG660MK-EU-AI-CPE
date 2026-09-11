@@ -20,6 +20,7 @@ BULB = "/data/ai_cpe/bulb_control.py"
 SNAPSHOT = "/data/ai_cpe/hermes/home/diag/rg660mk_c270_snapshot"
 VISION = "/data/ai_cpe/vision_control.py"
 PIPELINE = "/data/ai_cpe/hermes/home/photo_pipeline.py"
+FACE_RECOG = "/data/ai_cpe/face_recognize.py"
 REC_DEV = os.environ.get("REC_DEV", "plughw:2,0")
 PLAY_DEV = os.environ.get("PLAY_DEV", "plughw:2,0")
 
@@ -195,6 +196,9 @@ def execute_tool(name, args):
             if r.returncode == 0 and "[FAIL]" not in out:
                 return "拍照并上传到服务器完成"
             return "拍照上传失败"
+        elif name == "face_recognize":
+            r = subprocess.run(["python3", FACE_RECOG], capture_output=True, text=True, timeout=90)
+            return (r.stdout or r.stderr).strip() or "人脸识别完成"
     except Exception as e:
         return "工具执行失败: %s" % e
     return "未知工具"
@@ -310,10 +314,12 @@ def route(text):
         if any(k in text for k in ["上传", "传到", "服务器", "immich", "相册", "同步", "保存"]):
             return execute_tool("photo_upload", {}), False
         return execute_tool("take_photo", {}), False
-    # 4b. 人脸检测 / 坐姿检测
+    # 4b. 人脸识别（身份）/ 坐姿检测 / 人脸检测（可见性）
     if any(k in text for k in ["坐姿", "姿势", "体态"]):
         return execute_tool("detect_posture", {}), False
-    if any(k in text for k in ["人脸", "脸检测", "脸识别"]):
+    if any(k in text for k in ["识别", "是谁", "谁在", "脸识别"]):
+        return execute_tool("face_recognize", {}), False
+    if any(k in text for k in ["人脸", "脸检测"]):
         return execute_tool("detect_face", {}), False
     # "检测/检查"兜底：名词被误听（如"人脸"→"冷凉"）时默认人脸检测
     if any(k in text for k in ["检测", "檢查", "检查"]):
