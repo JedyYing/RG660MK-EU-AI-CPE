@@ -8,6 +8,7 @@
   3. 复杂问题      -> 投递 Hermes，先播"请稍等"
 """
 import os, subprocess, sys, time, math, wave, struct, json, urllib.request, urllib.parse, asyncio, datetime
+import re, threading, itertools
 
 os.environ.setdefault("HOME", "/data/hermes/home")
 
@@ -37,7 +38,14 @@ ACTIVE_TIMEOUT = 24
 WAKE_WORDS = ["小皮", "下皮", "小屁", "下屁", "小批", "小披", "小pipi", "你好小皮", "小皮皮"]
 EXIT_WORDS = ["休息", "睡觉", "退下", "再见", "拜拜", "晚安"]
 
+# ---- 双超时(设计文档 §4)----
+WAIT_PROMPT_SECS = 30      # 30 秒仍无结果 -> 先播"请稍等。"
+HARD_TIMEOUT_SECS = 60     # 60 秒仍无结果 -> 终止本轮并播"我还没有学会这个问题。"
+WAIT_PROMPT_TEXT = "请稍等。"
+GIVEUP_TEXT = "我还没有学会这个问题。"
+
 TIME_KEYS = ["几点", "时间", "日期", "几号", "星期", "今天", "现在", "什么时候"]
+WEATHER_KEYS = ["天气", "气温", "温度", "下雨", "下雪", "几度", "冷不冷", "热不热"]
 
 SYSTEM_PROMPT = ("你是小皮，智能音箱助手。回答简洁口语化。"
                  "查天气、控制灯泡、拍照、人脸检测、坐姿检测时务必调用对应工具获取真实信息。"
@@ -73,10 +81,14 @@ TOOLS = [
 
 
 def load_api_key():
-    for line in open("/data/hermes/.hermes/.env"):
-        line = line.strip()
-        if line.startswith("PHICOTEK_API_KEY="):
-            return line.split("=", 1)[1].strip().strip('"').strip("'")
+    try:
+        for line in open("/data/hermes/.hermes/.env"):
+            line = line.strip()
+            if line.startswith("PHICOTEK_API_KEY="):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    except OSError:
+        # 设备外(如本机离线测试)无 .env 时不崩,允许模块被 import
+        pass
     return ""
 
 API_KEY = load_api_key()
@@ -165,6 +177,70 @@ def get_time_now():
         "下午" if now.hour >= 12 else "上午",
         now.hour % 12 or 12, now.minute,
         ["一", "二", "三", "四", "五", "六", "日"][now.weekday()])
+
+
+# ---- 本地计算器(设计文档 §3.1: 安全表达式解析,禁止 eval)----
+_CN_NUM = {"零": "0", "〇": "0", "一": "1", "二": "2", "两": "2", "三": "3",
+           "四": "4", "五": "5", "六": "6", "七": "7", "八": "8", "九": "9"}
+_CN_OP = {"加": "+", "减": "-", "乘": "*", "除以": "/", "除": "/",
+          "×": "*", "÷": "/", "＋": "+", "－": "-", "x": "*", "X": "*"}
+
+
+def _normalize_calc(text):
+    """把中文算式口语归一成 ASCII 算术串。仅保留数字与 + - * / ( ) 和小数点。"""
+    t = text
+    for k, v in _CN_OP.items():
+        t = t.replace(k, v)
+    for k, v in _CN_NUM.items():
+        t = t.replace(k, v)
+    # 去掉"等于几/是多少/等于多少/得多少/结果"等尾巴与空白
+    t = re.sub(r"[等於于=]+(多少|几|是多少)?|结果|是多少|多少|请问|帮我算|算一下|计算|得", "", t)
+    t = t.replace(" ", "").replace("（", "(").replace("）", ")")
+    return t
+
+
+def is_calc(text):
+    """判断是否为纯算术问题。命中返回归一化表达式,否则 None。"""
+    norm = _normalize_calc(text)
+    # 必须含运算符,且整体只由 数字/运算符/括号/小数点 组成
+    if not re.search(r"[+\-*/]", norm):
+        return None
+    if not re.fullmatch(r"[0-9+\-*/().]+", norm):
+        return None
+    if not re.search(r"\d", norm):
+        return None
+    return norm
+
+
+def safe_calc(expr):
+    """用 AST 白名单求值,绝不 eval 用户输入。返回口语化结果字符串或 None。"""
+    import ast, operator
+    ops = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+           ast.Div: operator.truediv, ast.USub: operator.neg, ast.UAdd: operator.pos}
+
+    def _ev(node):
+        if isinstance(node, ast.Expression):
+            return _ev(node.body)
+        if isinstance(node, ast.Constant):
+            if isinstance(node.value, (int, float)):
+                return node.value
+            raise ValueError("bad const")
+        if isinstance(node, ast.BinOp) and type(node.op) in ops:
+            return ops[type(node.op)](_ev(node.left), _ev(node.right))
+        if isinstance(node, ast.UnaryOp) and type(node.op) in ops:
+            return ops[type(node.op)](_ev(node.operand))
+        raise ValueError("unsupported")
+
+    try:
+        tree = ast.parse(expr, mode="eval")
+        val = _ev(tree)
+        if isinstance(val, float):
+            val = round(val, 6)
+            if val == int(val):
+                val = int(val)
+        return "%s" % val
+    except Exception:
+        return None
 
 
 def execute_tool(name, args):
@@ -294,37 +370,62 @@ def extract_city(text):
     return None
 
 
-def route(text):
-    """分流。返回 (reply, need_hermes)。need_hermes=True 表示复杂问题需转 Hermes。"""
-    # 1. 时间/日期：本地即刻
+def classify(text):
+    """纯逻辑意图分类(无副作用,可离线测试)。返回 (intent, slots)。
+    优先级(设计文档 §2.2): DEVICE_CONTROL > WEATHER > LOCAL_DATE_TIME > LOCAL_CALCULATOR > (LLM兜底) > HERMES
+    关键: WEATHER 必须先于 LOCAL_DATE_TIME,否则"今天上海什么天气"里的"今天"会误命中时间。
+    """
+    # 1. 设备控制(最高优先级): 灯泡 / 拍照 / 检测
+    if "灯" in text:
+        action = "on" if "开" in text else ("off" if "关" in text else "status")
+        return "DEVICE_CONTROL", {"tool": "control_bulb", "action": action}
+    if any(k in text for k in ["拍照", "照相", "拍一张", "拍个照", "拍个照片"]):
+        if any(k in text for k in ["上传", "传到", "服务器", "immich", "相册", "同步", "保存"]):
+            return "DEVICE_CONTROL", {"tool": "photo_upload"}
+        return "DEVICE_CONTROL", {"tool": "take_photo"}
+    if any(k in text for k in ["坐姿", "姿势", "体态"]):
+        return "DEVICE_CONTROL", {"tool": "detect_posture"}
+    if any(k in text for k in ["识别", "是谁", "谁在", "脸识别"]):
+        return "DEVICE_CONTROL", {"tool": "face_recognize"}
+    if any(k in text for k in ["人脸", "脸检测"]):
+        return "DEVICE_CONTROL", {"tool": "detect_face"}
+    if any(k in text for k in ["检测", "檢查", "检查"]):
+        return "DEVICE_CONTROL", {"tool": "detect_face"}
+    # 2. 天气/实时(必须先于时间,处理"今天...天气"的关键词重叠)
+    if any(k in text for k in WEATHER_KEYS):
+        return "WEATHER", {"city": extract_city(text)}
+    # 3. 时间/日期
     if any(k in text for k in TIME_KEYS):
-        return get_time_now(), False
-    # 2. 天气：本地关键词 + 城市提取，直接查 wttr.in
-    if any(k in text for k in ["天气", "气温", "温度", "下雨", "下雪", "几度", "冷不冷", "热不热"]):
-        city = extract_city(text)
+        return "LOCAL_DATE_TIME", {}
+    # 4. 本地计算器
+    expr = is_calc(text)
+    if expr:
+        return "LOCAL_CALCULATOR", {"expr": expr}
+    # 5. 交给上层: 先 LLM 函数调用兜底,再 Hermes
+    return "LLM_OR_HERMES", {}
+
+
+def dispatch(intent, slots, text):
+    """按分类结果执行(有副作用)。返回 (reply, need_hermes)。"""
+    if intent == "DEVICE_CONTROL":
+        tool = slots["tool"]
+        if tool == "control_bulb":
+            return execute_tool("control_bulb", {"action": slots["action"]}), False
+        return execute_tool(tool, {}), False
+    if intent == "WEATHER":
+        city = slots.get("city")
         if not city:
             return "你想查哪个城市的天气呢？", False
         return execute_tool("get_weather", {"city": city}), False
-    # 3. 灯泡：本地关键词
-    if "灯" in text:
-        action = "on" if "开" in text else ("off" if "关" in text else "status")
-        return execute_tool("control_bulb", {"action": action}), False
-    # 4. 拍照：本地关键词（含上传/服务器等复合需求则走一条龙 photo_pipeline 上传）
-    if any(k in text for k in ["拍照", "照相", "拍一张", "拍个照", "拍个照片"]):
-        if any(k in text for k in ["上传", "传到", "服务器", "immich", "相册", "同步", "保存"]):
-            return execute_tool("photo_upload", {}), False
-        return execute_tool("take_photo", {}), False
-    # 4b. 人脸识别（身份）/ 坐姿检测 / 人脸检测（可见性）
-    if any(k in text for k in ["坐姿", "姿势", "体态"]):
-        return execute_tool("detect_posture", {}), False
-    if any(k in text for k in ["识别", "是谁", "谁在", "脸识别"]):
-        return execute_tool("face_recognize", {}), False
-    if any(k in text for k in ["人脸", "脸检测"]):
-        return execute_tool("detect_face", {}), False
-    # "检测/检查"兜底：名词被误听（如"人脸"→"冷凉"）时默认人脸检测
-    if any(k in text for k in ["检测", "檢查", "检查"]):
-        return execute_tool("detect_face", {}), False
-    # 5. 未命中本地关键词：先试 LLM 函数调用（抗误听，如"人脸"被听成"人年"），失败再转 Hermes
+    if intent == "LOCAL_DATE_TIME":
+        return get_time_now(), False
+    if intent == "LOCAL_CALCULATOR":
+        val = safe_calc(slots["expr"])
+        if val is not None:
+            return "%s" % val, False
+        # 解析失败则兜底给 LLM/Hermes
+        intent = "LLM_OR_HERMES"
+    # LLM 函数调用兜底(抗误听),失败再转 Hermes
     try:
         reply, used_tool = llm_tools(text)
         if used_tool:
@@ -332,6 +433,121 @@ def route(text):
     except Exception:
         pass
     return None, True
+
+
+def route(text):
+    """分流(保持原签名向后兼容)。返回 (reply, need_hermes)。"""
+    intent, slots = classify(text)
+    return dispatch(intent, slots, text)
+
+
+# ======================================================================
+# Conversation Manager: turn_id 隔离 + 30/60 秒双超时(设计文档 §4/§5/§7)
+# ======================================================================
+_turn_seq = itertools.count(1000)
+_current_turn_id = None       # 全局"当前有效轮",用于迟到结果丢弃
+_turn_lock = threading.Lock()
+
+
+class Turn:
+    """单轮对话状态。每轮全新创建 = 每轮状态重置(§5.1)。"""
+    __slots__ = ("id", "text", "start", "wait_prompt_played",
+                 "expired", "cancelled", "done", "result")
+
+    def __init__(self, text, clock):
+        self.id = next(_turn_seq)
+        self.text = text
+        self.start = clock()
+        self.wait_prompt_played = False
+        self.expired = False
+        self.cancelled = False
+        self.done = False
+        self.result = None
+
+
+def new_turn(text, clock=time.monotonic):
+    """开启新一轮:分配 turn_id 并设为当前有效轮(§5:新问题优先,取消旧轮)。"""
+    global _current_turn_id
+    turn = Turn(text, clock)
+    with _turn_lock:
+        _current_turn_id = turn.id
+    return turn
+
+
+def accept_result(turn, response):
+    """进入 TTS 前的统一校验(§4.1/§5.3):turn_id/expired/cancelled 三态,任一不符即丢弃。"""
+    if response is None:
+        return False
+    if turn.expired or turn.cancelled:
+        print("[TURN=%d] DISCARD reason=expired/cancelled" % turn.id, flush=True)
+        return False
+    with _turn_lock:
+        if turn.id != _current_turn_id:
+            print("[TURN=%d] DISCARD reason=stale current=%s" % (turn.id, _current_turn_id), flush=True)
+            return False
+    return True
+
+
+def handle_turn(text, handler, tts,
+                clock=time.monotonic, sleep=time.sleep,
+                wait_secs=WAIT_PROMPT_SECS, hard_secs=HARD_TIMEOUT_SECS,
+                poll=0.2):
+    """最外层轮管理(§7 状态机的非阻塞实现)。
+      handler(text, turn) -> reply 字符串 (在后台线程执行,可能耗时/联网/调 Hermes)
+      tts(text)          -> 播报
+    计时起点 = 进入本函数(对应 ASR 得到最终文本)。返回本轮 Turn 对象(便于测试断言)。
+    """
+    turn = new_turn(text, clock)
+    print("[TURN=%d] ROUTER text=%r" % (turn.id, text), flush=True)
+
+    box = {}
+    def _work():
+        try:
+            box["result"] = handler(text, turn)
+        except Exception as e:
+            box["error"] = e
+        finally:
+            turn.done = True
+
+    th = threading.Thread(target=_work, daemon=True)
+    th.start()
+
+    while not turn.done:
+        elapsed = clock() - turn.start
+        if elapsed >= hard_secs:
+            # 60 秒:强制结束本轮,迟到结果后续会被 accept_result 丢弃
+            turn.expired = True
+            turn.cancelled = True
+            print("[TURN=%d] TIMEOUT hard=%ds -> giveup" % (turn.id, hard_secs), flush=True)
+            tts(GIVEUP_TEXT)
+            return turn
+        if elapsed >= wait_secs and not turn.wait_prompt_played:
+            # 30 秒:仅一次"请稍等。",不标记完成,后台继续
+            turn.wait_prompt_played = True
+            print("[TURN=%d] WAIT_PROMPT at=%ds" % (turn.id, wait_secs), flush=True)
+            tts(WAIT_PROMPT_TEXT)
+        sleep(poll)
+
+    # 后台已完成:再次校验才允许进入 TTS
+    reply = box.get("result")
+    if "error" in box:
+        print("[TURN=%d] HANDLER_ERROR %s" % (turn.id, box["error"]), flush=True)
+    if accept_result(turn, reply):
+        print("[TURN=%d] RESPONSE=%r" % (turn.id, reply), flush=True)
+        print("[TURN=%d] TTS_START" % turn.id, flush=True)
+        tts(reply)
+        print("[TURN=%d] TTS_DONE" % turn.id, flush=True)
+    turn.result = reply
+    return turn
+
+
+def _turn_handler(clean, turn):
+    """真实业务 handler:本地/天气/计算立即返回;复杂问题走 Hermes。"""
+    reply, need_hermes = route(clean)
+    if need_hermes:
+        # 复杂问题:先不在这里播"请稍等",交给 30 秒超时统一处理
+        reply = hermes_ask(clean)
+    return reply
 
 
 def main():
@@ -351,7 +567,7 @@ def main():
                 if rms("/tmp/voice_rec.wav") < RMS_THRESHOLD:
                     continue
                 t = transcribe("/tmp/voice_rec.wav")
-                print("[said] %r" % t, flush=True)
+                print("[TURN? ] ASR_TEXT=%r" % t, flush=True)
                 if not t:
                     continue
                 if any(w in t for w in EXIT_WORDS):
@@ -362,12 +578,8 @@ def main():
                     speak("我在听，请说")
                     continue
                 try:
-                    reply, need_hermes = route(clean)
-                    if need_hermes:
-                        speak("请稍等")   # 即时反馈
-                        reply = hermes_ask(clean)
-                    print("[reply] %r" % reply, flush=True)
-                    speak(reply)
+                    # 每轮独立: turn_id 隔离 + 30/60 秒双超时统一在 handle_turn 内管理
+                    handle_turn(clean, _turn_handler, speak)
                 except Exception as e:
                     print("route error:", e, flush=True)
                     speak("我走神了，再说一次")
