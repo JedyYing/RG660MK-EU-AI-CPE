@@ -21,7 +21,7 @@ SNAPSHOT = "/data/ai_cpe/hermes/home/diag/rg660mk_c270_snapshot"
 VISION = "/data/ai_cpe/vision_control.py"
 PIPELINE = "/data/ai_cpe/hermes/home/photo_pipeline.py"
 FACE_RECOG = "/data/ai_cpe/face_recognize.py"
-REC_DEV = os.environ.get("REC_DEV", "plughw:2,0")
+REC_DEV = os.environ.get("REC_DEV", "plughw:1,0")
 PLAY_DEV = os.environ.get("PLAY_DEV", "plughw:2,0")
 
 # ---- LLM ----
@@ -32,12 +32,12 @@ VOICE = "zh-CN-XiaoxiaoNeural"
 # ---- 参数 ----
 RATE = 48000
 LISTEN_SECS = 5
-RMS_THRESHOLD = 200
+RMS_THRESHOLD = 50
 ACTIVE_TIMEOUT = 24
 WAKE_WORDS = ["小皮", "下皮", "小屁", "下屁", "小批", "小披", "小pipi", "你好小皮", "小皮皮"]
 EXIT_WORDS = ["休息", "睡觉", "退下", "再见", "拜拜", "晚安"]
 
-TIME_KEYS = ["几点", "时间", "日期", "几号", "星期", "今天", "现在", "什么时候"]
+TIME_KEYS = ["几点", "时间", "日期", "几号", "星期", "现在几", "什么时候", "今天星期", "今天几号", "今天什么日子"]
 
 SYSTEM_PROMPT = ("你是小皮，智能音箱助手。回答简洁口语化。"
                  "查天气、控制灯泡、拍照、人脸检测、坐姿检测时务必调用对应工具获取真实信息。"
@@ -83,13 +83,43 @@ API_KEY = load_api_key()
 
 
 def record(secs, path="/tmp/voice_rec.wav"):
-    subprocess.run(["arecord", "-D", REC_DEV, "-f", "S16_LE", "-r", str(RATE),
-                    "-c", "1", "-d", str(secs), "-q", path],
-                   check=False, stderr=subprocess.DEVNULL)
-    boost(path)
+    proc = subprocess.Popen(["arecord", "-D", REC_DEV, "-f", "S16_LE", "-r", str(RATE),
+                             "-c", "1", "-d", str(secs), "-q", path],
+                            stderr=subprocess.DEVNULL)
+    try:
+        proc.wait(timeout=secs + 5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+        print("[record] arecord timeout, killed", flush=True)
+    # 降采样 48kHz -> 16kHz（whisper 需要 16kHz，48kHz miniaudio 解码太慢）
+    if RATE == 48000:
+        downsample_48k_to_16k(path)
 
 
-def boost(path, factor=4.0):
+def downsample_48k_to_16k(path):
+    """Read 48kHz WAV, downsample to 16kHz, write back"""
+    try:
+        w = wave.open(path)
+        data = w.readframes(w.getnframes())
+        w.close()
+        n = len(data) // 2
+        samples = struct.unpack("<%dh" % n, data[:n * 2])
+        # Downsample: take every 3rd sample
+        samples_16k = samples[::3]
+        # Write back as 16kHz
+        w = wave.open(path, "w")
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(16000)
+        w.writeframes(struct.pack("<%dh" % len(samples_16k), *samples_16k))
+        w.close()
+        print("[downsample] 48kHz->16kHz: %d->%d samples" % (n, len(samples_16k)), flush=True)
+    except Exception as e:
+        print("[downsample] error: %s" % e, flush=True)
+
+
+def boost(path, factor=1.0):
     try:
         w = wave.open(path)
         n = w.getnframes()
@@ -97,14 +127,21 @@ def boost(path, factor=4.0):
             w.close(); return
         data = w.readframes(n)
         w.close()
-        a = struct.unpack("<%dh" % n, data[:n * 2])
+        actual_n = len(data) // 2
+        a = struct.unpack("<%dh" % actual_n, data[:actual_n * 2])
         a = [max(-32767, min(32767, int(x * factor))) for x in a]
+        # 降采样 48kHz -> 16kHz（whisper 需要 16kHz，48kHz miniaudio 解码太慢）
+        if RATE == 48000:
+            a = a[::3]
+            out_rate = 16000
+        else:
+            out_rate = RATE
         w = wave.open(path, "w")
-        w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE)
-        w.writeframes(struct.pack("<%dh" % n, *a))
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(out_rate)
+        w.writeframes(struct.pack("<%dh" % len(a), *a))
         w.close()
-    except Exception:
-        pass
+    except Exception as e:
+        print("[boost] error: %s" % e, flush=True)
 
 
 def rms(path):
@@ -141,10 +178,18 @@ def to_simplified(text):
 def transcribe(path):
     env = dict(os.environ, LD_LIBRARY_PATH=WHISPER_LIB)
     try:
-        r = subprocess.run([WHISPER, "-m", MODEL, "-f", path, "-l", "zh",
-                            "--no-timestamps", "-np"],
-                           capture_output=True, text=True, env=env, timeout=90)
-        for line in reversed(r.stdout.splitlines()):
+        proc = subprocess.Popen([WHISPER, "-m", MODEL, "-f", path, "-l", "zh",
+                                 "--no-timestamps", "-np"],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True, env=env)
+        try:
+            stdout, stderr = proc.communicate(timeout=30)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+            print("[transcribe] timeout, killed whisper", flush=True)
+            return ""
+        for line in reversed(stdout.splitlines()):
             line = line.strip()
             if not line:
                 continue
@@ -154,7 +199,8 @@ def transcribe(path):
                 continue
             return to_simplified(line)
         return ""
-    except Exception:
+    except Exception as e:
+        print("[transcribe] error: %s" % e, flush=True)
         return ""
 
 
