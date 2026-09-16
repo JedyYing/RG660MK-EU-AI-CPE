@@ -12,6 +12,13 @@ import re, threading, itertools
 
 os.environ.setdefault("HOME", "/data/hermes/home")
 
+# 真 VAD 语音端点检测（流式、说完即停）。vad.py 与本脚本同目录；
+# 缺失时回退到固定时长录音 record()，保证降级环境也能跑。
+try:
+    import vad
+except ImportError:
+    vad = None
+
 # ---- 路径与设备 ----
 WHISPER = "/data/ai_cpe/whisper/whisper-cli"
 WHISPER_LIB = "/data/ai_cpe/whisper/lib"
@@ -27,7 +34,7 @@ PLAY_DEV = os.environ.get("PLAY_DEV", "plughw:2,0")
 
 # ---- LLM ----
 LLM_URL = "https://qlitellm.phicotek.com/v1/chat/completions"
-LLM_MODEL = "deepseek-v4-pro"
+LLM_MODEL = os.environ.get("VOICE_LLM_MODEL", "deepseek-v4-flash")
 VOICE = "zh-CN-XiaoxiaoNeural"
 
 # ---- 参数 ----
@@ -44,10 +51,10 @@ HARD_TIMEOUT_SECS = 60     # 60 秒仍无结果 -> 终止本轮并播"我还没�
 WAIT_PROMPT_TEXT = "请稍等。"
 GIVEUP_TEXT = "我还没有学会这个问题。"
 
-TIME_KEYS = ["几点", "时间", "日期", "几号", "星期", "今天", "现在", "什么时候"]
+TIME_PATTERN = re.compile(r"^(?:请问|告诉我|帮我查一下)?(?:今天|现在)?(?:是)?(?:几点(?:钟)?(?:了)?|几月几[日号]|几号|星期几|周几|什么日期|什么时间|日期|时间)(?:了|呢|呀|啊|吗)?$")
 WEATHER_KEYS = ["天气", "气温", "温度", "下雨", "下雪", "几度", "冷不冷", "热不热"]
 
-SYSTEM_PROMPT = ("你是小皮，智能音箱助手。回答简洁口语化。"
+SYSTEM_PROMPT = ("你是小皮，智能音箱助手。回答供语音播报，只用两三句中文，不超过100字，不用标题、列表或Markdown。"
                  "查天气、控制灯泡、拍照、人脸检测、坐姿检测时务必调用对应工具获取真实信息。"
                  "注意：语音转写可能不准（如'人脸'可能被听成'冷凉/人年/人联'，'坐姿'可能被听成'作子/坐支'），"
                  "遇到'XX检测/检查'类命令时，优先判断用户是要人脸检测还是坐姿检测，调用 detect_face 或 detect_posture 工具。")
@@ -95,9 +102,11 @@ API_KEY = load_api_key()
 
 
 def record(secs, path="/tmp/voice_rec.wav"):
+    if os.path.exists(path):
+        os.unlink(path)
     subprocess.run(["arecord", "-D", REC_DEV, "-f", "S16_LE", "-r", str(RATE),
                     "-c", "1", "-d", str(secs), "-q", path],
-                   check=False, stderr=subprocess.DEVNULL)
+                   check=True, stderr=subprocess.DEVNULL, timeout=secs + 5)
     boost(path)
 
 
@@ -133,6 +142,24 @@ def rms(path):
         return 0
 
 
+def vad_record(path="/tmp/voice_rec.wav", max_s=None, start_wait_s=None,
+               end_sil_ms=None):
+    """用真 VAD 录一句：流式端点检测，说完即停。返回 True=录到语音。
+    vad 缺失时回退到固定 5 秒录音 + RMS 门限（兼容降级环境）。"""
+    if vad is None:
+        record(LISTEN_SECS, path)
+        return rms(path) >= RMS_THRESHOLD
+    got = vad.record_utterance(
+        path, rate=RATE, dev=REC_DEV,
+        max_s=max_s if max_s is not None else vad.MAX_UTTER_S,
+        start_wait_s=start_wait_s if start_wait_s is not None else vad.START_WAIT_S,
+        end_sil_ms=end_sil_ms if end_sil_ms is not None else vad.END_SIL_MS,
+        gain=4.0)
+    if got:
+        boost(path)
+    return got
+
+
 FAN2JIAN = str.maketrans({
     "氣": "气", "溫": "温", "間": "间", "點": "点", "號": "号", "幾": "几",
     "時": "时", "現": "现", "樣": "样", "麼": "么", "嗎": "吗", "開": "开",
@@ -156,17 +183,25 @@ def transcribe(path):
         r = subprocess.run([WHISPER, "-m", MODEL, "-f", path, "-l", "zh",
                             "--no-timestamps", "-np"],
                            capture_output=True, text=True, env=env, timeout=90)
-        for line in reversed(r.stdout.splitlines()):
+        if r.returncode != 0:
+            print("[ASR] failed rc=%s" % r.returncode, flush=True)
+            return ""
+        lines = []
+        for line in r.stdout.splitlines():
             line = line.strip()
             if not line:
                 continue
             if line.startswith(("whisper_", "main:", "system_info:", "read_audio",
                                 "whisper_print", "ggml_", "CPU", "processing",
-                                "[BLANK_AUDIO]", "(")):
+                                "[BLANK_AUDIO]")):
                 continue
-            return to_simplified(line)
-        return ""
-    except Exception:
+            # 括号里的音效/字幕是非语音标注，不能当成唤醒词或命令。
+            if re.fullmatch(r"[（(\[].*[）)\]]", line):
+                continue
+            lines.append(line)
+        return to_simplified("".join(lines))
+    except Exception as e:
+        print("[ASR] error=%s" % type(e).__name__, flush=True)
         return ""
 
 
@@ -188,13 +223,15 @@ _CN_OP = {"加": "+", "减": "-", "乘": "*", "除以": "/", "除": "/",
 
 def _normalize_calc(text):
     """把中文算式口语归一成 ASCII 算术串。仅保留数字与 + - * / ( ) 和小数点。"""
-    t = text
+    # 已观察到的 ASR 尾音误识别，仅在后续整串通过算式白名单时生效。
+    t = re.sub(r"等一[節节]$", "等于几", text)
     for k, v in _CN_OP.items():
         t = t.replace(k, v)
     for k, v in _CN_NUM.items():
         t = t.replace(k, v)
     # 去掉"等于几/是多少/等于多少/得多少/结果"等尾巴与空白
-    t = re.sub(r"[等於于=]+(多少|几|是多少)?|结果|是多少|多少|请问|帮我算|算一下|计算|得", "", t)
+    t = re.sub(r"(?:等[於于]?|=|得)(?:多少|几|是多少)?$|(?:是多少|多少|结果)$", "", t)
+    t = re.sub(r"^(?:请问|帮我算|算一下|计算)", "", t)
     t = t.replace(" ", "").replace("（", "(").replace("）", ")")
     return t
 
@@ -243,20 +280,88 @@ def safe_calc(expr):
         return None
 
 
+def get_weather_now(city):
+    """优先原天气服务；失败时通过独立 HTTPS 服务查询，始终校验证书。"""
+    try:
+        url = "https://wttr.in/" + urllib.parse.quote(city) + "?format=j1&lang=zh"
+        with urllib.request.urlopen(url, timeout=8) as response:
+            cur = json.load(response)["current_condition"][0]
+        desc = (cur.get("lang_zh") or cur["weatherDesc"])[0]["value"]
+        return "%s现在%s，气温%s度，体感%s度，湿度百分之%s" % (
+            city, desc, cur["temp_C"], cur["FeelsLikeC"], cur["humidity"])
+    except Exception as e:
+        print("[WEATHER] primary failed: %s" % e, flush=True)
+    coordinates = {"上海": (31.23, 121.47), "北京": (39.90, 116.41)}
+    if city in coordinates:
+        lat, lon = coordinates[city]
+    else:
+        url = "https://geocoding-api.open-meteo.com/v1/search?" + urllib.parse.urlencode(
+            {"name": city, "count": 5, "language": "zh"})
+        with urllib.request.urlopen(url, timeout=8) as response:
+            places = json.load(response).get("results", [])
+        place = next((p for p in places if p.get("country_code") in ("CN", "TW", "HK", "MO")), None)
+        if place is None:
+            return "没有查到这个城市的天气位置，请换一个城市名。"
+        lat, lon = place["latitude"], place["longitude"]
+    url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode({
+        "latitude": lat, "longitude": lon,
+        "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code",
+        "timezone": "Asia/Shanghai"})
+    with urllib.request.urlopen(url, timeout=10) as response:
+        cur = json.load(response)["current"]
+    descriptions = {0: "晴", 1: "晴间多云", 2: "多云", 3: "阴", 45: "有雾", 48: "有雾凇",
+                    51: "小毛毛雨", 53: "毛毛雨", 55: "较强毛毛雨", 56: "冻毛毛雨", 57: "冻毛毛雨",
+                    61: "小雨", 63: "中雨", 65: "大雨", 66: "冻雨", 67: "冻雨",
+                    71: "小雪", 73: "中雪", 75: "大雪", 77: "雪粒", 80: "阵雨", 81: "阵雨",
+                    82: "强阵雨", 85: "阵雪", 86: "强阵雪", 95: "雷雨", 96: "雷雨伴冰雹", 99: "雷雨伴冰雹"}
+    code = cur["weather_code"]
+    values = [cur[k] for k in ("temperature_2m", "apparent_temperature", "relative_humidity_2m")]
+    if code not in descriptions or any(v is None for v in values):
+        raise ValueError("incomplete weather data")
+    print("[WEATHER] source=open-meteo city=%s time=%s" % (city, cur["time"]), flush=True)
+    return "%s现在%s，气温%s度，体感%s度，湿度百分之%s" % (
+        city, descriptions[code], *values)
+
+
+def bulb_reply(action, result):
+    """把现有灯控 CLI 输出转成可播报结果；不将空输出视为成功。"""
+    output = (result.stdout or result.stderr or "").strip()
+    payload = None
+    start = output.find("{")
+    if start >= 0:
+        try:
+            payload = json.loads(output[start:])
+        except (ValueError, TypeError):
+            pass
+    if not isinstance(payload, dict):
+        payload = {}
+    if "device is offline" in output.lower():
+        return "灯泡离线了，请检查灯泡电源和网络连接。"
+    if result.returncode != 0 or payload.get("success") is False:
+        print("[BULB] failed rc=%s code=%s" % (result.returncode, payload.get("code")), flush=True)
+        return "灯泡控制失败，请稍后再试。"
+    if action == "status":
+        if payload.get("success") is True and isinstance(payload.get("result"), list):
+            for item in payload["result"]:
+                if isinstance(item, dict) and item.get("code") == "switch_led" and isinstance(item.get("value"), bool):
+                    return "灯泡当前是开着的。" if item["value"] else "灯泡当前是关着的。"
+        return "暂时无法确认灯泡的开关状态。"
+    # 兼容已有 CLI 的明确成功标记，不声称已确认物理状态。
+    if "已发送开灯指令" in output:
+        return "已发送开灯指令。"
+    if "已发送关灯指令" in output:
+        return "已发送关灯指令。"
+    return "没有收到灯泡的有效确认，请稍后再试。"
+
+
 def execute_tool(name, args):
     try:
         if name == "get_weather":
-            city = args.get("city", "上海")
-            url = "https://wttr.in/" + urllib.parse.quote(city) + "?format=j1"
-            r = json.loads(urllib.request.urlopen(url, timeout=15).read())
-            cur = r["current_condition"][0]
-            desc = cur["weatherDesc"][0]["value"]
-            return "%s现在%s，气温%s度，体感%s度，湿度百分之%s" % (
-                city, desc, cur["temp_C"], cur["FeelsLikeC"], cur["humidity"])
+            return get_weather_now(args.get("city", "上海"))
         elif name == "control_bulb":
             action = args.get("action", "status")
             r = subprocess.run(["python3", BULB, action], capture_output=True, text=True, timeout=30)
-            return (r.stdout or r.stderr).strip() or "灯泡操作完成"
+            return bulb_reply(action, r)
         elif name == "take_photo":
             r = subprocess.run([SNAPSHOT], capture_output=True, text=True, timeout=30)
             return "拍照完成，" + (r.stdout or "").strip()
@@ -276,7 +381,10 @@ def execute_tool(name, args):
             r = subprocess.run(["python3", FACE_RECOG], capture_output=True, text=True, timeout=90)
             return (r.stdout or r.stderr).strip() or "人脸识别完成"
     except Exception as e:
-        return "工具执行失败: %s" % e
+        print("[TOOL_ERROR] tool=%s error=%s" % (name, e), flush=True)
+        if name == "get_weather":
+            return "天气服务暂时连接失败，请稍后再试。"
+        return "设备操作失败，请稍后再试。"
     return "未知工具"
 
 
@@ -292,7 +400,7 @@ def llm_tools(text):
     r = json.loads(urllib.request.urlopen(req, timeout=40).read())
     msg = r["choices"][0]["message"]
     if not msg.get("tool_calls"):
-        return "", False  # 没调工具 => 复杂问题
+        return (msg.get("content") or "").strip(), False
     # 执行工具
     messages.append({"role": "assistant", "content": msg.get("content") or "",
                      "tool_calls": msg["tool_calls"]})
@@ -315,9 +423,13 @@ def hermes_ask(text):
     env = dict(os.environ, HOME="/data/hermes/home", HERMES_HOME="/data/hermes/.hermes")
     try:
         r = subprocess.run(["/data/hermes/venv/bin/hermes", "chat", "-q",
-                            text + "（请用两三句话简洁回答）", "-Q"],
+                            text + "（请用两三句话简洁回答）", "-Q", "-m", LLM_MODEL],
                            capture_output=True, text=True, env=env, timeout=180)
-        return r.stdout.strip()
+        output = r.stdout.strip()
+        if r.returncode != 0 or re.search(r"HTTP [45]\d\d|Invalid model|Traceback", output, re.I):
+            print("[HERMES] failed rc=%s" % r.returncode, flush=True)
+            return "问答服务暂时不可用，请稍后再试。"
+        return output or "问答服务暂时没有返回结果，请稍后再试。"
     except subprocess.TimeoutExpired:
         return "抱歉，这个问题我想得有点久，你换个说法试试"
     except Exception:
@@ -334,7 +446,7 @@ def speak(text):
     import re
     cn = len(re.findall(r'[\u4e00-\u9fff]', text))
     if len(text) > 10 and cn / len(text) < 0.3:
-        text = "抱歉，我没听清，请再说一次"
+        text = "回复内容暂时无法播报，请稍后再试。"
     mp3 = "/tmp/voice_tts.mp3"
     try:
         import edge_tts
@@ -351,11 +463,16 @@ def speak(text):
         print("speak error:", e)
 
 
+# 仅识别句首完整称呼；保留“你好”的兼容入口，去掉单字误触发。
+_WAKE_PREFIX = re.compile(r"^(?:你好[，,、\s]*(?:(?:小皮皮|小pipi|小皮|下皮|小屁|下屁|小批|小披|夏丁|下爹|夏皮))?|小皮皮|小pipi|小皮|下皮|小屁|下屁|小批|小披)[，,。.!！?？\s]*", re.I)
+
+
+def is_wake(text):
+    return bool(_WAKE_PREFIX.match(text.strip()))
+
+
 def strip_wake(text):
-    t = text
-    for w in WAKE_WORDS:
-        t = t.replace(w, "")
-    return t.strip().strip("，,。.!！?？ ")
+    return _WAKE_PREFIX.sub("", text.strip(), count=1).strip("，,。.!！?？ ")
 
 
 CITIES = ["上海", "北京", "广州", "深圳", "杭州", "南京", "成都", "重庆", "武汉",
@@ -375,6 +492,9 @@ def classify(text):
     优先级(设计文档 §2.2): DEVICE_CONTROL > WEATHER > LOCAL_DATE_TIME > LOCAL_CALCULATOR > (LLM兜底) > HERMES
     关键: WEATHER 必须先于 LOCAL_DATE_TIME,否则"今天上海什么天气"里的"今天"会误命中时间。
     """
+    text = to_simplified(text).strip().strip("，,。!！?？ ")
+    if not text:
+        return "EMPTY", {}
     # 1. 设备控制(最高优先级): 灯泡 / 拍照 / 检测
     if "灯" in text:
         action = "on" if "开" in text else ("off" if "关" in text else "status")
@@ -395,7 +515,7 @@ def classify(text):
     if any(k in text for k in WEATHER_KEYS):
         return "WEATHER", {"city": extract_city(text)}
     # 3. 时间/日期
-    if any(k in text for k in TIME_KEYS):
+    if TIME_PATTERN.fullmatch(text):
         return "LOCAL_DATE_TIME", {}
     # 4. 本地计算器
     expr = is_calc(text)
@@ -407,6 +527,8 @@ def classify(text):
 
 def dispatch(intent, slots, text):
     """按分类结果执行(有副作用)。返回 (reply, need_hermes)。"""
+    if intent == "EMPTY":
+        return "请再说一下，我没听清", False
     if intent == "DEVICE_CONTROL":
         tool = slots["tool"]
         if tool == "control_bulb":
@@ -428,7 +550,7 @@ def dispatch(intent, slots, text):
     # LLM 函数调用兜底(抗误听),失败再转 Hermes
     try:
         reply, used_tool = llm_tools(text)
-        if used_tool:
+        if reply:
             return reply, False
     except Exception:
         pass
@@ -551,24 +673,30 @@ def _turn_handler(clean, turn):
 
 
 def main():
-    print("voice_assistant started: rec=%s play=%s" % (REC_DEV, PLAY_DEV), flush=True)
+    print("voice_assistant started: rec=%s play=%s vad=%s" % (REC_DEV, PLAY_DEV, vad is not None), flush=True)
     while True:
-        # IDLE: 监听唤醒词
-        record(LISTEN_SECS)
-        if rms("/tmp/voice_rec.wav") < RMS_THRESHOLD:
+        # IDLE: VAD 监听唤醒词（流式端点检测，说完即停；无人说话则持续等待）
+        # end_sil_ms 调大到 2000ms：唤醒词"你好…小皮"中间有自然停顿，别把它切成两段。
+        if not vad_record("/tmp/voice_rec.wav", max_s=8, start_wait_s=86400, end_sil_ms=2000):
             continue
         text = transcribe("/tmp/voice_rec.wav")
         print("[listen] %r" % text, flush=True)
-        if "你好" in text or any(w in text for w in WAKE_WORDS) or any(c in text for c in ["皮", "吉", "批", "屁", "披"]):
+        if is_wake(text):
             print(">>> WAKE", flush=True)
-            speak("在呢，请说")
+            clean = strip_wake(text)
+            if clean:
+                handle_turn(clean, _turn_handler, speak)
+            else:
+                speak("在呢，请说")
             while True:
-                record(LISTEN_SECS)
-                if rms("/tmp/voice_rec.wav") < RMS_THRESHOLD:
-                    continue
+                # VAD 录一句；ACTIVE_TIMEOUT 内无人说话则自动退出对话
+                if not vad_record("/tmp/voice_rec.wav", start_wait_s=ACTIVE_TIMEOUT):
+                    speak("好的，先不打扰你了")
+                    break
                 t = transcribe("/tmp/voice_rec.wav")
                 print("[TURN? ] ASR_TEXT=%r" % t, flush=True)
                 if not t:
+                    speak("请再说一下，我没听清")
                     continue
                 if any(w in t for w in EXIT_WORDS):
                     speak("好的，再见")
