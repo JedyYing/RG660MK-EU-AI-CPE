@@ -388,54 +388,62 @@ def main():
                     add("warn", "摄像头", "USB 总线上未见摄像头，请插回 C270")
                     print(yellow("  △ USB 上没有摄像头，请插回 C270"))
 
-    # 摄像头实时预览 Web 页（camview @ http://<HOST>:8090/）健康检查 + 自愈
+    # 摄像头实时预览 Web 页（camview @ http://<HOST>:8090/）健康检查
     #   camview 是 procd 托管的常驻服务,直采 USB 摄像头并输出 MJPEG 预览。
     #   已知故障:摄像头一旦重新枚举(掉线/重插/USB 复位),camview 仍攥着旧的
     #   已失效句柄(/proc/<pid>/fd 里指向 "/dev/bus/usb/... (deleted)"),此时
     #   HTTP 主页还能开(返回 200),但 /stream 视频流卡死、取不到帧——用户体感即
-    #   "8090 打不开"。判据分两层:HTTP 可达 + USB 句柄未失效;任一异常则重启 camview 自愈。
+    #   "8090 打不开"。判据三层:HTTP 可达 + 进程在 + USB 句柄未失效。
+    #   注意:设备上已有 camview 看门狗(cron 每 5 分钟)在自愈同一问题。巡检不再
+    #   自己抢着重启(否则会与看门狗撞车,在进程切换空窗里误报"重启失败"),而是
+    #   带宽限复查最多 3 次——任一次通过即正常;持续异常才判故障并触发一次兜底重启。
     url = "http://%s:%d/" % (HOST, CAM_PREVIEW_PORT)
-    status, err = local_http_get(HOST, CAM_PREVIEW_PORT, "/")
-    http_ok = status is not None and 200 <= status < 500
-    # 查 camview 进程持有的 USB 句柄是否失效(deleted)
-    fd_out, _ = sh(ssh, "p=$(pgrep -f '/data/camview/camview' | head -1); "
-                        "[ -n \"$p\" ] && ls -l /proc/$p/fd 2>/dev/null | grep -i usb || echo NOPROC")
-    stale = "(deleted)" in fd_out
-    running = "NOPROC" not in fd_out
 
-    if http_ok and running and not stale:
+    def _probe_preview():
+        st, er = local_http_get(HOST, CAM_PREVIEW_PORT, "/")
+        ok_http = st is not None and 200 <= st < 500
+        fd, _ = sh(ssh, "p=$(pgrep -f '/data/camview/camview' | head -1); "
+                        "[ -n \"$p\" ] && ls -l /proc/$p/fd 2>/dev/null | grep -i usb || echo NOPROC")
+        return ok_http, ("NOPROC" not in fd), ("(deleted)" not in fd), st, er
+
+    ok_http = ok_run = ok_fd = False
+    status = err = None
+    for attempt in range(3):
+        ok_http, ok_run, ok_fd, status, err = _probe_preview()
+        if ok_http and ok_run and ok_fd:
+            break
+        if attempt < 2:
+            time.sleep(4)  # 宽限:可能正撞看门狗重启空窗,等几秒复查
+
+    if ok_http and ok_run and ok_fd:
         kv("预览页", "%s → HTTP %d,USB 句柄有效" % (url, status))
         add("ok", "摄像头预览页", "camview %s 可访问(HTTP %d),视频流句柄正常" % (url, status))
         print(green("  ✓ 摄像头预览页正常: %s (HTTP %d)" % (url, status)))
     else:
-        # 组织故障原因
         why = []
-        if not http_ok:
+        if not ok_http:
             why.append("HTTP %s" % (status if status is not None else (err or "无响应")))
-        if not running:
+        if not ok_run:
             why.append("camview 进程未运行")
-        if stale:
+        if not ok_fd:
             why.append("USB 句柄失效(摄像头重枚举后未重连,视频流会卡死)")
         reason = ";".join(why)
         if do_fix:
-            # 低风险自愈:重启 camview,让它重新打开有效的 USB 节点
+            # 复查 3 次仍异常 → 触发一次兜底重启(看门狗 5 分钟才跑一次,巡检立即救一把)
             sh(ssh, "/etc/init.d/camview enabled 2>/dev/null || /etc/init.d/camview enable")
             sh(ssh, "/etc/init.d/camview restart 2>&1", timeout=40)
-            time.sleep(5)
-            status2, err2 = local_http_get(HOST, CAM_PREVIEW_PORT, "/")
-            fd2, _ = sh(ssh, "p=$(pgrep -f '/data/camview/camview' | head -1); "
-                             "[ -n \"$p\" ] && ls -l /proc/$p/fd 2>/dev/null | grep -i usb || echo NOPROC")
-            ok2 = (status2 is not None and 200 <= status2 < 500) and "(deleted)" not in fd2 and "NOPROC" not in fd2
-            if ok2:
+            time.sleep(6)
+            r_http, r_run, r_fd, status2, _ = _probe_preview()
+            if r_http and r_run and r_fd:
                 kv("预览页", "%s → 曾异常(%s),已重启恢复" % (url, reason))
                 add("warn", "摄像头预览页", "camview 曾异常(%s),已自动重启恢复(HTTP %d)" % (reason, status2))
                 FIXES.append("重启 camview(8090 预览) → 已恢复")
                 print(yellow("  △ 摄像头预览页异常(%s) → 已自动重启恢复" % reason))
             else:
-                kv("预览页", "%s → 异常,重启后仍未恢复" % url)
-                add("fail", "摄像头预览页", "camview %s 异常(%s),自动重启后仍未恢复,需人工排查(USB 供电/摄像头连接)" % (url, reason))
+                kv("预览页", "%s → 持续异常,重启后仍未恢复" % url)
+                add("fail", "摄像头预览页", "camview %s 持续异常(%s),复查3次+重启后仍未恢复,需人工排查(USB 供电/摄像头连接)" % (url, reason))
                 FIXES.append("重启 camview(8090 预览) → 失败,需人工")
-                print(red("  ✗ 摄像头预览页异常,重启后仍未恢复,需人工排查"))
+                print(red("  ✗ 摄像头预览页持续异常,重启后仍未恢复,需人工排查"))
         else:
             kv("预览页", "%s → 打不开(%s)" % (url, reason))
             add("fail", "摄像头预览页", "camview %s 打不开(%s)(--no-fix 未修复)" % (url, reason))
