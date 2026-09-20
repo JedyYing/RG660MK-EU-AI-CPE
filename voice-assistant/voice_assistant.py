@@ -245,16 +245,18 @@ def asr_context(path):
         return 1500
 
 
-def transcribe(path):
+def transcribe(path, use_prompt=True):
     started = time.monotonic()
     env = dict(os.environ, LD_LIBRARY_PATH=WHISPER_LIB)
     try:
         # 热词偏置(设计 §6.1): 业务词表作为 whisper initial-prompt 上文提示,
         # 提升设备名/新疆地名等专有词命中率。模块缺失时不加,链路照常。
+        # 注意: 偏置只用于命令路径(默认 use_prompt=True); 唤醒/待机转写传
+        # use_prompt=False —— 唤醒词不在热词表内,且实测每次转写 +2.2s。
         cmd = [WHISPER, "-m", MODEL, "-f", path, "-l", "zh",
                "--no-timestamps", "-np", "-ac", str(asr_context(path)),
                "-bs", "1", "-bo", "1", "-nf"]
-        if accent_correct is not None:
+        if accent_correct is not None and use_prompt:
             try:
                 cmd += ["--prompt", accent_correct.whisper_prompt()]
             except Exception:
@@ -1056,7 +1058,8 @@ def main():
         # 唤醒收尾等待 800ms；固定确认语音在部署时预热到本地。
         if not vad_record("/tmp/voice_rec.wav", max_s=8, start_wait_s=86400, end_sil_ms=800):
             continue
-        text = transcribe("/tmp/voice_rec.wav")
+        # 待机唤醒转写不加热词 prompt: 唤醒词不在热词表内,加了只会 +2.2s 且空耗 CPU。
+        text = transcribe("/tmp/voice_rec.wav", use_prompt=False)
         print("[listen] %r" % text, flush=True)
         if is_wake(text):
             print(">>> WAKE", flush=True)
