@@ -50,6 +50,10 @@ LISTEN_SECS = 5
 RMS_THRESHOLD = 200
 ACTIVE_TIMEOUT = 24
 ASR_TIMEOUT = 8
+# 热词 prompt 开关（whisper --prompt）：默认关。2026-09-20 晚真机 A/B 证据：
+# 全量热词 prompt 会把含混的真实语音解码成热词碎片（"你好小皮"→"阿梅，鲁，河田"），
+# 且每次转写固定 +2.2s（约基线2倍）。待真实口音命令录音 A/B 通过后再启用（VOICE_ASR_PROMPT=1）。
+ASR_HOTWORD_PROMPT = os.environ.get("VOICE_ASR_PROMPT", "0") == "1"
 TTS_TIMEOUT = 3
 TTS_CACHE = os.environ.get("VOICE_TTS_CACHE", "/data/ai_cpe/tts_cache")
 FAST_TIMEOUT_TEXT = "这次处理有点慢，请再试一次。"
@@ -60,7 +64,7 @@ CACHED_SPEECH = {"在呢，请说", "我在听，请说", "请再说一下，我
                  "天气服务暂时连接失败，请稍后再试。",
                  "行情服务暂时连接失败，请稍后再试。",
                  "没有找到这只股票，请换一个名称或代码。"}
-WAKE_WORDS = ["小皮", "下皮", "小屁", "下屁", "小批", "小披", "小pipi", "你好小皮", "小皮皮"]
+WAKE_WORDS = ["小皮", "下皮", "小屁", "下屁", "小批", "小披", "小pipi", "你好小皮", "小皮皮", "下题"]
 EXIT_WORDS = ["休息", "睡觉", "退下", "再见", "拜拜", "晚安"]
 
 # ---- 双超时(设计文档 §4)----
@@ -245,14 +249,15 @@ def asr_context(path):
         return 1500
 
 
-def transcribe(path, use_prompt=True):
+def transcribe(path, use_prompt=None):
+    if use_prompt is None:
+        use_prompt = ASR_HOTWORD_PROMPT
     started = time.monotonic()
     env = dict(os.environ, LD_LIBRARY_PATH=WHISPER_LIB)
     try:
-        # 热词偏置(设计 §6.1): 业务词表作为 whisper initial-prompt 上文提示,
-        # 提升设备名/新疆地名等专有词命中率。模块缺失时不加,链路照常。
-        # 注意: 偏置只用于命令路径(默认 use_prompt=True); 唤醒/待机转写传
-        # use_prompt=False —— 唤醒词不在热词表内,且实测每次转写 +2.2s。
+        # 热词偏置(设计 §6.1): 业务词表作为 whisper initial-prompt 上文提示。
+        # 默认关闭(ASR_HOTWORD_PROMPT 开关)；唤醒/待机路径恒不带(use_prompt=False)。
+        # 开启与否以真实口音录音 A/B 为准（当前实测为负面：污染解码 + 每次 +2.2s）。
         cmd = [WHISPER, "-m", MODEL, "-f", path, "-l", "zh",
                "--no-timestamps", "-np", "-ac", str(asr_context(path)),
                "-bs", "1", "-bo", "1", "-nf"]
@@ -814,7 +819,7 @@ def respond(clean):
 
 
 # 仅识别句首完整称呼；保留“你好”的兼容入口，去掉单字误触发。
-_WAKE_PREFIX = re.compile(r"^(?:你好[，,、\s]*(?:(?:小皮皮|小pipi|小皮|下皮|小屁|下屁|小批|小披|夏丁|下爹|夏皮))?|小皮皮|小pipi|小皮|下皮|小屁|下屁|小批|小披)[，,。.!！?？\s]*", re.I)
+_WAKE_PREFIX = re.compile(r"^(?:你好[，,、\s]*(?:(?:小皮皮|小pipi|小皮|下皮|下题|小屁|下屁|小批|小披|夏丁|下爹|夏皮))?|小皮皮|小pipi|小皮|下皮|下题|小屁|下屁|小批|小披)[，,。.!！?？\s]*", re.I)
 
 
 def is_wake(text):
@@ -822,7 +827,15 @@ def is_wake(text):
 
 
 def strip_wake(text):
-    return _WAKE_PREFIX.sub("", text.strip(), count=1).strip("，,。.!！?？ ")
+    """剥离开头唤醒词。ASR 循环输出（如"你好下皮"×70）全部剥掉：
+    剥完为空 = 纯唤醒呼叫（按"在呢/我在听"处理），避免循环垃圾被当成命令送后端。"""
+    s = text.strip().strip("，,。.!！?？ ")
+    while s:
+        s2 = _WAKE_PREFIX.sub("", s, count=1).strip("，,。.!！?？ ")
+        if s2 == s:
+            break
+        s = s2
+    return s
 
 
 CITIES = ["上海", "北京", "广州", "深圳", "杭州", "南京", "成都", "重庆", "武汉",
