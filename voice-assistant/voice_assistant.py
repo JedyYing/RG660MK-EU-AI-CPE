@@ -19,6 +19,13 @@ try:
 except ImportError:
     vad = None
 
+# 新疆口音近音纠错 + 热词偏置（设计《新疆口音识别优化 V1.0》§6.1/§6.3）。
+# accent_correct.py 与本脚本同目录；缺失时口音优化整体降级为不启用，主链路照常。
+try:
+    import accent_correct
+except ImportError:
+    accent_correct = None
+
 # ---- 路径与设备 ----
 WHISPER = "/data/ai_cpe/whisper/whisper-cli"
 WHISPER_LIB = "/data/ai_cpe/whisper/lib"
@@ -179,9 +186,16 @@ def to_simplified(text):
 
 def transcribe(path):
     env = dict(os.environ, LD_LIBRARY_PATH=WHISPER_LIB)
+    # 热词偏置(设计 §6.1): 把业务词表作为 whisper initial-prompt 上文提示,
+    # 提升设备名/新疆地名等专有词的命中率。模块缺失时不加,链路照常。
+    cmd = [WHISPER, "-m", MODEL, "-f", path, "-l", "zh", "--no-timestamps", "-np"]
+    if accent_correct is not None:
+        try:
+            cmd += ["--prompt", accent_correct.whisper_prompt()]
+        except Exception:
+            pass
     try:
-        r = subprocess.run([WHISPER, "-m", MODEL, "-f", path, "-l", "zh",
-                            "--no-timestamps", "-np"],
+        r = subprocess.run(cmd,
                            capture_output=True, text=True, env=env, timeout=90)
         if r.returncode != 0:
             print("[ASR] failed rc=%s" % r.returncode, flush=True)
@@ -477,7 +491,10 @@ def strip_wake(text):
 
 CITIES = ["上海", "北京", "广州", "深圳", "杭州", "南京", "成都", "重庆", "武汉",
           "西安", "天津", "苏州", "长沙", "郑州", "青岛", "沈阳", "大连", "厦门",
-          "福州", "合肥", "昆明", "哈尔滨", "济南", "宁波", "无锡", "香港", "澳门", "台北"]
+          "福州", "合肥", "昆明", "哈尔滨", "济南", "宁波", "无锡", "香港", "澳门", "台北",
+          # 新疆地名（口音优化设计 §6.1：加入实际业务需要的地名）
+          "乌鲁木齐", "喀什", "伊犁", "克拉玛依", "吐鲁番", "阿克苏",
+          "和田", "库尔勒", "昌吉", "哈密", "石河子", "阿勒泰", "博乐", "奎屯"]
 
 
 def extract_city(text):
@@ -487,10 +504,12 @@ def extract_city(text):
     return None
 
 
-def classify(text):
+def classify(text, _accent_tried=False):
     """纯逻辑意图分类(无副作用,可离线测试)。返回 (intent, slots)。
     优先级(设计文档 §2.2): DEVICE_CONTROL > WEATHER > LOCAL_DATE_TIME > LOCAL_CALCULATOR > (LLM兜底) > HERMES
     关键: WEATHER 必须先于 LOCAL_DATE_TIME,否则"今天上海什么天气"里的"今天"会误命中时间。
+
+    _accent_tried: 内部递归标志,防止口音纠错后二次分类再触发纠错(只纠一次)。
     """
     text = to_simplified(text).strip().strip("，,。!！?？ ")
     if not text:
@@ -521,7 +540,19 @@ def classify(text):
     expr = is_calc(text)
     if expr:
         return "LOCAL_CALCULATOR", {"expr": expr}
-    # 5. 交给上层: 先 LLM 函数调用兜底,再 Hermes
+    # 5. 新疆口音近音纠错(设计 §6.3): 前面都没命中时,才尝试把疑似"口音误识别的
+    #    控制命令"拉回已知设备命令,再分类一次。只在此兜底位置触发 => 标准普通话
+    #    已在上面命中的意图绝不会被纠错改写,保护基线不退化(设计 §2)。
+    if accent_correct is not None and not _accent_tried:
+        fix = accent_correct.correct_command(text)
+        if fix is not None:
+            fixed_intent, fixed_slots = classify(fix["corrected"], _accent_tried=True)
+            if fixed_intent == "DEVICE_CONTROL":
+                fixed_slots = dict(fixed_slots)
+                fixed_slots["accent_fix"] = fix  # 保留纠错溯源,便于日志与回滚
+                print("[ACCENT] %r -> %r (dist=%d)" % (text, fix["corrected"], fix["distance"]), flush=True)
+                return fixed_intent, fixed_slots
+    # 6. 交给上层: 先 LLM 函数调用兜底,再 Hermes
     return "LLM_OR_HERMES", {}
 
 
