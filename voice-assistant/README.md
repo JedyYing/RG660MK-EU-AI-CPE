@@ -54,8 +54,12 @@ TTS: edge-tts(mp3) → mpg123 → aplay → 绿联 CM564 3.5mm 耳机口 (plughw
 
 按本地关键词优先级分流；**关键词没命中时先走 LLM 函数调用兜底（抗误听），再转 Hermes**：
 
-1. **时间/日期**：完整的日期/时间问句（如“现在几点”“今天星期几”）→ 本地 `get_time_now()`；不再由“今天”“现在”单独触发。实际优先级为设备控制 → 天气 → 日期时间 → 本地计算器 → LLM/Hermes。
+1. **时间/日期**：完整的日期/时间问句（如“现在几点”“今天星期几”）→ 本地 `get_time_now()`；不再由“今天”“现在”单独触发。实际优先级为设备控制 → 天气 → **行情** → 日期时间 → 本地计算器 → LLM/Hermes。
 2. **天气**：`天气/气温/温度/下雨/下雪/几度/冷不冷/热不热` → 提取城市 → `wttr.in`，失败后回退 Open-Meteo（HTTPS）。
+2b. **行情**（L1 实时联网，与天气同层）：`股价/股票/行情/收盘/开盘/涨跌/涨幅/大盘/涨停/市值…`，或出现已知股票名/6 位代码 → `resolve_symbol()` 解析代码 → 腾讯 `qt.gtimg.cn`，失败回退新浪 `hq.sinajs.cn`。
+   - 代码解析三级：显式代码（`603236`/`sh603236`）→ 本地别名表（含“移远通信”及 ASR 形近误听“亿元通信/一元通信”）→ smartbox 联网检索（`smartbox.gtimg.cn`，注意其返回是 ASCII `\uXXXX` 转义、不是 GBK）。
+   - 播报措辞按行情时间戳区分：15:00 后或更早日期说“收盘”，盘中说“最新价”；名称用接口返回的正式名，避免把误听的名字念出来。
+   - 名称解析不出来时**不谎称查过**，直接转 Hermes。
 3. **灯泡**：`灯` → `开`→on / `关`→off → `bulb_control.py`。
 4. **拍照**：`拍照/照相/拍一张/拍个照/拍个照片`
    - 含 `上传/传到/服务器/immich/相册/同步/保存` → `photo_pipeline.py` 一条龙（拍照→检测→传 Immich）
@@ -64,8 +68,14 @@ TTS: edge-tts(mp3) → mpg123 → aplay → 绿联 CM564 3.5mm 耳机口 (plughw
    - `坐姿/姿势/体态` → 坐姿检测
    - `人脸/脸检测/脸识别` → 人脸检测
    - **`检测/检查` 兜底** → 默认人脸检测（因为「人脸」「坐姿」名词常被误听成「冷凉」「人年」等，但「检测」两字稳定）
-6. **LLM 函数调用兜底**：以上都没命中 → `llm_tools()` 用 function calling 理解意图（工具：get_weather / control_bulb / take_photo / detect_face / detect_posture）。
+6. **LLM 函数调用兜底**：以上都没命中 → `llm_tools()` 用 function calling 理解意图（工具：get_weather / **get_stock_quote** / control_bulb / take_photo / detect_face / detect_posture）。
 7. **复杂问题**：先使用 LLM 直接答案；无结果再调用 `hermes chat -q`。默认语音模型 `deepseek-v4-flash`（可用 `VOICE_LLM_MODEL` 覆盖）；等待提示由统一双超时管理。
+
+> ⚠️ **模型的“我查不了”不是答案**。实测 deepseek-v4-flash 对股价/汇率/油价/新闻/车票一律回绝（“我暂时没法查询实时汇率…”）。这类文本若直接播报，就等于把 Hermes 兜底短路了 —— 用户听到的是一句回绝，而不是本可以查到的结果。因此 `dispatch()` 有两道闸：
+> - `is_capability_refusal()`：识别回绝措辞 → 转 Hermes；
+> - `needs_live_data()`：实时数据类问题**不带工具作答**就有编造数字的风险（比回绝更糟）→ 一律转 Hermes，绝不念出模型凭记忆写的数字。
+>
+> 另：`LLM_OR_HERMES` **不再享受 7 秒快速失败**（可能升级到 Hermes，实测约 29 秒），改用 §4 的 30/60 双超时。
 
 > 「拍照上传」这类**有现成脚本的确定任务不要走 Hermes**——Hermes 在边缘设备跑完整 agent 要 2.5 分钟+，本地 photo_pipeline 几秒完成。
 
@@ -103,6 +113,16 @@ procd_set_param respawn
 ## 2026-09-16 补充修复
 
 设备已部署并校验，详见 [修复与验证记录](修复与验证记录_20260916.md)。VAD 按 ×4 后的能量判断、输出 WAV 再做一次实际增益；最短有效语音 180ms，保留 150ms 尾音。ASR 合并全部有效转写行，失败返回空，录音开始前清除旧文件。
+
+## 2026-09-18 修复：实时行情与“拒绝即终答”
+
+用户反馈「问：请查看移远通信的收盘价 / 答：我查不了股市行情」。设备实测根因有三层：
+
+1. `dispatch()` 把模型的回绝当成最终答案直接播报（`need_hermes=False`，1.5 秒返回），**Hermes 从未被调用** —— 但实测 Hermes 能答对（走 `execute_code` 抓腾讯/新浪接口），耗时约 29 秒。
+2. 设计文档 §2.1 的 L1「实时联网」层只实现了天气，行情没有处理器，只能落到 L2。
+3. **即使修好路由也还是坏的**：`hermes_ask()` 返回的 stdout 开头是英文推理框（`┌─ Reasoning ─┐`），`speak()` 先截断 120 字符再做中文占比过滤 → 实测 `cn=4 ratio=0.03 → filtered=True`，用户会听到“回复内容暂时无法播报”。新增 `extract_hermes_answer()` 从末尾取连续中文段落解决。
+
+对应改动见 [修复与验证记录](修复与验证记录_20260916.md) 第四轮。回归测试 `tests/test_audio_pipeline.py::RealTimeQuoteTests`。
 
 ## 已知问题 / 待办
 

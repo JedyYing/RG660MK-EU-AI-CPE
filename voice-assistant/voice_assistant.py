@@ -8,7 +8,7 @@
   3. 复杂问题      -> 投递 Hermes，先播"请稍等"
 """
 import os, subprocess, sys, time, math, wave, struct, json, urllib.request, urllib.parse, asyncio, datetime
-import re, threading, itertools
+import re, threading, itertools, hashlib, tempfile
 
 os.environ.setdefault("HOME", "/data/hermes/home")
 
@@ -42,6 +42,17 @@ RATE = 48000
 LISTEN_SECS = 5
 RMS_THRESHOLD = 200
 ACTIVE_TIMEOUT = 24
+ASR_TIMEOUT = 8
+TTS_TIMEOUT = 3
+TTS_CACHE = os.environ.get("VOICE_TTS_CACHE", "/data/ai_cpe/tts_cache")
+FAST_TIMEOUT_TEXT = "这次处理有点慢，请再试一次。"
+CACHED_SPEECH = {"在呢，请说", "我在听，请说", "请再说一下，我没听清",
+                 "好的，再见", "好的，先不打扰你了", "2",
+                 "已发送开灯指令。", "已发送关灯指令。",
+                 "灯泡离线了，请检查灯泡电源和网络连接。", FAST_TIMEOUT_TEXT,
+                 "天气服务暂时连接失败，请稍后再试。",
+                 "行情服务暂时连接失败，请稍后再试。",
+                 "没有找到这只股票，请换一个名称或代码。"}
 WAKE_WORDS = ["小皮", "下皮", "小屁", "下屁", "小批", "小披", "小pipi", "你好小皮", "小皮皮"]
 EXIT_WORDS = ["休息", "睡觉", "退下", "再见", "拜拜", "晚安"]
 
@@ -54,9 +65,43 @@ GIVEUP_TEXT = "我还没有学会这个问题。"
 TIME_PATTERN = re.compile(r"^(?:请问|告诉我|帮我查一下)?(?:今天|现在)?(?:是)?(?:几点(?:钟)?(?:了)?|几月几[日号]|几号|星期几|周几|什么日期|什么时间|日期|时间)(?:了|呢|呀|啊|吗)?$")
 WEATHER_KEYS = ["天气", "气温", "温度", "下雨", "下雪", "几度", "冷不冷", "热不热"]
 
+# ---- L1 实时行情(设计文档 §2.1 L1「实时联网」,与天气处理器同款形状)----
+QUOTE_URL = "https://qt.gtimg.cn/q="
+QUOTE_BACKUP_URL = "https://hq.sinajs.cn/list="
+QUOTE_SUGGEST_URL = "https://smartbox.gtimg.cn/s3/"
+QUOTE_FAIL_TEXT = "行情服务暂时连接失败，请稍后再试。"
+QUOTE_NOTFOUND_TEXT = "没有找到这只股票，请换一个名称或代码。"
+STOCK_KEYS = ["股价", "股票", "行情", "收盘", "开盘", "涨跌", "涨幅", "跌幅", "涨停",
+              "跌停", "大盘", "成交量", "成交额", "市值", "市盈率", "换手率"]
+# 本地别名表：覆盖主力用例与已观察到的 ASR 形近误听；其余名称走联网检索。
+STOCK_ALIASES = {
+    "移远通信": "sh603236", "移远通讯": "sh603236", "一元通信": "sh603236", "亿元通信": "sh603236",
+    "上证指数": "sh000001", "上证综指": "sh000001", "沪指": "sh000001",
+    "深证成指": "sz399001", "创业板指": "sz399006", "沪深300": "sh000300", "科创50": "sh000688",
+}
+# 显式代码:无交易所前缀时靠首位推断,推断不出(如"123456")就不当股票处理。
+_STOCK_CODE = re.compile(r"(?<![0-9A-Za-z])(?:(sh|sz|bj|hk|us)\s*)?(\d{6})(?![0-9])", re.I)
+# 疑问词不是股票名:"什么是股票"应转 Hermes 解释概念,不该去查行情。
+_NAME_STOPWORDS = {"什么", "怎么", "如何", "哪些", "哪个", "多少", "为什么", "啥", "什么样"}
+
+# ---- 「拒绝不得成为终答」(设计文档 §3.3/§11: 复杂问题必须稳定进入 Hermes)----
+# 实测 deepseek-v4-flash 对实时数据的回绝措辞,见 2026-09-18 设备日志。
+_REFUSAL_PATTERN = re.compile(
+    r"我(?:暂时|这边)?(?:没法|无法|不能|查不了|查不到|没有|不具备)"
+    r"|没有[^，。！？]{0,10}的功能"
+    r"|帮不了|做不到"
+    r"|建议(?:您|你)(?:打开|用|上|去|使用)"
+    r"|只能帮(?:你|您)")
+# 实时数据域：模型给不出实时值，编造一个数字比回绝更糟(§1.2 同一原则)。
+LIVE_DOMAINS = ["股价", "股票", "行情", "收盘", "开盘", "汇率", "油价", "汽油", "柴油",
+                "金价", "比分", "彩票", "快递", "航班", "限行", "新闻", "涨停", "涨跌"]
+LIVE_MARKERS = ["今天", "现在", "最新", "实时", "当前", "刚刚", "多少", "几"]
+
 SYSTEM_PROMPT = ("你是小皮，智能音箱助手。回答供语音播报，只用两三句中文，不超过100字，不用标题、列表或Markdown。"
-                 "查天气、控制灯泡、拍照、人脸检测、坐姿检测时务必调用对应工具获取真实信息。"
-                 "注意：语音转写可能不准（如'人脸'可能被听成'冷凉/人年/人联'，'坐姿'可能被听成'作子/坐支'），"
+                 "查天气、查股票行情、控制灯泡、拍照、人脸检测、坐姿检测时务必调用对应工具获取真实信息。"
+                 "股价、汇率、油价、新闻、比分等实时数据一律不得凭记忆作答，没有工具就说明无法获取，绝不编造数字。"
+                 "注意：语音转写可能不准（如'人脸'可能被听成'冷凉/人年/人联'，'坐姿'可能被听成'作子/坐支'，"
+                 "'移远通信'可能被听成'亿元通信/一元通信'），"
                  "遇到'XX检测/检查'类命令时，优先判断用户是要人脸检测还是坐姿检测，调用 detect_face 或 detect_posture 工具。")
 
 TOOLS = [
@@ -76,6 +121,12 @@ TOOLS = [
         "name": "take_photo",
         "description": "用摄像头拍照",
         "parameters": {"type": "object", "properties": {}, "required": []}}},
+    {"type": "function", "function": {
+        "name": "get_stock_quote",
+        "description": "查询股票或指数的实时行情、收盘价、涨跌幅",
+        "parameters": {"type": "object",
+                       "properties": {"name": {"type": "string", "description": "股票名称或6位代码"}},
+                       "required": ["name"]}}},
     {"type": "function", "function": {
         "name": "detect_face",
         "description": "打开摄像头做人脸检测，判断画面里是否有人脸",
@@ -177,12 +228,24 @@ def to_simplified(text):
     return text.translate(FAN2JIAN)
 
 
+def asr_context(path):
+    # Whisper 音频上下文每秒约 50 个位置；留至少一秒余量。
+    try:
+        with wave.open(path) as wav:
+            duration = wav.getnframes() / wav.getframerate()
+        return min(1500, max(384, math.ceil((duration + 1) * 50 / 128) * 128))
+    except (OSError, wave.Error):
+        return 1500
+
+
 def transcribe(path):
+    started = time.monotonic()
     env = dict(os.environ, LD_LIBRARY_PATH=WHISPER_LIB)
     try:
         r = subprocess.run([WHISPER, "-m", MODEL, "-f", path, "-l", "zh",
-                            "--no-timestamps", "-np"],
-                           capture_output=True, text=True, env=env, timeout=90)
+                            "--no-timestamps", "-np", "-ac", str(asr_context(path)),
+                            "-bs", "1", "-bo", "1", "-nf"],
+                           capture_output=True, text=True, env=env, timeout=ASR_TIMEOUT)
         if r.returncode != 0:
             print("[ASR] failed rc=%s" % r.returncode, flush=True)
             return ""
@@ -204,6 +267,9 @@ def transcribe(path):
         print("[ASR] error=%s" % type(e).__name__, flush=True)
         return ""
 
+    finally:
+        print("[LATENCY] asr_s=%.3f" % (time.monotonic() - started), flush=True)
+
 
 def get_time_now():
     now = datetime.datetime.now()
@@ -224,6 +290,7 @@ _CN_OP = {"加": "+", "减": "-", "乘": "*", "除以": "/", "除": "/",
 def _normalize_calc(text):
     """把中文算式口语归一成 ASCII 算术串。仅保留数字与 + - * / ( ) 和小数点。"""
     # 已观察到的 ASR 尾音误识别，仅在后续整串通过算式白名单时生效。
+    text = re.sub(r"^一家一等(?:一集|[于於]几)$", "一加一等于几", text)
     t = re.sub(r"等一[節节]$", "等于几", text)
     for k, v in _CN_OP.items():
         t = t.replace(k, v)
@@ -284,7 +351,7 @@ def get_weather_now(city):
     """优先原天气服务；失败时通过独立 HTTPS 服务查询，始终校验证书。"""
     try:
         url = "https://wttr.in/" + urllib.parse.quote(city) + "?format=j1&lang=zh"
-        with urllib.request.urlopen(url, timeout=8) as response:
+        with urllib.request.urlopen(url, timeout=2) as response:
             cur = json.load(response)["current_condition"][0]
         desc = (cur.get("lang_zh") or cur["weatherDesc"])[0]["value"]
         return "%s现在%s，气温%s度，体感%s度，湿度百分之%s" % (
@@ -307,7 +374,7 @@ def get_weather_now(city):
         "latitude": lat, "longitude": lon,
         "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code",
         "timezone": "Asia/Shanghai"})
-    with urllib.request.urlopen(url, timeout=10) as response:
+    with urllib.request.urlopen(url, timeout=4) as response:
         cur = json.load(response)["current"]
     descriptions = {0: "晴", 1: "晴间多云", 2: "多云", 3: "阴", 45: "有雾", 48: "有雾凇",
                     51: "小毛毛雨", 53: "毛毛雨", 55: "较强毛毛雨", 56: "冻毛毛雨", 57: "冻毛毛雨",
@@ -321,6 +388,212 @@ def get_weather_now(city):
     print("[WEATHER] source=open-meteo city=%s time=%s" % (city, cur["time"]), flush=True)
     return "%s现在%s，气温%s度，体感%s度，湿度百分之%s" % (
         city, descriptions[code], *values)
+
+
+# ---- L1 实时行情(设计文档 §2.1,与 get_weather_now 同款主备结构)----
+def _unescape_u(text):
+    """smartbox 把中文名写成 ASCII 的 \\uXXXX 转义,不是 GBK。"""
+    return re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), text)
+
+
+def _infer_prefix(code):
+    head = code[0]
+    if head in "569":
+        return "sh"
+    if head in "023":
+        return "sz"
+    if head in "48":
+        return "bj"
+    return None
+
+
+def _code_to_symbol(code, market=None):
+    if market:
+        market = market.lower()
+        return ("sh" if market == "ss" else market) + code
+    prefix = _infer_prefix(code)
+    return prefix + code if prefix else None
+
+
+def _num(text):
+    try:
+        return float(text)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _trim_num(value):
+    return ("%.2f" % value).rstrip("0").rstrip(".") or "0"
+
+
+def _market_closed(stamp):
+    """行情时间戳 YYYYMMDDHHMMSS:当日 15:00 后,或已是更早的日期,都算已收盘。"""
+    try:
+        moment = datetime.datetime.strptime(stamp, "%Y%m%d%H%M%S")
+    except (ValueError, TypeError):
+        return True
+    return moment.date() < datetime.datetime.now().date() or moment.hour >= 15
+
+
+def _format_quote(name, price, change, percent, stamp):
+    if change > 0:
+        move = "涨%s元，涨幅百分之%s" % (_trim_num(change), _trim_num(percent))
+    elif change < 0:
+        move = "跌%s元，跌幅百分之%s" % (_trim_num(-change), _trim_num(-percent))
+    else:
+        move = "与上一交易日收盘持平"
+    return "%s今天%s%s元，%s。" % (
+        name, "收盘" if _market_closed(stamp) else "最新价", _trim_num(price), move)
+
+
+def _quote_from_tencent(symbol):
+    with urllib.request.urlopen(QUOTE_URL + symbol, timeout=4) as response:
+        body = response.read().decode("gbk", "replace")
+    match = re.search(r'="([^"]*)"', body)
+    if not match:
+        raise ValueError("bad quote payload")
+    field = match.group(1).split("~")
+    if len(field) < 33 or not field[1]:
+        raise ValueError("short quote payload")
+    name, price = field[1], _num(field[3])
+    if price <= 0:
+        return "暂时查不到%s的行情，可能停牌或代码不正确。" % name
+    return _format_quote(name, price, _num(field[31]), _num(field[32]), field[30])
+
+
+def _quote_from_sina(symbol):
+    req = urllib.request.Request(QUOTE_BACKUP_URL + symbol,
+                                 headers={"Referer": "https://finance.sina.com.cn"})
+    with urllib.request.urlopen(req, timeout=4) as response:
+        body = response.read().decode("gbk", "replace")
+    match = re.search(r'="([^"]*)"', body)
+    if not match:
+        raise ValueError("bad quote payload")
+    field = match.group(1).split(",")
+    if len(field) < 32 or not field[0]:
+        raise ValueError("short quote payload")
+    name, price, previous = field[0], _num(field[3]), _num(field[2])
+    if price <= 0:
+        return "暂时查不到%s的行情，可能停牌或代码不正确。" % name
+    change = price - previous
+    stamp = re.sub(r"\D", "", field[30] + field[31])[:14]
+    return _format_quote(name, price, change,
+                         (change / previous * 100) if previous else 0.0, stamp)
+
+
+def get_stock_quote(symbol):
+    try:
+        return _quote_from_tencent(symbol)
+    except Exception as e:
+        print("[QUOTE] primary failed: %s" % type(e).__name__, flush=True)
+    try:
+        return _quote_from_sina(symbol)
+    except Exception as e:
+        print("[QUOTE] backup failed: %s" % type(e).__name__, flush=True)
+    return QUOTE_FAIL_TEXT
+
+
+def _name_candidates(text):
+    """剥掉问法与行情词,取出剩余的中文串作为候选股票名。"""
+    stripped = text
+    for word in ("请查看", "帮我查一下", "帮我查", "查一下", "请问", "告诉我", "看看",
+                 "的", "是", "现在", "今天", "最新", "实时", "多少", "多少钱", "怎么样") + tuple(STOCK_KEYS):
+        stripped = stripped.replace(word, " ")
+    return [c for c in re.findall(r"[一-鿿]{2,8}", stripped) if c not in _NAME_STOPWORDS]
+
+
+def _suggest_symbol(name):
+    """联网把名称解析成代码;优先精确同名,再按 A股/港股/指数 顺序取。"""
+    url = QUOTE_SUGGEST_URL + "?" + urllib.parse.urlencode({"q": name, "t": "all"})
+    with urllib.request.urlopen(url, timeout=4) as response:
+        body = response.read().decode("ascii", "ignore")
+    if '"' not in body:
+        return None
+    hints = []
+    for item in body.split('"')[1].split("^"):
+        field = item.split("~")
+        if len(field) < 5 or field[0] not in ("sh", "sz", "bj", "hk") or not field[1].isdigit():
+            continue
+        hints.append((field[4], _unescape_u(field[2]), field[0] + field[1]))
+    for kind, label, symbol in hints:
+        if label == name:
+            return symbol, label
+    for want in ("GP-A", "GP", "ZS", "ETF"):
+        for kind, label, symbol in hints:
+            if kind == want:
+                return symbol, label
+    return None
+
+
+def _explicit_symbol(text):
+    match = _STOCK_CODE.search(text)
+    return _code_to_symbol(match.group(2), match.group(1)) if match else None
+
+
+def resolve_symbol(text):
+    """口语名/代码 -> 行情接口代码。返回 (symbol, 名称) 或 None。
+    顺序: 显式代码 -> 本地别名 -> 联网检索。"""
+    symbol = _explicit_symbol(text)
+    if symbol:
+        return symbol, None
+    for name, symbol in STOCK_ALIASES.items():
+        if name in text:
+            return symbol, name
+    for candidate in _name_candidates(text):
+        try:
+            found = _suggest_symbol(candidate)
+        except Exception as e:
+            print("[QUOTE] suggest failed: %s" % type(e).__name__, flush=True)
+            continue
+        if found:
+            return found
+    return None
+
+
+def is_stock_query(text):
+    if any(key in text for key in STOCK_KEYS):
+        return True
+    if any(name in text for name in STOCK_ALIASES):
+        return True
+    return _explicit_symbol(text) is not None
+
+
+def is_capability_refusal(reply):
+    """模型说"我查不了"并不等于回答了问题,不得作为终答(设计文档 §3.3/§11)。"""
+    return bool(_REFUSAL_PATTERN.search(reply or ""))
+
+
+def needs_live_data(text):
+    """实时数据类问题:模型不带工具作答就有编造数字的风险,强制升级 Hermes。"""
+    if not any(key in text for key in LIVE_DOMAINS):
+        return False
+    return any(key in text for key in LIVE_MARKERS)
+
+
+_BOX_FRAME = re.compile(r"^\s*[┌└│├─┐┘┤]+")
+
+
+def _cjk_ratio(text):
+    return sum(1 for c in text if "一" <= c <= "鿿") / len(text) if text else 0.0
+
+
+def extract_hermes_answer(output, min_ratio=0.3, max_chars=300):
+    """Hermes 的 stdout 先打印英文推理框,再打印最终中文答案(实测 2026-09-18)。
+    从末尾向前取连续的中文段落,遇到第一个不达标段落即停,避免把推理念给用户。"""
+    kept = [line for line in (output or "").splitlines()
+            if not _BOX_FRAME.match(line) and not line.strip().startswith("session_id:")]
+    picked, total = [], 0
+    for block in reversed("\n".join(kept).split("\n\n")):
+        text = " ".join(block.split())
+        if not text:
+            continue
+        if _cjk_ratio(text) < min_ratio:
+            break
+        picked.append(text)
+        total += len(text)
+        if total >= max_chars:
+            break
+    return "".join(reversed(picked))
 
 
 def bulb_reply(action, result):
@@ -358,9 +631,12 @@ def execute_tool(name, args):
     try:
         if name == "get_weather":
             return get_weather_now(args.get("city", "上海"))
+        elif name == "get_stock_quote":
+            found = resolve_symbol(args.get("name", ""))
+            return get_stock_quote(found[0]) if found else QUOTE_NOTFOUND_TEXT
         elif name == "control_bulb":
             action = args.get("action", "status")
-            r = subprocess.run(["python3", BULB, action], capture_output=True, text=True, timeout=30)
+            r = subprocess.run(["python3", BULB, action], capture_output=True, text=True, timeout=6)
             return bulb_reply(action, r)
         elif name == "take_photo":
             r = subprocess.run([SNAPSHOT], capture_output=True, text=True, timeout=30)
@@ -384,6 +660,8 @@ def execute_tool(name, args):
         print("[TOOL_ERROR] tool=%s error=%s" % (name, e), flush=True)
         if name == "get_weather":
             return "天气服务暂时连接失败，请稍后再试。"
+        if name == "get_stock_quote":
+            return QUOTE_FAIL_TEXT
         return "设备操作失败，请稍后再试。"
     return "未知工具"
 
@@ -429,38 +707,93 @@ def hermes_ask(text):
         if r.returncode != 0 or re.search(r"HTTP [45]\d\d|Invalid model|Traceback", output, re.I):
             print("[HERMES] failed rc=%s" % r.returncode, flush=True)
             return "问答服务暂时不可用，请稍后再试。"
-        return output or "问答服务暂时没有返回结果，请稍后再试。"
+        # stdout 里带着推理框,必须先抽出最终中文答案,否则会被播报层当成乱码过滤掉。
+        answer = extract_hermes_answer(output)
+        print("[HERMES] raw=%d chars -> answer=%d chars" % (len(output), len(answer)), flush=True)
+        return answer or "问答服务暂时没有返回结果，请稍后再试。"
     except subprocess.TimeoutExpired:
         return "抱歉，这个问题我想得有点久，你换个说法试试"
     except Exception:
         return ""
 
 
+def prepare_tts(text, timeout=TTS_TIMEOUT):
+    """固定句缓存，动态句临时文件；超时可控，不复用残缺音频。"""
+    import edge_tts
+    os.makedirs(TTS_CACHE, exist_ok=True)
+    key = hashlib.sha256((VOICE + "\n" + text).encode()).hexdigest()
+    cached = text in CACHED_SPEECH
+    target = os.path.join(TTS_CACHE, key + ".mp3")
+    if cached and os.path.exists(target) and os.path.getsize(target) > 0:
+        return target, False
+    fd, temporary = tempfile.mkstemp(suffix=".mp3", dir=TTS_CACHE)
+    os.close(fd)
+    async def synth():
+        await asyncio.wait_for(edge_tts.Communicate(text, VOICE).save(temporary), timeout)
+    try:
+        asyncio.run(synth())
+        if not os.path.getsize(temporary):
+            raise ValueError("empty TTS audio")
+        if cached:
+            os.replace(temporary, target)
+            return target, False
+        return temporary, True
+    except Exception:
+        os.unlink(temporary)
+        raise
+
+
 def speak(text):
     if not text:
         return
-    # 防护：截断超长文本 + 过滤乱码，避免长时间占用音频设备
-    text = text.strip()
-    if len(text) > 120:
-        text = text[:120]
-    import re
+    text = text.strip()[:120]
     cn = len(re.findall(r'[\u4e00-\u9fff]', text))
     if len(text) > 10 and cn / len(text) < 0.3:
         text = "回复内容暂时无法播报，请稍后再试。"
-    mp3 = "/tmp/voice_tts.mp3"
+    started = time.monotonic()
+    disposable = False
+    mp3 = None
     try:
-        import edge_tts
-        async def _synth():
-            await edge_tts.Communicate(text, VOICE).save(mp3)
-        asyncio.run(_synth())
+        try:
+            mp3, disposable = prepare_tts(text)
+        except Exception as e:
+            print("[TTS] synthesis failed: %s" % type(e).__name__, flush=True)
+            # 已预热的本地提示，无需再等待网络。
+            mp3, disposable = prepare_tts(FAST_TIMEOUT_TEXT)
+        print("[LATENCY] tts_ready_s=%.3f text=%r" % (time.monotonic() - started, text), flush=True)
         p1 = subprocess.Popen([MPG123, "-q", "-s", "--rate", "48000", mp3],
                               stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        p2 = subprocess.Popen(["aplay", "-D", PLAY_DEV, "-f", "S16_LE", "-r", "48000",
-                               "-c", "1", "-q"], stdin=p1.stdout, stderr=subprocess.DEVNULL)
-        p1.stdout.close()
-        p2.communicate()
+        try:
+            p2 = subprocess.Popen(["aplay", "-D", PLAY_DEV, "-f", "S16_LE", "-r", "48000",
+                                   "-c", "1", "-q"], stdin=p1.stdout, stderr=subprocess.DEVNULL)
+            p1.stdout.close()
+            try:
+                p2.wait(timeout=25)
+            except subprocess.TimeoutExpired:
+                p2.kill()
+                p2.wait()
+                raise
+        finally:
+            if p1.poll() is None:
+                p1.terminate()
+            p1.wait(timeout=2)
     except Exception as e:
-        print("speak error:", e)
+        print("speak error:", e, flush=True)
+    finally:
+        if disposable and mp3:
+            os.unlink(mp3)
+
+
+def respond(clean):
+    intent, slots = classify(clean)
+    # 只有"确定不会升级到 Hermes"的意图才享受 7 秒快速失败。LLM_OR_HERMES 现在可能
+    # 因拒绝/实时数据升级到 Hermes(实测约 29 秒),必须走 §4 的 30/60 双超时。
+    simple = intent in ("LOCAL_DATE_TIME", "LOCAL_CALCULATOR", "WEATHER", "STOCK_QUOTE", "EMPTY") or (
+        intent == "DEVICE_CONTROL" and slots.get("tool") == "control_bulb")
+    return handle_turn(clean, _turn_handler, speak,
+                       hard_secs=7 if simple else HARD_TIMEOUT_SECS,
+                       wait_secs=30,
+                       giveup_text=FAST_TIMEOUT_TEXT if simple else GIVEUP_TEXT)
 
 
 # 仅识别句首完整称呼；保留“你好”的兼容入口，去掉单字误触发。
@@ -514,6 +847,10 @@ def classify(text):
     # 2. 天气/实时(必须先于时间,处理"今天...天气"的关键词重叠)
     if any(k in text for k in WEATHER_KEYS):
         return "WEATHER", {"city": extract_city(text)}
+    # 2b. 实时行情(同属 §2.2 的 REALTIME 带,故先于时间/计算器)。
+    #     这里只做纯关键词判定,代码解析(可能联网)留给 dispatch。
+    if is_stock_query(text):
+        return "STOCK_QUOTE", {"query": text}
     # 3. 时间/日期
     if TIME_PATTERN.fullmatch(text):
         return "LOCAL_DATE_TIME", {}
@@ -539,6 +876,12 @@ def dispatch(intent, slots, text):
         if not city:
             return "你想查哪个城市的天气呢？", False
         return execute_tool("get_weather", {"city": city}), False
+    if intent == "STOCK_QUOTE":
+        found = resolve_symbol(slots.get("query", text))
+        if not found:
+            # 名称解析不出来(常见于 ASR 误听)时交给 Hermes,不要谎称查过了。
+            return None, True
+        return get_stock_quote(found[0]), False
     if intent == "LOCAL_DATE_TIME":
         return get_time_now(), False
     if intent == "LOCAL_CALCULATOR":
@@ -547,11 +890,15 @@ def dispatch(intent, slots, text):
             return "%s" % val, False
         # 解析失败则兜底给 LLM/Hermes
         intent = "LLM_OR_HERMES"
-    # LLM 函数调用兜底(抗误听),失败再转 Hermes
+    # LLM 函数调用兜底(抗误听)。注意:模型的"我查不了"不是答案,
+    # 实时数据类问题不带工具作答也有编造风险 —— 两种都必须转 Hermes(§3.3/§11)。
     try:
         reply, used_tool = llm_tools(text)
-        if reply:
+        if reply and not is_capability_refusal(reply) and (used_tool or not needs_live_data(text)):
             return reply, False
+        if reply:
+            print("[ROUTE] escalate reason=%s reply=%r" % (
+                "refusal" if is_capability_refusal(reply) else "live-data", reply[:40]), flush=True)
     except Exception:
         pass
     return None, True
@@ -613,7 +960,7 @@ def accept_result(turn, response):
 def handle_turn(text, handler, tts,
                 clock=time.monotonic, sleep=time.sleep,
                 wait_secs=WAIT_PROMPT_SECS, hard_secs=HARD_TIMEOUT_SECS,
-                poll=0.2):
+                poll=0.2, giveup_text=GIVEUP_TEXT):
     """最外层轮管理(§7 状态机的非阻塞实现)。
       handler(text, turn) -> reply 字符串 (在后台线程执行,可能耗时/联网/调 Hermes)
       tts(text)          -> 播报
@@ -641,7 +988,7 @@ def handle_turn(text, handler, tts,
             turn.expired = True
             turn.cancelled = True
             print("[TURN=%d] TIMEOUT hard=%ds -> giveup" % (turn.id, hard_secs), flush=True)
-            tts(GIVEUP_TEXT)
+            tts(giveup_text)
             return turn
         if elapsed >= wait_secs and not turn.wait_prompt_played:
             # 30 秒:仅一次"请稍等。",不标记完成,后台继续
@@ -676,8 +1023,8 @@ def main():
     print("voice_assistant started: rec=%s play=%s vad=%s" % (REC_DEV, PLAY_DEV, vad is not None), flush=True)
     while True:
         # IDLE: VAD 监听唤醒词（流式端点检测，说完即停；无人说话则持续等待）
-        # end_sil_ms 调大到 2000ms：唤醒词"你好…小皮"中间有自然停顿，别把它切成两段。
-        if not vad_record("/tmp/voice_rec.wav", max_s=8, start_wait_s=86400, end_sil_ms=2000):
+        # 唤醒收尾等待 800ms；固定确认语音在部署时预热到本地。
+        if not vad_record("/tmp/voice_rec.wav", max_s=8, start_wait_s=86400, end_sil_ms=800):
             continue
         text = transcribe("/tmp/voice_rec.wav")
         print("[listen] %r" % text, flush=True)
@@ -685,7 +1032,7 @@ def main():
             print(">>> WAKE", flush=True)
             clean = strip_wake(text)
             if clean:
-                handle_turn(clean, _turn_handler, speak)
+                respond(clean)
             else:
                 speak("在呢，请说")
             while True:
@@ -707,7 +1054,7 @@ def main():
                     continue
                 try:
                     # 每轮独立: turn_id 隔离 + 30/60 秒双超时统一在 handle_turn 内管理
-                    handle_turn(clean, _turn_handler, speak)
+                    respond(clean)
                 except Exception as e:
                     print("route error:", e, flush=True)
                     speak("我走神了，再说一次")
