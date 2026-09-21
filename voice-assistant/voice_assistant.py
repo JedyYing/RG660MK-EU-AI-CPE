@@ -68,6 +68,8 @@ SHERPA_TOKENS = os.environ.get("VOICE_SHERPA_TOKENS",
                                "/data/ai_cpe/sherpa-onnx/paraformer-zh-small/tokens.txt")
 SHERPA_THREADS = os.environ.get("VOICE_SHERPA_THREADS", "2")
 SHERPA_TIMEOUT = int(os.environ.get("VOICE_SHERPA_TIMEOUT", "30"))
+# 常驻识别服务（sherpa-onnx-offline-websocket-server，由 /etc/init.d/sherpa-asr 管理）
+SHERPA_WS = os.environ.get("VOICE_SHERPA_WS", "ws://127.0.0.1:6006")
 TTS_TIMEOUT = 3
 TTS_CACHE = os.environ.get("VOICE_TTS_CACHE", "/data/ai_cpe/tts_cache")
 FAST_TIMEOUT_TEXT = "这次处理有点慢，请再试一次。"
@@ -263,11 +265,54 @@ def asr_context(path):
         return 1500
 
 
-def transcribe_paraformer(path):
-    """Paraformer 引擎（sherpa-onnx-offline + glibc 陪跑）：
-    48k→16k 重采样 → CLI 识别 → 解析末行 JSON 的 "text"。
-    失败返回 ''（与 whisper 路径语义一致，上层照旧处理空识别）。"""
-    started = time.monotonic()
+def _paraformer_payload(path):
+    """wav → 16k float32 载荷（8 字节头: 采样率+字节数，官方 ws 协议）。失败返回 None。"""
+    try:
+        import array
+        import audioop
+        import struct
+        with wave.open(path) as w:
+            sr = w.getframerate()
+            frames = w.readframes(w.getnframes())
+        if sr != 16000:
+            frames, _ = audioop.ratecv(frames, 2, 1, sr, 16000, None)
+            sr = 16000
+        a = array.array("h")
+        a.frombytes(frames)
+        f32 = array.array("f", (x / 32768.0 for x in a))
+        return struct.pack("<ii", sr, len(f32) * 4) + f32.tobytes()
+    except Exception:
+        return None
+
+
+def _paraformer_ws_once(path):
+    """常驻服务路径：模型只加载一次，单句毫秒级。失败抛异常，由上层回退。"""
+    import asyncio
+    import websockets
+
+    payload = _paraformer_payload(path)
+    if payload is None:
+        raise RuntimeError("bad wav")
+
+    async def _run():
+        async with websockets.connect(SHERPA_WS, max_size=20 * 1024 * 1024,
+                                      open_timeout=3) as ws:
+            buf = payload
+            while len(buf) > 10240:
+                await ws.send(buf[:10240])
+                buf = buf[10240:]
+            if buf:
+                await ws.send(buf)
+            r = await asyncio.wait_for(ws.recv(), timeout=15)
+            if isinstance(r, bytes):
+                r = r.decode("utf-8", "replace")
+            return json.loads(r).get("text", "")
+
+    return asyncio.run(_run())
+
+
+def _paraformer_oneshot(path):
+    """回退路径：sherpa-onnx-offline 单次调用（含模型加载，慢但独立可用）。"""
     tmp16 = path + ".16k.wav"
     try:
         import audioop
@@ -299,7 +344,7 @@ def transcribe_paraformer(path):
                     pass
         return to_simplified(text)
     except Exception as e:
-        print("[ASR-PF] error=%s" % type(e).__name__, flush=True)
+        print("[ASR-PF] oneshot error=%s" % type(e).__name__, flush=True)
         return ""
 
     finally:
@@ -307,6 +352,20 @@ def transcribe_paraformer(path):
             os.unlink(tmp16)
         except OSError:
             pass
+
+
+def transcribe_paraformer(path):
+    """Paraformer 引擎：优先常驻服务（ws://127.0.0.1:6006，毫秒级）；
+    服务不可用时回退单次调用（慢但可用）。失败返回 ''（与 whisper 语义一致）。"""
+    started = time.monotonic()
+    try:
+        try:
+            return to_simplified(_paraformer_ws_once(path))
+        except Exception as e:
+            print("[ASR-PF] ws fallback (%s)" % type(e).__name__, flush=True)
+            return _paraformer_oneshot(path)
+
+    finally:
         print("[LATENCY] asr_s=%.3f" % (time.monotonic() - started), flush=True)
 
 
@@ -1128,7 +1187,7 @@ def _turn_handler(clean, turn):
 
 
 def main():
-    print("voice_assistant started: rec=%s play=%s vad=%s" % (REC_DEV, PLAY_DEV, vad is not None), flush=True)
+    print("voice_assistant started: rec=%s play=%s vad=%s asr=%s" % (REC_DEV, PLAY_DEV, vad is not None, ASR_ENGINE), flush=True)
     while True:
         # IDLE: VAD 监听唤醒词（流式端点检测，说完即停；无人说话则持续等待）
         # 唤醒收尾等待 800ms；固定确认语音在部署时预热到本地。
