@@ -54,6 +54,20 @@ ASR_TIMEOUT = 8
 # 全量热词 prompt 会把含混的真实语音解码成热词碎片（"你好小皮"→"阿梅，鲁，河田"），
 # 且每次转写固定 +2.2s（约基线2倍）。待真实口音命令录音 A/B 通过后再启用（VOICE_ASR_PROMPT=1）。
 ASR_HOTWORD_PROMPT = os.environ.get("VOICE_ASR_PROMPT", "0") == "1"
+
+# ---- ASR 引擎（whisper | paraformer）----
+# 2026-09-21 新增：Paraformer（sherpa-onnx-offline + glibc 陪跑）作为可切换引擎。
+# 默认 whisper 不变；切换：VOICE_ASR_ENGINE=paraformer（详见 麦克风切换与唤醒验证记录_20260921.md）。
+ASR_ENGINE = os.environ.get("VOICE_ASR_ENGINE", "whisper")
+SHERPA_GLIBC = "/data/ai_cpe/glibc/ld-linux-aarch64.so.1"
+SHERPA_LIB = "/data/ai_cpe/glibc"
+SHERPA_BIN = "/data/ai_cpe/sherpa-onnx/bin/sherpa-onnx-offline"
+SHERPA_MODEL = os.environ.get("VOICE_SHERPA_MODEL",
+                              "/data/ai_cpe/sherpa-onnx/paraformer-zh-small/model.int8.onnx")
+SHERPA_TOKENS = os.environ.get("VOICE_SHERPA_TOKENS",
+                               "/data/ai_cpe/sherpa-onnx/paraformer-zh-small/tokens.txt")
+SHERPA_THREADS = os.environ.get("VOICE_SHERPA_THREADS", "2")
+SHERPA_TIMEOUT = int(os.environ.get("VOICE_SHERPA_TIMEOUT", "30"))
 TTS_TIMEOUT = 3
 TTS_CACHE = os.environ.get("VOICE_TTS_CACHE", "/data/ai_cpe/tts_cache")
 FAST_TIMEOUT_TEXT = "这次处理有点慢，请再试一次。"
@@ -249,7 +263,56 @@ def asr_context(path):
         return 1500
 
 
+def transcribe_paraformer(path):
+    """Paraformer 引擎（sherpa-onnx-offline + glibc 陪跑）：
+    48k→16k 重采样 → CLI 识别 → 解析末行 JSON 的 "text"。
+    失败返回 ''（与 whisper 路径语义一致，上层照旧处理空识别）。"""
+    started = time.monotonic()
+    tmp16 = path + ".16k.wav"
+    try:
+        import audioop
+        with wave.open(path) as w:
+            sr = w.getframerate()
+            frames = w.readframes(w.getnframes())
+        if sr != 16000:
+            frames, _ = audioop.ratecv(frames, 2, 1, sr, 16000, None)
+        with wave.open(tmp16, "wb") as o:
+            o.setnchannels(1)
+            o.setsampwidth(2)
+            o.setframerate(16000)
+            o.writeframes(frames)
+        cmd = [SHERPA_GLIBC, "--library-path", SHERPA_LIB, SHERPA_BIN,
+               "--tokens=" + SHERPA_TOKENS,
+               "--paraformer=" + SHERPA_MODEL,
+               "--num-threads=" + SHERPA_THREADS,
+               tmp16]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=SHERPA_TIMEOUT)
+        text = ""
+        for line in ((r.stdout or "") + "\n" + (r.stderr or "")).splitlines():
+            line = line.strip()
+            if line.startswith("{"):
+                try:
+                    got = json.loads(line).get("text", "")
+                    if got:
+                        text = got
+                except ValueError:
+                    pass
+        return to_simplified(text)
+    except Exception as e:
+        print("[ASR-PF] error=%s" % type(e).__name__, flush=True)
+        return ""
+
+    finally:
+        try:
+            os.unlink(tmp16)
+        except OSError:
+            pass
+        print("[LATENCY] asr_s=%.3f" % (time.monotonic() - started), flush=True)
+
+
 def transcribe(path, use_prompt=None):
+    if ASR_ENGINE == "paraformer":
+        return transcribe_paraformer(path)
     if use_prompt is None:
         use_prompt = ASR_HOTWORD_PROMPT
     started = time.monotonic()
