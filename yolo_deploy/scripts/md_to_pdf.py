@@ -26,14 +26,42 @@ pdfmetrics.registerFont(TTFont("CJKB", _cjk))
 pdfmetrics.registerFont(TTFont("Mono", MONO))
 registerFontFamily("CJK", normal="CJK", bold="CJKB", italic="CJK", boldItalic="CJKB")
 
+# CJK 汉字/全角标点。DejaVu Mono 没有这些字形,含中文的等宽片段必须换字体,
+# 否则行内代码与代码块会整片渲染成豆腐块(□)。
+_CJK_CHAR = re.compile(r'[⺀-鿿＀-￯　-〿]')
+
+
+def _code_span(body):
+    # Mono 无中文字形 -> 含中文的片段退化为 CJK 字体(非等宽,但可读)。
+    if _CJK_CHAR.search(body):
+        return '<font face="CJK" size="9.3">%s</font>' % body
+    return '<font face="Mono" size="8.5">%s</font>' % body
+
+
 def inline(text):
     # 转义 XML,再还原 **bold** 与 `code`
     t = html.escape(text)
     t = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', t)
-    t = re.sub(r'`(.+?)`', r'<font face="Mono" size="8.5">\1</font>', t)
+    t = re.sub(r'`(.+?)`', lambda m: _code_span(m.group(1)), t)
     return t
 
-def build(md_path, pdf_path):
+
+def _disp_width(text):
+    """显示宽度:中文按 2 计,便于折行时对齐右边距。"""
+    return sum(2 if _CJK_CHAR.match(c) else 1 for c in text)
+
+
+def _cut(text, limit):
+    """切成不超过 limit 显示宽度的前缀,返回字符数。"""
+    used = 0
+    for idx, ch in enumerate(text):
+        used += 2 if _CJK_CHAR.match(ch) else 1
+        if used > limit:
+            return max(1, idx)
+    return len(text)
+
+def build(md_path, pdf_path, title="RG660MK-EU YOLO 姿态/坐姿检测部署报告", footer_text=None):
+    md_path, pdf_path = str(md_path), str(pdf_path)  # reportlab 不接受 pathlib.Path
     styles = getSampleStyleSheet()
     body = ParagraphStyle("body", parent=styles["Normal"], fontName="CJK", fontSize=10.2,
                           leading=15.5, alignment=TA_LEFT, spaceAfter=5)
@@ -47,6 +75,8 @@ def build(md_path, pdf_path):
     codest = ParagraphStyle("code", fontName="Mono", fontSize=8.2, leading=11,
                             backColor=colors.HexColor("#f4f5f7"), textColor=colors.HexColor("#1b1f23"),
                             borderPadding=5, leftIndent=2, spaceBefore=4, spaceAfter=8)
+    # 含中文的代码块用这个;见 _CJK_CHAR 注释。
+    codest_cjk = ParagraphStyle("codecjk", parent=codest, fontName="CJK", fontSize=8.6, leading=12)
 
     story = []
     lines = open(md_path, encoding="utf-8").read().split("\n")
@@ -60,18 +90,18 @@ def build(md_path, pdf_path):
             while i < n and not lines[i].strip().startswith("```"):
                 buf.append(lines[i]); i += 1
             i += 1
-            # 软换行:超过 W 字符的行折行,避免溢出右边距
-            WRAP = 92
+            # 含中文的块改用 CJK 字体,否则整块是豆腐块
+            style = codest_cjk if _CJK_CHAR.search("".join(buf)) else codest
+            # 软换行:按显示宽度折行(中文按 2 计),避免溢出右边距
+            WRAP = 82 if style is codest_cjk else 92
             wrapped = []
             for row in (buf if buf else [" "]):
-                if len(row) <= WRAP:
-                    wrapped.append(row)
-                else:
-                    while len(row) > WRAP:
-                        wrapped.append(row[:WRAP] + "↩")  # 续行标记
-                        row = row[WRAP:]
-                    wrapped.append(row)
-            story.append(Preformatted("\n".join(wrapped), codest))
+                while _disp_width(row) > WRAP:
+                    cut = _cut(row, WRAP)
+                    wrapped.append(row[:cut] + "↩")  # 续行标记
+                    row = row[cut:]
+                wrapped.append(row)
+            story.append(Preformatted("\n".join(wrapped), style))
             continue
         # 表格
         if ln.strip().startswith("|") and i+1 < n and re.match(r'^\s*\|[\s:|-]+\|\s*$', lines[i+1]):
@@ -119,9 +149,22 @@ def build(md_path, pdf_path):
         story.append(Paragraph(inline(s), body)); i += 1
 
     doc = SimpleDocTemplate(pdf_path, pagesize=A4,
-                            leftMargin=18*mm, rightMargin=18*mm, topMargin=16*mm, bottomMargin=16*mm,
-                            title="RG660MK-EU YOLO 姿态/坐姿检测部署报告")
-    doc.build(story)
+                            leftMargin=18*mm, rightMargin=18*mm, topMargin=16*mm,
+                            bottomMargin=20*mm if footer_text else 16*mm,
+                            title=title)
+    if footer_text:
+        def footer(canvas, doc_):
+            canvas.saveState()
+            canvas.setStrokeColor(colors.HexColor("#cad5df"))
+            canvas.line(18*mm, 13*mm, A4[0]-18*mm, 13*mm)
+            canvas.setFont("CJK", 8)
+            canvas.setFillColor(colors.HexColor("#526474"))
+            canvas.drawString(18*mm, 8.5*mm, footer_text)
+            canvas.drawRightString(A4[0]-18*mm, 8.5*mm, str(doc_.page))
+            canvas.restoreState()
+        doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    else:
+        doc.build(story)
     print("PDF 生成:", pdf_path)
 
 if __name__ == "__main__":
