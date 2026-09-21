@@ -999,7 +999,11 @@ def classify(text, _accent_tried=False):
         if any(k in text for k in ["上传", "传到", "服务器", "immich", "相册", "同步", "保存"]):
             return "DEVICE_CONTROL", {"tool": "photo_upload"}
         return "DEVICE_CONTROL", {"tool": "take_photo"}
-    if any(k in text for k in ["坐姿", "姿势", "体态"]):
+    # 残句兜底：只听到"上传/immich"而丢了"拍照"时也要能兜住（2026-09-21 实测漏失）。
+    if any(k in text for k in ["上传", "传到", "同步"]) and any(
+            k in text for k in ["照片", "相片", "immich", "相册", "拍"]):
+        return "DEVICE_CONTROL", {"tool": "photo_upload"}
+    if any(k in text for k in ["坐姿", "姿势", "体态", "座姿", "做姿", "坐子"]):
         return "DEVICE_CONTROL", {"tool": "detect_posture"}
     if any(k in text for k in ["识别", "是谁", "谁在", "脸识别"]):
         return "DEVICE_CONTROL", {"tool": "face_recognize"}
