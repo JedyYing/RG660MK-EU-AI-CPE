@@ -34,11 +34,13 @@ class AudioTests(unittest.TestCase):
                     self.assertEqual(va.execute_tool('control_bulb', {'action': action}), expected)
 
     def test_latency_budget_for_escalating_intents(self):
-        """LLM_OR_HERMES 现在可能升级到 Hermes(实测约 29 秒),不得再用 7 秒快速失败。"""
+        """可能与 Hermes 相关的意图不得用 7 秒快速失败。
+        2026-09-21 更新：股票名解析失败会升级 Hermes（实测 ~23-29 秒），
+        STOCK_QUOTE 因此也改走 30/60 双超时（设备实测 7 秒必超时，用户可见故障）。"""
         with patch.object(va, 'handle_turn') as handler:
             va.respond('请查看移远通信的收盘价')
-            self.assertEqual(handler.call_args.kwargs['hard_secs'], 7)
-            self.assertEqual(handler.call_args.kwargs['giveup_text'], va.FAST_TIMEOUT_TEXT)
+            self.assertEqual(handler.call_args.kwargs['hard_secs'], va.HARD_TIMEOUT_SECS)
+            self.assertEqual(handler.call_args.kwargs['giveup_text'], va.GIVEUP_TEXT)
         with patch.object(va, 'handle_turn') as handler:
             va.respond('相对论是怎么回事')
             self.assertEqual(handler.call_args.kwargs['hard_secs'], va.HARD_TIMEOUT_SECS)
