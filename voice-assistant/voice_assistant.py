@@ -70,7 +70,7 @@ SHERPA_THREADS = os.environ.get("VOICE_SHERPA_THREADS", "2")
 SHERPA_TIMEOUT = int(os.environ.get("VOICE_SHERPA_TIMEOUT", "30"))
 # 常驻识别服务（sherpa-onnx-offline-websocket-server，由 /etc/init.d/sherpa-asr 管理）
 SHERPA_WS = os.environ.get("VOICE_SHERPA_WS", "ws://127.0.0.1:6006")
-TTS_TIMEOUT = 3
+TTS_TIMEOUT = 5
 TTS_CACHE = os.environ.get("VOICE_TTS_CACHE", "/data/ai_cpe/tts_cache")
 FAST_TIMEOUT_TEXT = "这次处理有点慢，请再试一次。"
 CACHED_SPEECH = {"在呢，请说", "我在听，请说", "请再说一下，我没听清",
@@ -103,6 +103,8 @@ STOCK_KEYS = ["股价", "股票", "行情", "收盘", "开盘", "涨跌", "涨�
 # 本地别名表：覆盖主力用例与已观察到的 ASR 形近误听；其余名称走联网检索。
 STOCK_ALIASES = {
     "移远通信": "sh603236", "移远通讯": "sh603236", "一元通信": "sh603236", "亿元通信": "sh603236",
+    "以远通信": "sh603236", "以远通讯": "sh603236", "宜远通信": "sh603236",
+    "意远通信": "sh603236", "义远通信": "sh603236", "一远通信": "sh603236",
     "上证指数": "sh000001", "上证综指": "sh000001", "沪指": "sh000001",
     "深证成指": "sz399001", "创业板指": "sz399006", "沪深300": "sh000300", "科创50": "sh000688",
 }
@@ -890,6 +892,11 @@ def prepare_tts(text, timeout=TTS_TIMEOUT):
 def speak(text):
     if not text:
         return
+    text = text.strip()
+    # 跳过开头非中文（模型偶发英文思考残留），避免整条被误判"无法播报"（2026-09-21 实测）。
+    _cn = re.search(r'[\u4e00-\u9fff]', text)
+    if _cn and _cn.start() > 0:
+        text = text[_cn.start():]
     text = text.strip()[:120]
     cn = len(re.findall(r'[\u4e00-\u9fff]', text))
     if len(text) > 10 and cn / len(text) < 0.3:
@@ -932,7 +939,8 @@ def respond(clean):
     intent, slots = classify(clean)
     # 只有"确定不会升级到 Hermes"的意图才享受 7 秒快速失败。LLM_OR_HERMES 现在可能
     # 因拒绝/实时数据升级到 Hermes(实测约 29 秒),必须走 §4 的 30/60 双超时。
-    simple = intent in ("LOCAL_DATE_TIME", "LOCAL_CALCULATOR", "WEATHER", "STOCK_QUOTE", "EMPTY") or (
+    # STOCK_QUOTE 也移出快失败：股票名解析失败会升级 Hermes，7 秒必超时（2026-09-21 实测）。
+    simple = intent in ("LOCAL_DATE_TIME", "LOCAL_CALCULATOR", "WEATHER", "EMPTY") or (
         intent == "DEVICE_CONTROL" and slots.get("tool") == "control_bulb")
     return handle_turn(clean, _turn_handler, speak,
                        hard_secs=7 if simple else HARD_TIMEOUT_SECS,
