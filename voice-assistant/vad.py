@@ -30,8 +30,8 @@ MAX_UTTER_S = 12        # 单次录音最长
 START_WAIT_S = 8        # 起始静音超时（一直没人说话就放弃）
 
 # 双门限：能量与过零率。能量为主，过零率辅助（清辅音/擦音能量低但 ZCR 高）。
-RMS_ON = 450            # 高于此判定"可能有话"（抬高以抗底噪）
-RMS_OFF = 280           # 低于此判定"静音"（滞回，避免抖动）
+RMS_ON = float(os.environ.get("VOICE_VAD_ON", "450"))    # 高于此判定"可能有话"；VOICE_VAD_ON 可覆盖（换麦克风后按实测标定）
+RMS_OFF = float(os.environ.get("VOICE_VAD_OFF", "280"))  # 低于此判定"静音"（滞回）；VOICE_VAD_OFF 可覆盖
 ZCR_MIN = 0.02          # 过零率下限（纯直流/极低频噪声排除）
 
 
