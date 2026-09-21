@@ -122,14 +122,28 @@ def upload(photo_path):
 def main():
     photo = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].startswith('/') else None
     if photo is None:
-        # 拍照
-        out = run('%s 2>&1' % SNAPSHOT, t=90)
-        if 'PHOTO_OK' not in out:
-            sys.stderr.write('拍照失败: %s\n' % out[-300:])
-            return 1
+        # 抓帧：优先复用 camview 预览服务的 http 取帧（避免与 camview 抢占 C270 USB）
+        # camview 常驻独占摄像头，posture 直开 USB 会 uvc_open Busy(-6)，故走 http /snapshot
         src = '/tmp/RG660MK_C270.jpg'
+        try:
+            os.unlink(src)   # 先删旧帧，杜绝失败时复用旧图
+        except OSError:
+            pass
+        got = False
+        run("curl -s -m 15 -o %s http://127.0.0.1:8090/snapshot 2>&1" % src, t=30)
+        try:
+            with open(src, 'rb') as _f:
+                got = _f.read(2) == b'\xff\xd8' and os.path.getsize(src) > 5000  # JPEG SOI 魔数+尺寸，确认有效帧
+        except Exception:
+            got = False
+        if not got:
+            # 回退：camview 不可用时才直开 USB 抓帧
+            out = run('%s 2>&1' % SNAPSHOT, t=90)
+            if 'PHOTO_OK' not in out:
+                sys.stderr.write('抓帧失败(camview http 与 USB 均不可用): %s\n' % out[-300:])
+                return 1
         if not os.path.exists(src):
-            sys.stderr.write('拍照输出不存在\n')
+            sys.stderr.write('抓帧输出不存在\n')
             return 1
         ts = time.strftime('%Y%m%d_%H%M%S')
         photo = os.path.join(PHOTO_DIR, 'photo_%s.jpg' % ts)

@@ -29,11 +29,34 @@ HEAD_RATIO_MAX = 0.75        # 高于=头抬太高
 TRUNK_SWAY_MAX = 0.35        # 躯干侧倾（肩中点x-髋中点x）/肩宽
 
 
+CAMVIEW_SNAP = 'http://127.0.0.1:8090/snapshot'
+
+
 def take_photo():
-    """拍照并落盘，返回照片路径；失败返回 None。"""
-    subprocess.run([SNAPSHOT], capture_output=True, text=True, timeout=90)
+    """拍照并落盘，返回照片路径；失败返回 None。
+    优先走 camview HTTP（避免与常驻 camview 抢占 C270 USB 导致 uvc_open Busy），
+    失败回退直开 USB；抓帧前删除旧文件，防止复用旧图。"""
     src = '/tmp/RG660MK_C270.jpg'
-    if not os.path.exists(src):
+    try:
+        os.unlink(src)
+    except OSError:
+        pass
+    got = False
+    try:
+        subprocess.run(['curl', '-s', '-m', '8', '-o', src, CAMVIEW_SNAP],
+                       capture_output=True, timeout=15)
+        with open(src, 'rb') as f:
+            got = f.read(2) == b'\xff\xd8' and os.path.getsize(src) > 5000
+    except Exception:
+        got = False
+    if not got:
+        try:
+            subprocess.run([SNAPSHOT], capture_output=True, text=True, timeout=90)
+            with open(src, 'rb') as f:
+                got = f.read(2) == b'\xff\xd8' and os.path.getsize(src) > 5000
+        except Exception:
+            got = False
+    if not got:
         return None
     os.makedirs(PHOTO_DIR, exist_ok=True)
     photo = os.path.join(PHOTO_DIR, 'voice_%s.jpg' % time.strftime('%Y%m%d_%H%M%S'))
