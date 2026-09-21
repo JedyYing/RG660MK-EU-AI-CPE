@@ -80,7 +80,8 @@ CACHED_SPEECH = {"在呢，请说", "我在听，请说", "请再说一下，我
                  "天气服务暂时连接失败，请稍后再试。",
                  "行情服务暂时连接失败，请稍后再试。",
                  "没有找到这只股票，请换一个名称或代码。"}
-WAKE_WORDS = ["小皮", "下皮", "小屁", "下屁", "小批", "小披", "小pipi", "你好小皮", "小皮皮", "下题"]
+WAKE_WORDS = ["小皮", "下皮", "小屁", "下屁", "小批", "小披", "小pipi", "你好小皮", "小皮皮", "下题",
+              "小提", "下提"]
 EXIT_WORDS = ["休息", "睡觉", "退下", "再见", "拜拜", "晚安"]
 
 # ---- 双超时(设计文档 §4)----
@@ -847,7 +848,8 @@ def hermes_ask(text):
     env = dict(os.environ, HOME="/data/hermes/home", HERMES_HOME="/data/hermes/.hermes")
     try:
         r = subprocess.run(["/data/hermes/venv/bin/hermes", "chat", "-q",
-                            text + "（请用两三句话简洁回答）", "-Q", "-m", LLM_MODEL],
+                            text + "（请用两三句话简洁回答。只输出回答本身，不要复述提示词或思考过程。）",
+                            "-Q", "-m", LLM_MODEL],
                            capture_output=True, text=True, env=env, timeout=180)
         output = r.stdout.strip()
         if r.returncode != 0 or re.search(r"HTTP [45]\d\d|Invalid model|Traceback", output, re.I):
@@ -949,7 +951,9 @@ def respond(clean):
 
 
 # 仅识别句首完整称呼；保留“你好”的兼容入口，去掉单字误触发。
-_WAKE_PREFIX = re.compile(r"^(?:你好[，,、\s]*(?:(?:小皮皮|小pipi|小皮|下皮|下题|小屁|下屁|小批|小披|夏丁|下爹|夏皮))?|小皮皮|小pipi|小皮|下皮|下题|小屁|下屁|小批|小披)[，,。.!！?？\s]*", re.I)
+# 2026-09-21：用户口音下 paraformer 稳定把“小皮”听成“小提”（设备实测 2 次），
+# 必须把小提/下提/小蹄纳入变体，否则“你好小提”会被剥成残句“小提”当命令送问答。
+_WAKE_PREFIX = re.compile(r"^(?:你好[，,、\s]*(?:(?:小皮皮|小pipi|小皮|小提|下提|小蹄|下皮|下题|小屁|下屁|小批|小披|夏丁|下爹|夏皮))?|小皮皮|小pipi|小皮|小提|下提|小蹄|下皮|下题|小屁|下屁|小批|小披)[，,。.!！?？\s]*", re.I)
 
 
 def is_wake(text):
@@ -1038,6 +1042,10 @@ def classify(text, _accent_tried=False):
                 print("[ACCENT] %r -> %r (dist=%d)" % (text, fix["corrected"], fix["distance"]), flush=True)
                 return fixed_intent, fixed_slots
     # 6. 交给上层: 先 LLM 函数调用兜底,再 Hermes
+    # 2026-09-21 实测：≤3 字的碎片(嗯/哦/好好/喂你好/奥特曼)送问答必空转 19 秒+乱答，
+    # 本地快速回“请再说一下”体验更好（已知指令如“开灯/几点/坐姿”都在前面已命中）。
+    if len(text) <= 3:
+        return "EMPTY", {}
     return "LLM_OR_HERMES", {}
 
 
