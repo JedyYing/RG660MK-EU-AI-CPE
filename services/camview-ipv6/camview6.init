@@ -1,0 +1,16 @@
+#!/bin/sh /etc/rc.common
+# camview6 -- IPv6 -> IPv4 转发 (把 camview 的 8090 暴露到 IPv6)
+# 注意: 实测多数移动运营商封禁蜂窝入站 IPv6，本方案在其网络下不可用，
+#       保留作为公网 IPv6 可用时的备用方案。
+START=99
+STOP=10
+USE_PROCD=1
+
+start_service() {
+    procd_open_instance
+    procd_set_param command /usr/bin/python3 /data/ai_cpe/hermes/home/camview6.py 8090
+    procd_set_param respawn
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_close_instance
+}

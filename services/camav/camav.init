@@ -1,0 +1,17 @@
+#!/bin/sh /etc/rc.common
+# camav -- 摄像头 MJPEG 画面 + C270 麦克风实时音频 合流服务
+# 部署: cp camav.py /data/ai_cpe/hermes/home/ && cp camav.init /etc/init.d/camav
+#       chmod +x /etc/init.d/camav && /etc/init.d/camav enable && /etc/init.d/camav start
+START=99
+STOP=10
+USE_PROCD=1
+
+start_service() {
+    procd_open_instance
+    procd_set_param command /usr/bin/python3 /data/ai_cpe/hermes/home/camav.py 8092
+    procd_set_param env MIC_DEV=plughw:1,0 MIC_RATE=16000
+    procd_set_param respawn
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_close_instance
+}
