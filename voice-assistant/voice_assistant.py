@@ -83,6 +83,10 @@ CACHED_SPEECH = {"在呢，请说", "我在听，请说", "请再说一下，我
 WAKE_WORDS = ["小皮", "下皮", "小屁", "下屁", "小批", "小披", "小pipi", "你好小皮", "小皮皮", "下题",
               "小提", "下提"]
 EXIT_WORDS = ["休息", "睡觉", "退下", "再见", "拜拜", "晚安"]
+# ---- 休眠/启动流程（用户 2026-09-21 要求）----
+# "小皮，休息" -> 休眠；休眠后不轻易启动，直到听到"你好小皮"（完整称呼）。
+SLEEP_WORDS = ["休息", "睡觉", "退下"]
+WORK_WORDS = ["启动工作", "开始工作"]
 
 # ---- 双超时(设计文档 §4)----
 WAIT_PROMPT_SECS = 30      # 30 秒仍无结果 -> 先播"请稍等。"
@@ -972,6 +976,14 @@ def strip_wake(text):
     return s
 
 
+# 休眠态唤醒：必须带"你好"+小皮族称呼（不接受裸"你好"/裸"小皮"，避免轻易启动）。
+_SLEEP_WAKE = re.compile(r"^(?:你好[，,、\s]*(?:小皮皮|小pipi|小皮|小提|下提|小蹄|下皮|下题|小屁|下屁|小批|小披|夏丁|下爹|夏皮))", re.I)
+
+
+def is_sleep_wake(text):
+    return bool(_SLEEP_WAKE.match(text.strip()))
+
+
 CITIES = ["上海", "北京", "广州", "深圳", "杭州", "南京", "成都", "重庆", "武汉",
           "西安", "天津", "苏州", "长沙", "郑州", "青岛", "沈阳", "大连", "厦门",
           "福州", "合肥", "昆明", "哈尔滨", "济南", "宁波", "无锡", "香港", "澳门", "台北",
@@ -1208,44 +1220,69 @@ def _turn_handler(clean, turn):
 
 def main():
     print("voice_assistant started: rec=%s play=%s vad=%s asr=%s" % (REC_DEV, PLAY_DEV, vad is not None, ASR_ENGINE), flush=True)
+    asleep = False  # 休眠态：只认完整"你好小皮"才启动（用户 2026-09-21 流程要求）
     while True:
-        # IDLE: VAD 监听唤醒词（流式端点检测，说完即停；无人说话则持续等待）
+        # IDLE/休眠: VAD 监听唤醒词（流式端点检测，说完即停；无人说话则持续等待）
         # 唤醒收尾等待 800ms；固定确认语音在部署时预热到本地。
         if not vad_record("/tmp/voice_rec.wav", max_s=8, start_wait_s=86400, end_sil_ms=800):
             continue
         # 待机唤醒转写不加热词 prompt: 唤醒词不在热词表内,加了只会 +2.2s 且空耗 CPU。
         text = transcribe("/tmp/voice_rec.wav", use_prompt=False)
-        print("[listen] %r" % text, flush=True)
-        if is_wake(text):
+        if asleep:
+            # 休眠态：不轻易启动——只等完整唤醒语（你好小皮/你好小提…），其余一律无视。
+            print("[sleep-listen] %r" % text, flush=True)
+            if not is_sleep_wake(text):
+                continue
+            print(">>> WAKE(sleep)", flush=True)
+        else:
+            print("[listen] %r" % text, flush=True)
+            if not is_wake(text):
+                continue
             print(">>> WAKE", flush=True)
-            clean = strip_wake(text)
-            if clean:
+        clean = strip_wake(text)
+        # "小皮，休息" -> 休眠（"不要轻易启动"，直到再次听到"你好小皮"）
+        if clean and any(w in clean for w in SLEEP_WORDS):
+            speak("好的，我休息了")
+            asleep = True
+            continue
+        # "你好小皮，启动工作" -> 工作确认
+        if clean and any(w in clean for w in WORK_WORDS):
+            speak("好的，开始工作")
+        elif clean:
+            respond(clean)
+        else:
+            speak("在呢，请说")
+        while True:
+            # VAD 录一句；ACTIVE_TIMEOUT 内无人说话则自动退出对话
+            if not vad_record("/tmp/voice_rec.wav", start_wait_s=ACTIVE_TIMEOUT):
+                speak("好的，先不打扰你了")
+                break
+            t = transcribe("/tmp/voice_rec.wav")
+            print("[TURN? ] ASR_TEXT=%r" % t, flush=True)
+            if not t:
+                speak("请再说一下，我没听清")
+                continue
+            # 休息指令：进入休眠（不轻易启动），与普通告别区分
+            if any(w in t for w in SLEEP_WORDS):
+                speak("好的，我休息了")
+                asleep = True
+                break
+            if any(w in t for w in EXIT_WORDS):
+                speak("好的，再见")
+                break
+            if any(w in t for w in WORK_WORDS):
+                speak("好的，开始工作")
+                continue
+            clean = strip_wake(t)
+            if not clean:
+                speak("我在听，请说")
+                continue
+            try:
+                # 每轮独立: turn_id 隔离 + 30/60 秒双超时统一在 handle_turn 内管理
                 respond(clean)
-            else:
-                speak("在呢，请说")
-            while True:
-                # VAD 录一句；ACTIVE_TIMEOUT 内无人说话则自动退出对话
-                if not vad_record("/tmp/voice_rec.wav", start_wait_s=ACTIVE_TIMEOUT):
-                    speak("好的，先不打扰你了")
-                    break
-                t = transcribe("/tmp/voice_rec.wav")
-                print("[TURN? ] ASR_TEXT=%r" % t, flush=True)
-                if not t:
-                    speak("请再说一下，我没听清")
-                    continue
-                if any(w in t for w in EXIT_WORDS):
-                    speak("好的，再见")
-                    break
-                clean = strip_wake(t)
-                if not clean:
-                    speak("我在听，请说")
-                    continue
-                try:
-                    # 每轮独立: turn_id 隔离 + 30/60 秒双超时统一在 handle_turn 内管理
-                    respond(clean)
-                except Exception as e:
-                    print("route error:", e, flush=True)
-                    speak("我走神了，再说一次")
+            except Exception as e:
+                print("route error:", e, flush=True)
+                speak("我走神了，再说一次")
 
 
 if __name__ == "__main__":
