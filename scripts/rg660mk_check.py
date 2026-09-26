@@ -582,29 +582,57 @@ def _summary_text():
     return ok, warn, fail, total, verdict, problems
 
 
+def _find_lark_cli():
+    """定位 lark-cli。它被打包在 QRIBuddy 应用内,不一定在 PATH 里,
+    且 AppImage 挂载点(/tmp/.mount_*)每次启动会变——后台跑巡检时尤其如此。
+    顺序:PATH → 应用挂载点 glob → 环境变量兜底。找不到返回 None。"""
+    import shutil
+    import glob as _glob
+    p = shutil.which("lark-cli")
+    if p:
+        return p
+    patterns = [
+        "/tmp/.mount_QRIBud*/resources/app.asar.unpacked/node_modules/@larksuite/cli/bin/lark-cli",
+        "/tmp/.mount_*/resources/app.asar.unpacked/node_modules/@larksuite/cli/bin/lark-cli",
+    ]
+    env_bin = os.environ.get("QRIBUDDY_LARK_CLI")
+    if env_bin:
+        patterns.insert(0, env_bin)
+    for pat in patterns:
+        for h in sorted(_glob.glob(pat)):
+            if os.path.isfile(h) and os.access(h, os.X_OK):
+                return h
+    return None
+
+
 def _send_feishu(summary_line, problems):
     """尝试通过 lark-cli 给自己发一条巡检摘要。飞书未连接则跳过并提示。"""
-    lark = None
-    if subprocess.run(["which", "lark-cli"], capture_output=True).returncode == 0:
-        lark = "lark-cli"
+    lark = _find_lark_cli()
     if not lark:
-        print(yellow("  ⚠ 未找到 lark-cli，跳过飞书推送(报告已落盘)"))
+        print(yellow("  ⚠ 未找到 lark-cli(已在 PATH 与应用挂载点中查找)，跳过飞书推送(报告已落盘)"))
         return
     try:
         st = subprocess.run([lark, "auth", "status", "--json"],
                             capture_output=True, text=True, timeout=15)
-        avail = json.loads(st.stdout or "{}").get("identities", {}).get("user", {}).get("available")
+        user = json.loads(st.stdout or "{}").get("identities", {}).get("user", {})
+        avail = user.get("available")
+        open_id = user.get("openId")
     except Exception:
         avail = None
+        open_id = None
     if not avail:
         print(yellow("  ⚠ 飞书未连接(设置→飞书 点连接后生效)，本次仅落盘未推送"))
+        return
+    if not open_id:
+        print(yellow("  ⚠ 飞书已连接但取不到用户 open_id，本次仅落盘未推送"))
         return
     body = "【RG660MK 巡检】%s\n%s" % (time.strftime("%m-%d %H:%M"), summary_line)
     if problems:
         body += "\n需关注:\n- " + "\n- ".join(problems[:8])
     else:
         body += "\n全部正常，无需处理。"
-    r = subprocess.run([lark, "im", "+send-to-me", "--text", body],
+    # 给自己发私聊:+messages-send + 自己的 open_id(旧的 +send-to-me 子命令不存在)
+    r = subprocess.run([lark, "im", "+messages-send", "--user-id", open_id, "--text", body],
                        capture_output=True, text=True, timeout=25)
     if r.returncode == 0 and '"ok":true' in (r.stdout.replace(" ", "")):
         print(green("  ✓ 飞书摘要已发送"))
