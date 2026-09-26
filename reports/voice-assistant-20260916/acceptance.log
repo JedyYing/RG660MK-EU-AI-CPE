@@ -1,0 +1,59 @@
+
+===== 路由分类 classify() =====
+[PASS] T01 1+1等于几 -> LOCAL_CALCULATOR  got=LOCAL_CALCULATOR expr=1+1
+[PASS] T01b safe_calc(1+1)==2
+[PASS] CALC 三加五等于几 = 8  intent=LOCAL_CALCULATOR val=8
+[PASS] CALC 100除以4 = 25  intent=LOCAL_CALCULATOR val=25
+[PASS] CALC 二十三乘七 -> 分类=LLM_OR_HERMES  got=LLM_OR_HERMES
+[PASS] CALC 23*7 = 161  intent=LOCAL_CALCULATOR val=161
+[PASS] CALC 10减3等于多少 = 7  intent=LOCAL_CALCULATOR val=7
+[PASS] T02 今天星期几 -> LOCAL_DATE_TIME  got=LOCAL_DATE_TIME
+[PASS] T03 今天上海什么天气 -> WEATHER  got=WEATHER
+[PASS] T03b 提取城市=上海  got=上海
+[PASS] T04 北京明天会下雨吗 -> WEATHER  got=WEATHER
+[PASS] T04b 提取城市=北京  got=北京
+[PASS] T05 相对论 -> LLM_OR_HERMES(兜底Hermes)  got=LLM_OR_HERMES
+[PASS] T06 把灯打开 -> DEVICE_CONTROL/on  got=DEVICE_CONTROL {'tool': 'control_bulb', 'action': 'on'}
+[PASS] T10 开灯 -> DEVICE_CONTROL/on  got=DEVICE_CONTROL {'tool': 'control_bulb', 'action': 'on'}
+[PASS] PRIO 天气优先于时间  got=WEATHER
+
+===== 双超时 handle_turn() =====
+[TURN=1000] ROUTER text='相对论是怎么回事'
+[TURN=1000] WAIT_PROMPT at=30s
+[TURN=1000] RESPONSE='相对论的简洁回答'
+[TURN=1000] TTS_START
+[TURN=1000] TTS_DONE
+[PASS] T07 播报了'请稍等。'  spoken=[(30.0, '请稍等。'), (35.0, '相对论的简洁回答')]
+[PASS] T07 最终播报了结果(35s)  spoken=[(30.0, '请稍等。'), (35.0, '相对论的简洁回答')]
+[PASS] T07 未播报'我还没学会'(未到60s)
+[PASS] T07 turn 未 expired
+[TURN=1001] ROUTER text='模拟70秒'
+[TURN=1001] WAIT_PROMPT at=30s
+[TURN=1001] TIMEOUT hard=60s -> giveup
+[PASS] T08 播报了'请稍等。'(30s)  spoken=[(30.0, '请稍等。'), (60.0, '我还没有学会这个问题。')]
+[PASS] T08 播报了'我还没有学会这个问题。'(60s)  spoken=[(30.0, '请稍等。'), (60.0, '我还没有学会这个问题。')]
+[PASS] T08 turn 已 expired
+[TURN=1001] DISCARD reason=expired/cancelled
+[PASS] T08 70秒迟到结果被 accept_result 拒绝
+
+===== turn_id 隔离 / 防串话 (T09) =====
+[TURN=1002] ROUTER text='今天上海什么天气'
+[TURN=1002] RESPONSE='reply-for:今天上海什么天气'
+[TURN=1002] TTS_START
+[TURN=1002] TTS_DONE
+[TURN=1003] ROUTER text='相对论是怎么回事'
+[TURN=1003] RESPONSE='reply-for:相对论是怎么回事'
+[TURN=1003] TTS_START
+[TURN=1003] TTS_DONE
+[TURN=1004] ROUTER text='1+1等于几'
+[TURN=1004] RESPONSE='reply-for:1+1等于几'
+[TURN=1004] TTS_START
+[TURN=1004] TTS_DONE
+[PASS] T09 三轮 turn_id 严格递增  ids=[1002, 1003, 1004]
+[TURN=1005] DISCARD reason=stale current=1006
+[PASS] T09 旧轮迟到结果被丢弃(current 已切新轮)
+[PASS] T09 新轮结果可正常接受
+
+===== 汇总 =====
+PASS: 27   FAIL: 0
+ALL GREEN
