@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=AI CPE 五大功能演示
+Comment=双击运行 AI CPE 全功能自检与演示（RG660MK 设备侧执行，浏览器实时看板）
+Exec=bash -c "ssh root@192.168.1.1 \"cd /data/ai_cpe/hermes/home/aicpe_demo && nohup /data/hermes/venv/bin/python aicpe_demo.py --port 8099 --keep-alive 3600 >> demo_desktop.log 2>&1 &\"; sleep 3; xdg-open http://192.168.1.1:8099/"
+Terminal=true
+Icon=utilities-terminal
+Categories=Utility;
