@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=RG660MK 巡检
+Name[zh_CN]=RG660MK 巡检
+Comment=巡检 RG660MK AI CPE 全功能(网络/语音/视觉/家居/Matter)并自动修复常见问题
+Exec=python3 /home/jedyying/Desktop/RG660MK巡检脚本/rg660mk_check.py
+Icon=utilities-terminal
+Terminal=true
+Categories=Utility;

@@ -1,0 +1,22 @@
+test_bulb_spoken_results (test_audio_pipeline.AudioTests) ... [BULB] failed rc=1 code=None
+[BULB] failed rc=0 code=None
+ok
+test_direct_answer_does_not_fall_through_to_hermes (test_audio_pipeline.AudioTests) ... ok
+test_failed_fixed_record_never_reuses_wav (test_audio_pipeline.AudioTests) ... ok
+test_multiline_and_failed_asr (test_audio_pipeline.AudioTests) ... [ASR] failed rc=1
+ok
+test_noise_and_click_rejected (test_audio_pipeline.AudioTests) ... ok
+test_observed_calc_transcript (test_audio_pipeline.AudioTests) ... ok
+test_user_questions (test_audio_pipeline.AudioTests) ... ok
+test_wake_and_inline_command (test_audio_pipeline.AudioTests) ... ok
+test_weak_short_command (test_audio_pipeline.AudioTests) ... ok
+test_weather_fallback_and_failure_message (test_audio_pipeline.AudioTests) ... [WEATHER] primary failed: certificate expired
+[WEATHER] source=open-meteo city=上海 time=2026-09-16T10:00
+[WEATHER] primary failed: offline
+[TOOL_ERROR] tool=get_weather error=offline
+ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.016s
+
+OK

@@ -33,9 +33,19 @@
 
 ## 依赖
 
-* 设备侧：仅 Python 3 标准库 + `arecord`（OpenWrt 自带）。**不需要 ffmpeg**。
+* 设备侧：需要 **`/data/hermes/venv/bin/python`**（含 Pillow，v3 起用于画质/缩放处理）+ `arecord`（OpenWrt 自带）。**不需要 ffmpeg**。
+  * ⚠️ 2026-09-26 修复：v3 起**不能**用系统 `python3` 启动（无 PIL，会 `ModuleNotFoundError`）；`camav.init` 已固定用 venv python，部署时请以仓库内 init 为准。
 * 麦克风：`MIC_DEV` 环境变量，默认 `plughw:1,0`（card 1 = Logitech C270 HD WEBCAM）。
   可用逗号分隔多个设备做回退，例如 `MIC_DEV=plughw:1,0,plughw:2,0`。
+
+## 2026-09-26 重新部署记录
+
+- **服务化补齐**：设备上 `/etc/init.d/camav` 曾缺失（camav 一直在以手工 nohup 进程运行）——
+  本次按本文档正式安装并 `enable`（`S99camav`，重启不丢）。
+- **修复潜伏缺陷**：设备文件自 9/22 起已是 v3（需 PIL），但实际运行的是**旧代码的内存副本**
+  （文件更新后从未重启过），所以一直"看起来正常"。本次重启暴露并修复（venv python）。
+- **修复后状态**：视频 288px/q38/2fps、音频按设计 16kHz 满速（32KB/s 稳态，隧道实测一致）、
+  快照 ~36KB、procd respawn 守护。
 
 ## 部署
 
