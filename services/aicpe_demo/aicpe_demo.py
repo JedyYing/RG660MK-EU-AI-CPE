@@ -115,19 +115,25 @@ def check_voice(it, no_audio=False):
                 healed = True; asr_up = True; break
     ms.append(("语音助手进程", "存活" if va_alive else "未运行"))
     ms.append(("ASR 常驻服务(:6006)", ("在线" if asr_up else "离线") + ("（已自动拉起）" if healed else "")))
-    wavs = sorted([os.path.join("/data/ai_cpe/capdiag", f) for f in os.listdir("/data/ai_cpe/capdiag")
-                   if f.endswith(".wav")], key=os.path.getmtime)[-1:]
-    asr_text = ""
-    if wavs:
+    wav_list = sorted([os.path.join("/data/ai_cpe/capdiag", f) for f in os.listdir("/data/ai_cpe/capdiag")
+                       if f.endswith(".wav")], key=os.path.getmtime)
+    asr_text = ""; asr_pick = ""
+    # 从最新往旧扫最近 12 条现场录音，取第一条能转出非空文本的
+    # （现场偶有极短碎片/无语音录音，固定只取最新一条会被碎片偶发误报失败）
+    for wf in reversed(wav_list[-12:]):
         fn = "_paraformer_ws_once" if asr_up else "_paraformer_oneshot"
         code = ("import sys,json;sys.path.insert(0,'/data/ai_cpe');import voice_assistant as va;"
                 "print(json.dumps({'text': getattr(va,'%s')(sys.argv[1])}, ensure_ascii=False))" % fn)
-        rc, out = sh("%s -c %s %s" % (VENV, json.dumps(code), json.dumps(wavs[0])), t=180)
+        rc, out = sh("%s -c %s %s" % (VENV, json.dumps(code), json.dumps(wf)), t=180)
         try:
-            asr_text = json.loads(out.strip().splitlines()[-1]).get("text", "")
+            t = json.loads(out.strip().splitlines()[-1]).get("text", "")
         except Exception:
-            asr_text = ""
+            t = ""
+        if t:
+            asr_text = t; asr_pick = os.path.basename(wf); break
     ms.append(("ASR 实测转写", (asr_text[:40] + "…") if asr_text else "未取到文本"))
+    if asr_pick:
+        ms.append(("转写素材", asr_pick))
     reply = ""
     try:
         env = {}
