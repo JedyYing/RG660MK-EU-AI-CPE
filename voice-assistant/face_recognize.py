@@ -88,13 +88,14 @@ def main():
         print('上传失败: %s' % json.dumps(r, ensure_ascii=False)[:120])
         return 1
 
-    # 3. 等 ML 人脸识别（轮询，最长 ~15s）
-    people = []
-    for _ in range(6):
-        time.sleep(3)
+    # 3. 等 ML 人脸识别（轮询，最长 ~30s；ML 处理/模型冷启动可能需十几秒）
+    people = None
+    for _ in range(15):
+        time.sleep(2)
         a = http('GET', '/api/assets/%s' % asset_id, key)
-        people = a.get('people') if isinstance(a, dict) else None
-        if people is not None:
+        p = a.get('people') if isinstance(a, dict) else None
+        if p:
+            people = p
             break
 
     if not people:
