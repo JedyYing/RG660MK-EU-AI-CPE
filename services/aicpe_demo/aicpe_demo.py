@@ -84,6 +84,88 @@ def set_item(it, status, detail="", metrics=None):
     log("  [%s] %s %s" % (status.upper(), it["name"], ("- " + detail) if detail else ""))
 
 
+CPE_MODEL = "RG660MK-EU"
+CPE_PLATFORM = "MediaTek T930 + Wi-Fi MT7992"
+_CPE_CACHE = {"t": 0.0, "d": {}}
+
+
+def cpe_info():
+    """CPE 基本信息（5G 信号/接入终端/WiFi 信号/温度等），12s 缓存供看板轮询。"""
+    now = time.time()
+    if now - _CPE_CACHE["t"] < 12 and _CPE_CACHE["d"]:
+        return _CPE_CACHE["d"]
+    d = {"model": CPE_MODEL, "platform": CPE_PLATFORM}
+    rc, o = sh("mipc_wan_cli --nw_get_signal 2>/dev/null", t=6)
+    m = re.search(r"RAT\s+([0-9A-Za-z+/]+)\s*,\s*RSRP=(-?\d+)", o)
+    if m:
+        d["rat"] = m.group(1); d["rsrp"] = int(m.group(2))
+    st = []
+    for ifc in ("ra0", "ra1", "rai0"):
+        rc, o2 = sh("iw dev %s station dump 2>/dev/null" % ifc, t=5)
+        cur = None
+        for ln in o2.splitlines():
+            mm = re.match(r"\s*Station\s+([0-9a-fA-F:]+)", ln)
+            if mm:
+                cur = {"mac": mm.group(1).lower(), "ifc": ifc}; st.append(cur)
+            elif cur is not None:
+                ms = re.search(r"signal:\s*(-?\d+)", ln)
+                if ms:
+                    cur["rssi"] = int(ms.group(1))
+    leases = {}
+    rc, o3 = sh("cat /tmp/dhcp.leases 2>/dev/null", t=5)
+    for ln in o3.splitlines():
+        p = ln.split()
+        if len(p) >= 4:
+            leases[p[1].lower()] = p[3]
+    wm = set(s["mac"] for s in st); lm = set(leases)
+    d["clients"] = len(wm | lm); d["clients_wifi"] = len(wm); d["clients_lan"] = len(lm - wm)
+    d["sta"] = [{"name": leases.get(s["mac"], s["mac"][-8:]), "rssi": s.get("rssi")} for s in st[:3]]
+    rc, w = sh("ifstatus wan 2>/dev/null", t=6)
+    d["wan_up"] = '"up": true' in w
+    m4 = re.search(r'"address":\s*"([0-9.]+)"', w)
+    if m4:
+        d["wan_ip"] = m4.group(1)
+    rc, o5 = sh("cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null", t=4)
+    try:
+        d["temp_c"] = round(int(o5.strip()) / 1000.0, 1)
+    except Exception:
+        pass
+    try:
+        d["uptime_s"] = int(float(open("/proc/uptime").read().split()[0]))
+    except Exception:
+        pass
+    _CPE_CACHE["t"] = now; _CPE_CACHE["d"] = d
+    return d
+
+
+def immich_upload(path, t=30):
+    """把本地照片上传 Immich（multipart），返回 asset_id；失败返回 ''。"""
+    key = immich_key()
+    if not key:
+        return ""
+    try:
+        with open(path, "rb") as f:
+            content = f.read()
+    except OSError:
+        return ""
+    boundary = "----aicpe%d" % int(time.time() * 1000)
+    now = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
+    fields = {"deviceAssetId": "aicpe-demo-%d" % int(time.time()), "deviceId": "rg660mk-demo",
+              "fileCreatedAt": now, "fileModifiedAt": now}
+    body = b""
+    for name, value in fields.items():
+        body += ("--%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n" % (boundary, name, value)).encode()
+    body += ("--%s\r\nContent-Disposition: form-data; name=\"assetData\"; filename=\"aicpe_vision.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n" % boundary).encode()
+    body += content + b"\r\n" + ("--%s--\r\n" % boundary).encode()
+    req = urllib.request.Request(IMMICH + "/api/assets", data=body, headers={
+        "x-api-key": key, "Content-Type": "multipart/form-data; boundary=%s" % boundary})
+    try:
+        with urllib.request.urlopen(req, timeout=t) as r:
+            return json.loads(r.read().decode("utf-8")).get("id", "")
+    except Exception:
+        return ""
+
+
 def immich_key():
     try:
         return open(IMMICH_KEY_FILE).read().strip()
@@ -196,6 +278,8 @@ def check_vision(it, no_audio=False):
     if not ok:
         set_item(it, "fail", "抓帧失败（camview/camav 未就绪）", [("现场抓帧", "失败")]); return
     ms.append(("现场抓帧", "%d KB" % (size // 1024)))
+    aid = immich_upload(SNAP)
+    ms.append(("照片上传 Immich", ("已上传 ✓" if aid else "未上传（Immich 不可达或无 Key）")))
     try:
         det = vision_call("detect", SNAP); pose = vision_call("pose", SNAP)
     except Exception as e:
@@ -356,20 +440,23 @@ def check_smart_home(it, no_audio=False):
         ms.append(("动作", "静音质检模式：仅读取状态，不实际开关"))
         set_item(it, "pass" if ok0 else "fail", "本地灯控状态读取成功（未改动现场）" if ok0 else "本地灯控读取失败", ms)
         return
-    rc, st1 = _smarthome("toggle")
-    sw1 = bool(_field(st1, "switch_led"))
-    ms.append(("下发指令", "toggle → 回读：%s" % ("开" if sw1 else "关")))
-    ms.append(("往返时延", "%s ms（门面含进程启动；代理侧执行 2–7 ms）" % st1.get("latency_ms")))
-    ms.append(("状态回读", "已变化 ✓" if sw1 != sw0 else "未变化 ✗"))
-    accepted = bool(st1.get("success")) and sw1 != sw0
-    if accepted:                                   # 恢复现场
-        rc, st2 = _smarthome("toggle")
-        sw2 = bool(_field(st2, "switch_led"))
-        ms.append(("现场恢复", "已回到演示前状态（%s）" % ("开" if sw2 else "关") if sw2 == sw0 else "恢复后为 %s" % ("开" if sw2 else "关")))
-    if accepted:
-        set_item(it, "pass", "本地 MQTT 灯控闭环：指令下发→物理执行→状态回读一致（零涂鸦/零云依赖）", ms)
+    # 三轮「关→开」循环（用户 2026-09-28 要求：演示时关开灯三次），随后恢复现场
+    seq_ok = True
+    for i in range(1, 4):
+        rc_o, st_o = _smarthome("off", t=40)
+        sw_o = bool(_field(st_o, "switch_led"))
+        rc_n, st_n = _smarthome("on", t=40)
+        sw_n = bool(_field(st_n, "switch_led"))
+        good = bool(st_o.get("success")) and bool(st_n.get("success")) and (not sw_o) and sw_n
+        seq_ok = seq_ok and good
+        ms.append(("第 %d 轮 关→开" % i, "关%s / 开%s %s" % ("✓" if not sw_o else "✗", "✓" if sw_n else "✗", "" if good else "（异常）")))
+    rc_f, st_f = _smarthome("off" if sw0 else "on", t=40)
+    sw_f = bool(_field(st_f, "switch_led"))
+    ms.append(("现场恢复", "已回到演示前状态（%s）" % ("开" if sw_f else "关") if sw_f == sw0 else "恢复后为 %s" % ("开" if sw_f else "关")))
+    if seq_ok:
+        set_item(it, "pass", "本地 MQTT + Matter 真灯：关开 3 轮全部闭环（指令→物理执行→状态回读一致）", ms)
     else:
-        set_item(it, "fail", "本地 MQTT 灯控未闭环 → 检查设备内 broker(1883) 与 agent 是否在运行", ms)
+        set_item(it, "fail", "灯控循环存在未闭环轮次 → 检查 broker(1883)/agent/driver", ms)
 
 
 def run_all(args):
@@ -459,6 +546,9 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
 #log{background:#0a1526;border:1px solid #1f3350;border-radius:14px;padding:12px;height:260px;overflow:auto;font:12px/1.7 ui-monospace,Consolas,monospace;color:#9fe8b6;white-space:pre-wrap}
 #sum{margin:0 16px 16px;padding:14px;border-radius:14px;background:#0f2a1e;border:1px solid #2ecc71;font-size:17px}
 .small{font-size:12px;color:#8fa6c4}
+#cpewrap{display:flex;flex-wrap:wrap;gap:6px;margin:10px 16px 2px;padding:8px 12px;background:#0f1a2c;border:1px solid #1f3350;border-radius:12px}
+.chip{font-size:12px;color:#cfe0f5;background:#152339;border:1px solid #24416b;border-radius:16px;padding:4px 10px;white-space:nowrap}
+.chip b{color:#7fb7ff;font-weight:600}
 </style></head><body>
 <noscript><meta http-equiv="refresh" content="5"></noscript>
 <header>
@@ -468,6 +558,7 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
   <span class="tag" id="stat">加载中…</span>
   <button id="runbtn" onclick="startRun()" style="background:#31d17a;color:#06231a;border:0;border-radius:10px;padding:9px 16px;font-size:15px;font-weight:700;cursor:pointer">▶ 开始演示</button>
 </header>
+<div id="cpewrap"></div>
 <main>
   <div id="cards"><div class="card"><h3>正在读取状态…</h3><div class="d">若长时间无变化，请刷新页面</div></div></div>
   <div id="right">
@@ -518,6 +609,19 @@ async function tick(){
     });
     if((s.items||[]).length) document.getElementById("barIn").style.width=Math.round(done/s.items.length*100)+"%";
     document.getElementById("stat").textContent=s.summary||(s.phase==="running"?"演示进行中…":"等待开始");
+    var c=s.cpe||{};
+    if(c.model){
+      var chips="<span class='chip'><b>模组</b> "+c.model+"</span>";
+      if(c.platform) chips+="<span class='chip'><b>平台</b> "+c.platform+"</span>";
+      if(c.rsrp!==undefined) chips+="<span class='chip'><b>"+(c.rat||"5G")+" 信号</b> RSRP "+c.rsrp+" dBm</span>";
+      if(c.sta&&c.sta.length){ chips+="<span class='chip'><b>WiFi 信号</b> "+c.sta.map(function(x){return (x.name||"")+" "+(x.rssi!==undefined?x.rssi+" dBm":"—");}).join(" · ")+"</span>"; }
+      else { chips+="<span class='chip'><b>WiFi</b> 无接入终端</span>"; }
+      chips+="<span class='chip'><b>接入终端</b> "+c.clients+" 个（WiFi "+c.clients_wifi+" · 有线 "+c.clients_lan+"）</span>";
+      if(c.wan_ip) chips+="<span class='chip'><b>WAN</b> "+c.wan_ip+(c.wan_up?" ✓":" ✗")+"</span>";
+      if(c.temp_c) chips+="<span class='chip'><b>温度</b> "+c.temp_c+" °C</span>";
+      if(c.uptime_s) chips+="<span class='chip'><b>运行</b> "+Math.floor(c.uptime_s/3600)+"h"+Math.floor(c.uptime_s%3600/60)+"m</span>";
+      document.getElementById("cpewrap").innerHTML=chips;
+    }
     var lg=document.getElementById("log");
     lg.textContent=(s.log||[]).join("\\n"); lg.scrollTop=lg.scrollHeight;
     if(s.done && !_sumShown){ _sumShown=true;
@@ -666,8 +770,11 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
                 threading.Thread(target=lambda: run_all(ARGS), daemon=True).start()
                 self._send(200, "application/json", json.dumps({"started": True, "msg": "已启动"}))
         elif p == "/state":
+            cpe = cpe_info()
             with LOCK:
-                self._send(200, "application/json; charset=utf-8", json.dumps(STATE, ensure_ascii=False))
+                out = dict(STATE)
+            out["cpe"] = cpe
+            self._send(200, "application/json; charset=utf-8", json.dumps(out, ensure_ascii=False))
         elif p == "/snap":
             try:
                 with urllib.request.urlopen(CAMAV + "/snapshot", timeout=8) as r:
