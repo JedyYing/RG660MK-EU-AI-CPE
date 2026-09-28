@@ -483,14 +483,14 @@ def check_smart_home(it, no_audio=False):
     # 三轮「关→开」循环（用户 2026-09-28 要求：演示时关开灯三次），随后恢复现场
     seq_ok = True
     for i in range(1, 4):
-        rc_o, st_o = _smarthome("off", t=40)
+        rc_o, st_o = _smarthome("off", t=45)
         sw_o = bool(_field(st_o, "switch_led"))
-        rc_n, st_n = _smarthome("on", t=40)
+        rc_n, st_n = _smarthome("on", t=45)
         sw_n = bool(_field(st_n, "switch_led"))
         good = bool(st_o.get("success")) and bool(st_n.get("success")) and (not sw_o) and sw_n
         seq_ok = seq_ok and good
         ms.append(("第 %d 轮 关→开" % i, "关%s / 开%s %s" % ("✓" if not sw_o else "✗", "✓" if sw_n else "✗", "" if good else "（异常）")))
-    rc_f, st_f = _smarthome("off" if sw0 else "on", t=40)
+    rc_f, st_f = _smarthome("on" if sw0 else "off", t=45)
     sw_f = bool(_field(st_f, "switch_led"))
     ms.append(("现场恢复", "已回到演示前状态（%s）" % ("开" if sw_f else "关") if sw_f == sw0 else "恢复后为 %s" % ("开" if sw_f else "关")))
     if seq_ok:
@@ -649,6 +649,11 @@ async function tick(){
     });
     if((s.items||[]).length) document.getElementById("barIn").style.width=Math.round(done/s.items.length*100)+"%";
     document.getElementById("stat").textContent=s.summary||(s.phase==="running"?"演示进行中…":"等待开始");
+    var rb=document.getElementById("runbtn");
+    if(rb){
+      if(s.phase==="running"){ rb.textContent="演示进行中…"; rb.disabled=true; }
+      else { rb.textContent=s.done?"▶ 再次演示":"▶ 开始演示"; rb.disabled=false; }
+    }
     var c=s.cpe||{};
     if(c.model){
       var chips="<span class='chip'><b>模组</b> "+c.model+"</span>";
@@ -678,8 +683,8 @@ async function startRun(){
   var b=document.getElementById("runbtn"); b.disabled=true; b.textContent="启动中…";
   try{ var r=await fetch("/run",{cache:"no-store"}); var j=await r.json();
        b.textContent = j.started ? "演示进行中…" : (j.msg||"未能启动");
-  }catch(e){ b.textContent="启动失败"; b.disabled=false; }
-  setTimeout(function(){ b.disabled=false; },3000);
+  }catch(e){ b.textContent="启动失败"; }
+  /* 按钮的最终状态由 tick() 根据 /state 同步（防止文字永远停在"演示进行中…"） */
 }
 function boot(){
   if(!jsMode){ fallbackMode("no-fetch"); return; }
@@ -809,7 +814,11 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
             if busy:
                 self._send(200, "application/json", json.dumps({"started": False, "msg": "演示已在运行"}))
             else:
-                threading.Thread(target=lambda: run_all(ARGS), daemon=True).start()
+                # 页面「开始演示」= 完整演示：强制 no_audio=False
+                # （服务端 --no-audio 仅用于启动器的自动质检跑，避免页面按钮误落入只读分支）
+                a = argparse.Namespace(**vars(ARGS))
+                a.no_audio = False
+                threading.Thread(target=lambda: run_all(a), daemon=True).start()
                 self._send(200, "application/json", json.dumps({"started": True, "msg": "已启动"}))
         elif p == "/state":
             cpe = cpe_info()
