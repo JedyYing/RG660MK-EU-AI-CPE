@@ -94,7 +94,7 @@ HARD_TIMEOUT_SECS = 60     # 60 秒仍无结果 -> 终止本轮并播"我还没�
 WAIT_PROMPT_TEXT = "请稍等。"
 GIVEUP_TEXT = "我还没有学会这个问题。"
 
-TIME_PATTERN = re.compile(r"^(?:请问|告诉我|帮我查一下)?(?:今天|现在)?(?:是)?(?:几点(?:钟)?(?:了)?|几月几[日号]|几号|星期几|周几|什么日期|什么时间|日期|时间)(?:了|呢|呀|啊|吗)?$")
+TIME_PATTERN = re.compile(r"^(?:请问|告诉我|帮我查一下)?(?:今天|现在|都|那|在)?(?:是)?(?:几点(?:钟)?(?:了)?|几月几[日号]|几号|星期几|周几|什么日期|什么时间|日期|时间)(?:了|呢|呀|啊|吗)?$")
 WEATHER_KEYS = ["天气", "气温", "温度", "下雨", "下雪", "几度", "冷不冷", "热不热"]
 
 # ---- L1 实时行情(设计文档 §2.1 L1「实时联网」,与天气处理器同款形状)----
@@ -729,22 +729,21 @@ def _cjk_ratio(text):
 
 
 def extract_hermes_answer(output, min_ratio=0.3, max_chars=300):
-    """Hermes 的 stdout 先打印英文推理框,再打印最终中文答案(实测 2026-09-18)。
-    从末尾向前取连续的中文段落,遇到第一个不达标段落即停,避免把推理念给用户。"""
-    kept = [line for line in (output or "").splitlines()
-            if not _BOX_FRAME.match(line) and not line.strip().startswith("session_id:")]
-    picked, total = [], 0
-    for block in reversed("\n".join(kept).split("\n\n")):
-        text = " ".join(block.split())
-        if not text:
-            continue
-        if _cjk_ratio(text) < min_ratio:
+    """抽取 Hermes stdout 末尾的最终中文答案。
+    实测(2026-09-28)新版式：英文推理行与答案之间可能只有单换行、可能无 session_id 行，
+    旧的分段法会连坐失手。改为：从末尾逐行向上收中文行，遇非中文行即停（最多并 2 行）。"""
+    lines = [ln.strip() for ln in (output or "").splitlines()]
+    lines = [ln for ln in lines if ln and not _BOX_FRAME.match(ln) and not ln.startswith("session_id:")]
+    picked = []
+    for ln in reversed(lines):
+        if len(picked) >= 2:
             break
-        picked.append(text)
-        total += len(text)
-        if total >= max_chars:
+        cjk = sum(1 for c in ln if "一" <= c <= "鿿")
+        if _cjk_ratio(ln) >= min_ratio or (not picked and cjk >= 2):
+            picked.append(ln)
+        else:
             break
-    return "".join(reversed(picked))
+    return "".join(reversed(picked))[:max_chars]
 
 
 def bulb_reply(action, result):
@@ -866,7 +865,7 @@ def hermes_ask(text):
             return "问答服务暂时不可用，请稍后再试。"
         # stdout 里带着推理框,必须先抽出最终中文答案,否则会被播报层当成乱码过滤掉。
         answer = extract_hermes_answer(output)
-        print("[HERMES] raw=%d chars -> answer=%d chars" % (len(output), len(answer)), flush=True)
+        print("[HERMES] raw=%d chars -> answer=%d chars | tail=%r" % (len(output), len(answer), output.strip()[-90:]), flush=True)
         return answer or "问答服务暂时没有返回结果，请稍后再试。"
     except subprocess.TimeoutExpired:
         return "抱歉，这个问题我想得有点久，你换个说法试试"
@@ -987,6 +986,20 @@ _SLEEP_WAKE = re.compile(r"^(?:你好[，,、\s]*(?:小皮皮|小pipi|小皮|小
 
 def is_sleep_wake(text):
     return bool(_SLEEP_WAKE.match(text.strip()))
+
+
+SLEEP_EXACT = ("休息", "休息吧", "睡觉", "退下")
+
+
+def _is_sleep_cmd(raw_text, clean):
+    """休眠口令判定(2026-09-28 加固)：唤醒词引导的短口令，或极短的明确口令。
+    会议/嘈杂环境里长句串词（如"那我们先休息一下吧"）不再误触发休眠。"""
+    if not any(w in clean for w in SLEEP_WORDS):
+        return False
+    k = clean.strip("，,。.!！?？ ")
+    if k in SLEEP_EXACT:
+        return True
+    return len(k) <= 8 and is_wake(raw_text)
 
 
 CITIES = ["上海", "北京", "广州", "深圳", "杭州", "南京", "成都", "重庆", "武汉",
