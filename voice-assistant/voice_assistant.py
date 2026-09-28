@@ -760,6 +760,10 @@ def bulb_reply(action, result):
         payload = {}
     if "device is offline" in output.lower():
         return "灯泡离线了，请检查灯泡电源和网络连接。"
+    # 秒回模式回执（smarthome.py --nowait）：只表示指令已发出，不等物理确认
+    if payload.get("sent") is True:
+        return {"on": "已发送开灯指令。", "off": "已发送关灯指令。",
+                "toggle": "已发送切换指令。"}.get(action, "已发送指令。")
     if result.returncode != 0 or payload.get("success") is False:
         print("[BULB] failed rc=%s code=%s" % (result.returncode, payload.get("code")), flush=True)
         return "灯泡控制失败，请稍后再试。"
@@ -791,7 +795,13 @@ def execute_tool(name, args):
             return get_stock_quote(found[0]) if found else QUOTE_NOTFOUND_TEXT
         elif name == "control_bulb":
             action = args.get("action", "status")
-            r = subprocess.run(["python3", BULB, action], capture_output=True, text=True, timeout=6)
+            if action in ("on", "off", "toggle"):
+                # 秒回：仅发送指令，不等待 Matter 物理确认（确认需 12~19s 会拖慢播报；
+                # 旧 6s 超时会在确认前掐断子进程 → 误报"设备操作失败"，2026-09-28 修）
+                r = subprocess.run(["python3", BULB, action, "--nowait"],
+                                   capture_output=True, text=True, timeout=8)
+            else:
+                r = subprocess.run(["python3", BULB, "status"], capture_output=True, text=True, timeout=15)
             return bulb_reply(action, r)
         elif name == "take_photo":
             r = subprocess.run([SNAPSHOT], capture_output=True, text=True, timeout=30)
