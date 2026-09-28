@@ -612,7 +612,7 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
 <div id="sum"></div>
 <script>
 var jsMode = (typeof fetch !== "undefined");
-var _sumShown = false, _reloadTimer = null;
+var _reloadTimer = null;
 function cameraFail(){
   var e=document.getElementById("camstat");
   if(e && !e.textContent) e.textContent="画面加载失败，2 秒后重试…";
@@ -667,10 +667,9 @@ async function tick(){
     }
     var lg=document.getElementById("log");
     lg.textContent=(s.log||[]).join("\\n"); lg.scrollTop=lg.scrollHeight;
-    if(s.done && !_sumShown){ _sumShown=true;
-      var sm=document.getElementById("sum"); sm.style.display="block";
-      sm.innerHTML="🎉 "+s.summary+"　<span class='small'>报告："+s.report+"</span>";
-    }
+    var sm=document.getElementById("sum");
+    if(s.summary){ sm.style.display="block"; sm.innerHTML="🎉 "+s.summary+"　<span class='small'>报告："+s.report+"</span>"; }
+    else { sm.style.display="none"; sm.innerHTML=""; }
     var c=document.getElementById("cam");
     if(c) c.src="/snap?ts="+Date.now();
   }catch(e){ /* 渲染错误不影响画面刷新 */ }
