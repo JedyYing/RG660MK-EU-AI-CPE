@@ -45,10 +45,34 @@ def _one_shot(action, timeout=30.0):
     return state if state else {"power": "unknown", "error": "timeout/no-state", "latency_ms": ms}
 
 
+def _send_only(action):
+    """只发指令、不等物理确认（语音/看板「秒回」用）。
+    指令经本地 broker 交给 smarthome agent（Matter 真灯）异步执行（约 12~19s）；
+    物理结果可随时用 `smarthome.py status` 查询。"""
+    cli = Client(BROKER, PORT, "aicpe-cli-%d" % (os.getpid() % 100000)).connect(timeout=3)
+    cli.publish(T_SET, json.dumps({"state": action}), retain=False)
+    time.sleep(0.2)                                   # 让 broker/agent 排空一拍
+    cli.close()
+    return True
+
+
 def main():
-    action = (sys.argv[1] if len(sys.argv) > 1 else "status").lower()
+    argv = sys.argv[1:]
+    nowait = "--nowait" in argv[1:]
+    action = (argv[0] if argv else "status").lower()
     if action not in ("on", "off", "toggle", "status"):
-        print(json.dumps({"success": False, "error": "用法: smarthome.py on|off|toggle|status"})); return 2
+        print(json.dumps({"success": False, "error": "用法: smarthome.py on|off|toggle|status [--nowait]"})); return 2
+    if nowait and action in ("on", "off", "toggle"):
+        t0 = time.time()
+        try:
+            _send_only(action)
+            print(json.dumps({"success": True, "sent": True, "transport": "mqtt",
+                              "broker": "%s:%d" % (BROKER, PORT),
+                              "latency_ms": round((time.time() - t0) * 1000, 1)}, ensure_ascii=False))
+            return 0
+        except Exception as e:
+            print(json.dumps({"success": False, "error": "send failed: %s" % str(e)[:100]}))
+            return 1
     t0 = time.time()
     st = _one_shot(action)
     latency = st.pop("latency_ms", (time.time() - t0) * 1000)
