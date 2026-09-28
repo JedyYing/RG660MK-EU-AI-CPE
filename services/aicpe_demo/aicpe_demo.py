@@ -20,7 +20,8 @@ MODELS = {"detect": "/data/ai_cpe/demo/ai_models/yolov8n/model.ncnn.param",
           "pose": "/data/ai_cpe/demo/ai_models/yolov8n-pose/model.ncnn.param"}
 CAMAV = "http://127.0.0.1:8092"; CAMVIEW = "http://127.0.0.1:8090"
 IMMICH = "http://192.168.1.244:2283"; IMMICH_KEY_FILE = HOME + "/photos/.immich_key"
-BULB = "/data/ai_cpe/bulb_control.py"; TTS = "/data/ai_cpe/tts_say.py"
+BULB = "/data/ai_cpe/smarthome.py"   # 本地 MQTT 控制面（原涂鸦脚本已退役，见 /data/ai_cpe/attic_tuya/）
+TTS = "/data/ai_cpe/tts_say.py"
 FACEREC = "/data/ai_cpe/face_recognize.py"; SHERPA_INIT = "/etc/init.d/sherpa-asr"
 PY = "/usr/bin/python3"; VENV = "/data/hermes/venv/bin/python"
 STATE = {"started": time.time(), "phase": "init", "items": [], "log": [], "done": False,
@@ -221,8 +222,14 @@ def check_vision(it, no_audio=False):
     rc, o = sh("%s %s" % (PY, FACEREC), t=180)
     m = re.search(r"(识别到|没有识别到|未识别).{0,40}", o)
     ms.append(("人脸识别（身份）", m.group(0).strip() if m else (o.strip()[-70:] or "无输出")))
-    ok = bool(dets or persons) and ("异常" not in verdict)
-    set_item(it, "pass" if ok else "fail", "视觉双检（坐姿 + 人脸身份）已完成" if ok else verdict, ms)
+    # 判定原则：只有「判定过程本身出错」才算功能失败；"画面内无人"、"检出坐姿异常" 都是**场景状态**，
+    # 说明链路已正确执行（实测：把"检出异常坐姿"当失败会造成 2/3 的假失败）。
+    ok = not verdict.startswith("判定异常")
+    if ok and verdict.startswith("坐姿异常"):
+        detail = "视觉双检已完成：检出异常坐姿（场景状态，功能正常）"
+    else:
+        detail = ("视觉双检已完成：" if ok else "") + verdict
+    set_item(it, "pass" if ok else "fail", detail, ms)
 
 
 KEYMAP = [("云海", "yunhai"), ("泰晤士", "thames"), ("狗", "photo_"), ("宠物", "photo_"), ("照片", "photo_")]
@@ -314,46 +321,66 @@ def check_diag(it):
     set_item(it, "pass" if verdict.endswith("风险") else "fail", verdict, ms)
 
 
-def bulb_status():
-    rc, o = sh("%s %s status" % (PY, BULB), t=40)
+def _smarthome(action, t=30):
+    rc, o = sh("%s %s %s" % (PY, BULB, action), t=t)
     try:
-        return json.loads(o)
+        return rc, json.loads(o)
     except Exception:
-        return {"_raw": o[:200]}
+        return rc, {"_raw": o[:200]}
+
+
+def _field(st, code):
+    for r in (st.get("result") or []):
+        if r.get("code") == code:
+            return r.get("value")
+    return None
 
 
 def check_smart_home(it, no_audio=False):
+    """智能灯控（本地 MQTT 控制面）：设备内 broker + 代理 → 板载执行器，零云依赖、零涂鸦。"""
     set_item(it, "running")
     ms = []
-    before = bulb_status(); ok0 = "result" in before
-    ms.append(("Tuya 云连接", "正常" if ok0 else "异常: %s" % str(before)[:60]))
+    rc, st0 = _smarthome("status")
+    ok0 = bool(st0.get("success"))
+    sw0 = bool(_field(st0, "switch_led"))
+    ms.append(("控制面（本地 MQTT）", ("正常 · transport=%s · broker=%s" % (st0.get("transport"), st0.get("broker"))) if ok0 else "异常: %s" % str(st0)[:60]))
+    ms.append(("执行器驱动", str(_field(st0, "driver") or "?")))
+    ms.append(("指令前状态", "开" if sw0 else "关"))
     if no_audio:
         ms.append(("动作", "静音质检模式：仅读取状态，不实际开关"))
-        set_item(it, "pass" if ok0 else "fail", "设备状态读取成功（未改动现场）" if ok0 else "读取失败", ms); return
-    rc, out = sh("%s %s toggle" % (PY, BULB), t=40)
-    accepted = ("✅" in out) or ("已发送" in out) or (rc == 0 and "error" not in out.lower())
-    ms.append(("联动动作", (out.strip().splitlines()[-1][:50] if out.strip() else "无输出")))
-    time.sleep(3)
-    after = bulb_status()
-    ch = [k for k, v in [(x.get("code"), x.get("value")) for x in (after.get("result") or [])]
-          if any(y.get("code") == k and y.get("value") != v for y in (before.get("result") or []))]
-    ms.append(("状态回读", ("%d 个字段变化：%s" % (len(ch), ", ".join(ch[:3]))) if ch else "该型号状态接口未暴露开关 DP（指令已受理）"))
+        set_item(it, "pass" if ok0 else "fail", "本地灯控状态读取成功（未改动现场）" if ok0 else "本地灯控读取失败", ms)
+        return
+    rc, st1 = _smarthome("toggle")
+    sw1 = bool(_field(st1, "switch_led"))
+    ms.append(("下发指令", "toggle → 回读：%s" % ("开" if sw1 else "关")))
+    ms.append(("往返时延", "%s ms（门面含进程启动；代理侧执行 2–7 ms）" % st1.get("latency_ms")))
+    ms.append(("状态回读", "已变化 ✓" if sw1 != sw0 else "未变化 ✗"))
+    accepted = bool(st1.get("success")) and sw1 != sw0
+    if accepted:                                   # 恢复现场
+        rc, st2 = _smarthome("toggle")
+        sw2 = bool(_field(st2, "switch_led"))
+        ms.append(("现场恢复", "已回到演示前状态（%s）" % ("开" if sw2 else "关") if sw2 == sw0 else "恢复后为 %s" % ("开" if sw2 else "关")))
     if accepted:
-        sh("%s %s toggle" % (PY, BULB), t=40); time.sleep(3)
-        ms.append(("现场恢复", "已发再次切换指令，恢复演示前状态"))
-    set_item(it, "pass" if accepted else "fail",
-             "智能灯具远程开关指令已受理并由云平台执行" if accepted else "指令未被受理，请检查 Tuya 绑定", ms)
+        set_item(it, "pass", "本地 MQTT 灯控闭环：指令下发→物理执行→状态回读一致（零涂鸦/零云依赖）", ms)
+    else:
+        set_item(it, "fail", "本地 MQTT 灯控未闭环 → 检查设备内 broker(1883) 与 agent 是否在运行", ms)
 
 
 def run_all(args):
+    # 每轮开始必须重置状态：否则看板会残留上一轮结果、条目累加（实测踩过）
     with LOCK:
         STATE["phase"] = "running"
+        STATE["items"] = []
+        STATE["done"] = False
+        STATE["summary"] = ""
+        STATE["started"] = time.time()
+        STATE["log"] = []
     log("=== AI CPE 五大功能一键演示 开始（%s）===" % ("静音质检模式" if args.no_audio else "完整演示模式"))
     items = [item(1, "AI 智能语音对话", "语音交互 / 大模型对话 / TTS 播报"),
              item(2, "AI 视觉检测", "人脸识别 + 坐姿智能检测"),
              item(3, "飞书自然语言图片检索", "自然语言指令检索图片资源"),
              item(4, "视频卡顿智能故障排查", "自动检测、分析并定位卡顿"),
-             item(5, "智能家居控制", "智能灯具开关联动")]
+             item(5, "智能家居控制", "本地 MQTT 灯控联动（无涂鸦/无云依赖）")]
     for fn, it, kw in [(check_voice, items[0], {"no_audio": args.no_audio}),
                        (check_vision, items[1], {"no_audio": args.no_audio}),
                        (check_photo_search, items[2], {"query": args.query, "no_audio": args.no_audio}),
@@ -399,75 +426,206 @@ def write_report(items, passed):
 # ---------------- 可视化看板（HTTP + 实时页面） ----------------
 DASH_HTML = """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <title>AI CPE 功能演示 · 实时看板</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0b1220;color:#e8eef7;font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
-header{background:linear-gradient(90deg,#0f3d5c,#1b6ca8);padding:18px 26px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
-h1{font-size:26px;letter-spacing:1px}
+header{background:linear-gradient(90deg,#0f3d5c,#1b6ca8);padding:16px 22px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+h1{font-size:24px}
 .tag{background:rgba(255,255,255,.14);padding:6px 12px;border-radius:20px;font-size:13px}
-#bar{flex:1;min-width:220px;height:14px;background:rgba(255,255,255,.18);border-radius:8px;overflow:hidden}
+#bar{flex:1;min-width:200px;height:14px;background:rgba(255,255,255,.18);border-radius:8px;overflow:hidden}
 #barIn{height:100%;width:0;background:linear-gradient(90deg,#31d17a,#8ef0b4);transition:width .6s ease}
-main{display:grid;grid-template-columns:1.35fr .95fr;gap:18px;padding:18px}
-#cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.card{background:#121c2e;border:1px solid #1f3350;border-radius:14px;padding:14px 16px;position:relative;overflow:hidden;transition:.4s}
-.card.run{border-color:#3aa0f0;box-shadow:0 0 0 1px #3aa0f0 inset,0 0 26px rgba(58,160,240,.25)}
+main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+#cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:#121c2e;border:1px solid #1f3350;border-radius:14px;padding:12px 14px;position:relative}
+.card.run{border-color:#3aa0f0}
 .card.pass{border-color:#2ecc71;background:#0f2a1e}
 .card.fail{border-color:#e74c3c;background:#2a1214}
-.card h3{font-size:17px;margin-bottom:6px}
-.card .d{font-size:12px;color:#8fa6c4;margin-bottom:8px}
-.kv{font-size:12.5px;color:#c9d8ea;line-height:1.75}
+.card h3{font-size:16px;margin-bottom:5px}
+.card .d{font-size:12px;color:#8fa6c4;margin-bottom:7px}
+.kv{font-size:12.5px;color:#c9d8ea;line-height:1.7}
 .kv b{color:#7fd1ff;font-weight:600}
-.badge{position:absolute;top:12px;right:14px;font-size:12px;padding:3px 10px;border-radius:20px;background:#243b5a}
-.spin{width:12px;height:12px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:r 1s linear infinite}
-@keyframes r{to{transform:rotate(360deg)}}
-#right{display:flex;flex-direction:column;gap:14px}
+.badge{position:absolute;top:10px;right:12px;font-size:12px;padding:3px 10px;border-radius:20px;background:#243b5a}
+#right{display:flex;flex-direction:column;gap:12px}
 #camwrap{background:#121c2e;border:1px solid #1f3350;border-radius:14px;padding:10px}
-#cam{width:100%;border-radius:10px;display:block;background:#000;min-height:220px}
-#log{background:#0a1526;border:1px solid #1f3350;border-radius:14px;padding:12px;height:300px;overflow:auto;font:12px/1.7 ui-monospace,Consolas,monospace;color:#9fe8b6;white-space:pre-wrap}
-#sum{margin:0 18px 18px;padding:16px;border-radius:14px;background:#0f2a1e;border:1px solid #2ecc71;font-size:18px;display:none}
+#cam{width:100%;border-radius:10px;display:block;background:#000;min-height:200px}
+#log{background:#0a1526;border:1px solid #1f3350;border-radius:14px;padding:12px;height:260px;overflow:auto;font:12px/1.7 ui-monospace,Consolas,monospace;color:#9fe8b6;white-space:pre-wrap}
+#sum{margin:0 16px 16px;padding:14px;border-radius:14px;background:#0f2a1e;border:1px solid #2ecc71;font-size:17px}
 .small{font-size:12px;color:#8fa6c4}
 </style></head><body>
+<noscript><meta http-equiv="refresh" content="5"></noscript>
 <header>
   <h1>AI CPE 五大功能演示</h1>
   <span class="tag" id="dev">RG660MK · 5G 公网</span>
   <div id="bar"><div id="barIn"></div></div>
-  <span class="tag" id="stat">初始化…</span>
+  <span class="tag" id="stat">加载中…</span>
+  <button id="runbtn" onclick="startRun()" style="background:#31d17a;color:#06231a;border:0;border-radius:10px;padding:9px 16px;font-size:15px;font-weight:700;cursor:pointer">▶ 开始演示</button>
 </header>
 <main>
-  <div id="cards"></div>
+  <div id="cards"><div class="card"><h3>正在读取状态…</h3><div class="d">若长时间无变化，请刷新页面</div></div></div>
   <div id="right">
-    <div id="camwrap"><div class="small" style="margin-bottom:6px">现场摄像头实时画面（C270）</div><img id="cam" alt="等待画面…"></div>
-    <div id="log"></div>
+    <div id="camwrap">
+      <div class="small" style="margin-bottom:6px">现场摄像头实时画面（C270）<span id="camstat" style="color:#ffd479;margin-left:8px"></span></div>
+      <img id="cam" src="/snap" alt="画面加载中或失败（可直接刷新页面重试）" onerror="cameraFail()">
+    </div>
+    <div id="log">日志加载中…</div>
   </div>
 </main>
 <div id="sum"></div>
 <script>
-const ICON={pending:"○",running:null,pass:"✅",fail:"❌",skip:"⏭"};
-const CN={pending:"待运行",running:"运行中",pass:"通过",fail:"失败",skip:"跳过"};
+var jsMode = (typeof fetch !== "undefined");
+var _sumShown = false, _reloadTimer = null;
+function cameraFail(){
+  var e=document.getElementById("camstat");
+  if(e && !e.textContent) e.textContent="画面加载失败，2 秒后重试…";
+  setTimeout(function(){ var c=document.getElementById("cam"); if(c) c.src="/snap?ts="+Date.now(); }, 2000);
+}
+function fallbackMode(reason){
+  if(!jsMode) return;
+  jsMode=false;
+  var e=document.getElementById("camstat");
+  if(e) e.textContent="已切换兜底刷新模式（每 5 秒整页刷新）";
+  if(!_reloadTimer) _reloadTimer=setInterval(function(){ location.reload(); }, 5000);
+}
+var ICON={pending:"○",running:"◌",pass:"✅",fail:"❌",skip:"⏭"};
+var CN={pending:"待运行",running:"运行中",pass:"通过",fail:"失败",skip:"跳过"};
 async function tick(){
+  if(!jsMode) return;
+  var s=null;
   try{
-    const r=await fetch("/state",{cache:"no-store"}); const s=await r.json();
-    const box=document.getElementById("cards");
-    box.innerHTML="";
-    let done=0;
-    s.items.forEach(it=>{
-      const st=it.status; if(st==="pass"||st==="fail")done++;
-      const el=document.createElement("div"); el.className="card "+(st==="running"?"run":st);
-      let badge = st==="running" ? '<span class="badge"><span class="spin"></span> 运行中</span>'
-                                 : '<span class="badge">'+(ICON[st]||"")+" "+CN[st]+"</span>";
-      el.innerHTML=`<h3>${it.idx}. ${it.name}</h3><div class="d">${it.desc}</div>${badge}
-        <div class="kv">${it.metrics.map(([k,v])=>`<div><b>${k}</b>：${v}</div>`).join("")||"<span class='small'>等待执行…</span>"}</div>
-        ${it.dur?`<div class="small" style="margin-top:6px">耗时 ${it.dur}s</div>`:""}`;
+    var r=await fetch("/state",{cache:"no-store"});
+    s=await r.json();
+  }catch(e){ fallbackMode(String(e)); return; }
+  try{
+    var box=document.getElementById("cards"); box.innerHTML="";
+    var done=0;
+    (s.items||[]).forEach(function(it){
+      if(it.status==="pass"||it.status==="fail") done++;
+      var el=document.createElement("div"); el.className="card "+(it.status==="running"?"run":it.status);
+      var badge='<span class="badge">'+(ICON[it.status]||"")+" "+(CN[it.status]||it.status)+'</span>';
+      var kv=(it.metrics||[]).map(function(kv){return "<div><b>"+kv[0]+"</b>："+kv[1]+"</div>";}).join("");
+      el.innerHTML="<h3>"+it.idx+". "+it.name+"</h3><div class='d'>"+it.desc+"</div>"+badge+
+        "<div class='kv'>"+(kv||"<span class='small'>等待执行…</span>")+"</div>"+
+        (it.dur?"<div class='small' style='margin-top:6px'>耗时 "+it.dur+"s</div>":"");
       box.appendChild(el);
     });
-    document.getElementById("barIn").style.width=Math.round(done/s.items.length*100)+"%";
+    if((s.items||[]).length) document.getElementById("barIn").style.width=Math.round(done/s.items.length*100)+"%";
     document.getElementById("stat").textContent=s.summary||(s.phase==="running"?"演示进行中…":"等待开始");
-    const lg=document.getElementById("log"); lg.textContent=s.log.join("\n"); lg.scrollTop=lg.scrollHeight;
-    if(s.done){const sm=document.getElementById("sum"); sm.style.display="block"; sm.innerHTML="🎉 "+s.summary+"　<span class='small'>报告已生成："+s.report+"</span>";}
-    document.getElementById("cam").src="/snap?ts="+Date.now();
-  }catch(e){ }
+    var lg=document.getElementById("log");
+    lg.textContent=(s.log||[]).join("\n"); lg.scrollTop=lg.scrollHeight;
+    if(s.done && !_sumShown){ _sumShown=true;
+      var sm=document.getElementById("sum"); sm.style.display="block";
+      sm.innerHTML="🎉 "+s.summary+"　<span class='small'>报告："+s.report+"</span>";
+    }
+    var c=document.getElementById("cam");
+    if(c) c.src="/snap?ts="+Date.now();
+  }catch(e){ /* 渲染错误不影响画面刷新 */ }
 }
-setInterval(tick,1200); tick();
+async function startRun(){
+  var b=document.getElementById("runbtn"); b.disabled=true; b.textContent="启动中…";
+  try{ var r=await fetch("/run",{cache:"no-store"}); var j=await r.json();
+       b.textContent = j.started ? "演示进行中…" : (j.msg||"未能启动");
+  }catch(e){ b.textContent="启动失败"; b.disabled=false; }
+  setTimeout(function(){ b.disabled=false; },3000);
+}
+function boot(){
+  if(!jsMode){ fallbackMode("no-fetch"); return; }
+  setInterval(tick,1500); tick();
+}
+boot();
+</script></body></html>"""
+
+SIMPLE_HTML = """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="6">
+<title>AI CPE 演示 · 简易版</title>
+<style>body{background:#0b1220;color:#e8eef7;font-family:sans-serif;margin:0;padding:14px}
+img{width:100%;max-width:760px;border-radius:10px;background:#000}
+h2{margin:6px 0 10px;font-size:20px} .b{padding:10px;margin:8px 0;border-radius:10px;background:#121c2e;border:1px solid #1f3350}
+</style></head><body>
+<h2>AI CPE 五大功能演示（简易版，每 6 秒自动刷新）</h2>
+<img src="/snap" alt="画面加载中…">
+<div class="b" id="s">正在读取状态…</div>
+<script>
+(function(){
+  var x=new XMLHttpRequest();
+  x.onreadystatechange=function(){
+    if(x.readyState===4){
+      var d=document.getElementById("s");
+      if(x.status===200){
+        try{ var j=JSON.parse(x.responseText);
+          d.innerHTML="<b>"+(j.summary||(j.phase==="running"?"演示进行中…":"等待开始"))+"</b><br>"+
+            (j.items||[]).map(function(i){return i.idx+"."+i.name+"："+i.status+(i.detail?"（"+i.detail+"）":"");}).join("<br>");
+        }catch(e){ d.textContent="状态解析失败"; }
+      } else { d.textContent="状态读取失败("+x.status+")"; }
+    }
+  };
+  x.open("GET","/state",true); x.send();
+})();
+</script></body></html>"""
+
+
+
+RTT_HTML = """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>链路 RTT 实测（手机 → CPE）</title>
+<style>body{background:#0b1220;color:#e8eef7;font-family:sans-serif;margin:0;padding:16px}
+h2{font-size:20px;margin:4px 0 10px}.b{background:#121c2e;border:1px solid #1f3350;border-radius:12px;padding:12px;margin:10px 0}
+#big{font-size:34px;color:#7fd1ff;font-weight:700}.s{font-size:12px;color:#8fa6c4;line-height:1.7}
+canvas{width:100%;height:120px;background:#0a1526;border-radius:10px}
+button{background:#1b6ca8;color:#fff;border:0;border-radius:10px;padding:12px 20px;font-size:16px;margin-right:10px}
+</style></head><body>
+<h2>链路 RTT 实测：本机（手机/电脑） → RG660MK</h2>
+<div class="b"><div id="big">待测</div><div class="s" id="sum">点“开始测”后连续打 30 次，得到本机到设备的真实往返时延（含本机→CPE 网络段 + 设备处理/回程）</div></div>
+<div class="b"><button onclick="run()">开始测</button><span class="s" id="prog"></span></div>
+<script>if(location.search.indexOf("auto=1")>=0){window.addEventListener("load",function(){setTimeout(run,300);});}</script>
+<div class="b"><canvas id="cv" width="700" height="120"></canvas><div class="s" id="raw" style="margin-top:8px"></div></div>
+<div class="b s">判读：① 该值 = 你手机到 CPE 的网络往返 + 设备处理，不含 CPE→机器人 段，也不含 ASR/大模型处理；<br>
+② 与「本地排队时延」（设备内部环回测得）不是同一口径，两者不能相加当端到端；<br>
+③ 同 WiFi 下应在 2–10ms；经互联网/隧道会显著抬升（隧道本身的 RTT 也会计入）。</div>
+<script>
+var samples=[];
+async function one(){
+  var t0=performance.now();
+  try{ await fetch("/state?ts="+Date.now(),{cache:"no-store"}); }catch(e){ return null; }
+  return performance.now()-t0;
+}
+function stat(a){
+  if(!a.length) return {};
+  var b=a.slice().sort(function(x,y){return x-y});
+  var q=function(p){ return b[Math.min(b.length-1,Math.floor(p*b.length))]; };
+  var jit=0; for(var i=1;i<a.length;i++) jit+=Math.abs(a[i]-a[i-1]); jit=jit/Math.max(1,a.length-1);
+  var s=0; for(var i=0;i<a.length;i++) s+=a[i];
+  return {n:a.length,min:b[0],avg:s/a.length,p50:q(0.5),p95:q(0.95),max:b[b.length-1],jitter:jit};
+}
+async function run(){
+  samples=[]; document.getElementById("prog").textContent="测量中…";
+  for(var i=0;i<30;i++){
+    var d=await one();
+    if(d!==null){ samples.push(d); draw(); document.getElementById("prog").textContent="已测 "+samples.length+"/30"; }
+    await new Promise(function(r){setTimeout(r,120);});
+  }
+  var s=stat(samples);
+  document.getElementById("big").textContent = (s.avg?s.avg.toFixed(1):"-") + " ms";
+  document.getElementById("sum").innerHTML = "样本 "+s.n+" ｜ 最小 "+s.min.toFixed(1)+" ｜ P50 "+s.p50.toFixed(1)+
+      " ｜ P95 <b>"+s.p95.toFixed(1)+"</b> ｜ 最大 "+s.max.toFixed(1)+" ｜ 抖动(相邻差均值) "+s.jitter.toFixed(2)+" ms";
+  document.getElementById("prog").textContent="完成";
+  document.getElementById("raw").textContent="原始样本(ms): "+samples.map(function(x){return x.toFixed(1)}).join(", ");
+}
+function draw(){
+  var c=document.getElementById("cv"), g=c.getContext("2d");
+  g.clearRect(0,0,c.width,c.height);
+  var mx=Math.max.apply(null,samples.concat([5]));
+  g.strokeStyle="#3aa0f0"; g.lineWidth=2; g.beginPath();
+  samples.forEach(function(v,i){
+    var x=i/Math.max(1,samples.length-1)*(c.width-20)+10, y=c.height-10-(v/mx)*(c.height-25);
+    i?g.lineTo(x,y):g.moveTo(x,y);
+  });
+  g.stroke();
+  g.fillStyle="#8fa6c4"; g.font="12px sans-serif";
+  g.fillText("纵轴上限 "+mx.toFixed(1)+" ms",10,14);
+}
 </script></body></html>"""
 
 
@@ -476,7 +634,9 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
         pass
 
     def _send(self, code, ctype, body):
+        body = body if isinstance(body, bytes) else body.encode("utf-8")
         self.send_response(code); self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store"); self.end_headers()
         try:
             self.wfile.write(body if isinstance(body, bytes) else body.encode("utf-8"))
@@ -487,6 +647,18 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         if p == "/":
             self._send(200, "text/html; charset=utf-8", DASH_HTML)
+        elif p == "/simple":
+            self._send(200, "text/html; charset=utf-8", SIMPLE_HTML)
+        elif p == "/rtt":
+            self._send(200, "text/html; charset=utf-8", RTT_HTML)
+        elif p == "/run":
+            with LOCK:
+                busy = STATE.get("phase") == "running"
+            if busy:
+                self._send(200, "application/json", json.dumps({"started": False, "msg": "演示已在运行"}))
+            else:
+                threading.Thread(target=lambda: run_all(ARGS), daemon=True).start()
+                self._send(200, "application/json", json.dumps({"started": True, "msg": "已启动"}))
         elif p == "/state":
             with LOCK:
                 self._send(200, "application/json; charset=utf-8", json.dumps(STATE, ensure_ascii=False))
@@ -508,25 +680,47 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
 
 
 def serve(port):
+    import socket as _socket
     from http.server import ThreadingHTTPServer
-    srv = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+
+    class _DualStackServer(ThreadingHTTPServer):
+        # 同时支持 IPv4 与 IPv6（Linux 默认 bindv6only=0，绑 "::" 可同时接收 v4-mapped 连接）
+        address_family = _socket.AF_INET6
+
+    try:
+        srv = _DualStackServer(("::", port), Handler)
+    except OSError:
+        srv = ThreadingHTTPServer(("0.0.0.0", port), Handler)  # 回退：纯 IPv4
     t = threading.Thread(target=srv.serve_forever, daemon=True)
     t.start()
     return srv
 
 
+ARGS = None
+
+
 def main():
+    global ARGS
     ap = argparse.ArgumentParser(description="AI CPE 五大功能一键演示（含实时看板）")
     ap.add_argument("--port", type=int, default=8099, help="看板端口（默认 8099）")
     ap.add_argument("--no-audio", action="store_true", help="静音质检模式：不播报、不实际开关灯")
     ap.add_argument("--query", default="云海", help="图片检索的自然语言指令（默认 云海）")
     ap.add_argument("--no-serve", action="store_true", help="不启动看板，仅跑检查")
     ap.add_argument("--keep-alive", type=int, default=1800, help="跑完后看板继续在线秒数（默认 1800，0=立即退出）")
+    ap.add_argument("--serve-only", action="store_true",
+                    help="常驻模式：只提供看板，不自动跑检查（页面上点「开始演示」才跑）——适合长期挂着")
     a = ap.parse_args()
+    ARGS = a
+    if a.serve_only:
+        a.keep_alive = 10 ** 9          # 常驻
     if not a.no_serve:
         serve(a.port)
         ip = sh("ip -4 addr show br-lan | awk '/inet /{print $2}' | cut -d/ -f1")[1].strip() or "192.168.1.1"
         print("看板地址: http://%s:%d/   （局域网任意设备可访问；演示期间保持在线）" % (ip, a.port), flush=True)
+    if a.serve_only:
+        print("常驻模式：看板已就绪，等待页面点击「开始演示」…", flush=True)
+        while True:
+            time.sleep(3600)
     passed = run_all(a)
     if not a.no_serve and a.keep_alive > 0:
         print("演示已完成，看板继续在线 %d 秒（Ctrl+C 可提前结束）…" % a.keep_alive, flush=True)
