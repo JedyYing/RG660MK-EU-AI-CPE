@@ -120,6 +120,15 @@ def cpe_info():
     wm = set(s["mac"] for s in st); lm = set(leases)
     d["clients"] = len(wm | lm); d["clients_wifi"] = len(wm); d["clients_lan"] = len(lm - wm)
     d["sta"] = [{"name": leases.get(s["mac"], s["mac"][-8:]), "rssi": s.get("rssi")} for s in st[:3]]
+    # 本机广播的 SSID（AP 接口；主 SSID jedy 置前）
+    ssids = []
+    for ifc in ("ra0", "rai0", "ra1"):
+        rc, o4 = sh("iw dev %s info 2>/dev/null" % ifc, t=4)
+        m5 = re.search(r"ssid\s+(\S+)", o4)
+        if m5 and m5.group(1) not in ssids:
+            ssids.append(m5.group(1))
+    if ssids:
+        d["ssid"] = " · ".join(ssids)
     rc, w = sh("ifstatus wan 2>/dev/null", t=6)
     d["wan_up"] = '"up": true' in w
     m4 = re.search(r'"address":\s*"([0-9.]+)"', w)
@@ -132,6 +141,37 @@ def cpe_info():
         pass
     try:
         d["uptime_s"] = int(float(open("/proc/uptime").read().split()[0]))
+    except Exception:
+        pass
+    # 内存：总量 / 可用 + Hermes 智能体占用（直接读 /proc，避免 shell 匹配自扰）
+    try:
+        mi = open("/proc/meminfo").read()
+        mt = re.search(r"MemTotal:\s+(\d+)", mi)
+        ma = re.search(r"MemAvailable:\s+(\d+)", mi)
+        if mt:
+            d["mem_total_mb"] = int(round(int(mt.group(1)) / 1024.0))
+        if ma:
+            d["mem_avail_mb"] = int(round(int(ma.group(1)) / 1024.0))
+    except OSError:
+        pass
+    try:
+        import glob
+        tot_kb = 0; nproc = 0
+        for cd in glob.glob("/proc/[0-9]*/cmdline"):
+            try:
+                cl = open(cd, "rb").read().replace(b"\x00", b" ").decode("utf-8", "ignore")
+            except OSError:
+                continue
+            if "venv/bin/hermes" in cl:
+                try:
+                    for ln in open(cd.rsplit("/", 1)[0] + "/status"):
+                        if ln.startswith("VmRSS:"):
+                            tot_kb += int(ln.split()[1]); nproc += 1
+                            break
+                except OSError:
+                    pass
+        if tot_kb:
+            d["hermes_mb"] = int(round(tot_kb / 1024.0)); d["hermes_procs"] = nproc
     except Exception:
         pass
     _CPE_CACHE["t"] = now; _CPE_CACHE["d"] = d
@@ -616,9 +656,12 @@ async function tick(){
       if(c.rsrp!==undefined) chips+="<span class='chip'><b>"+(c.rat||"5G")+" 信号</b> RSRP "+c.rsrp+" dBm</span>";
       if(c.sta&&c.sta.length){ chips+="<span class='chip'><b>WiFi 信号</b> "+c.sta.map(function(x){return (x.name||"")+" "+(x.rssi!==undefined?x.rssi+" dBm":"—");}).join(" · ")+"</span>"; }
       else { chips+="<span class='chip'><b>WiFi</b> 无接入终端</span>"; }
+      if(c.ssid) chips+="<span class='chip'><b>SSID</b> "+c.ssid+"</span>";
       chips+="<span class='chip'><b>接入终端</b> "+c.clients+" 个（WiFi "+c.clients_wifi+" · 有线 "+c.clients_lan+"）</span>";
       if(c.wan_ip) chips+="<span class='chip'><b>WAN</b> "+c.wan_ip+(c.wan_up?" ✓":" ✗")+"</span>";
       if(c.temp_c) chips+="<span class='chip'><b>温度</b> "+c.temp_c+" °C</span>";
+      if(c.mem_total_mb) chips+="<span class='chip'><b>内存</b> 总 "+c.mem_total_mb+" MB · 剩余 "+c.mem_avail_mb+" MB</span>";
+      if(c.hermes_mb) chips+="<span class='chip'><b>Hermes 占用</b> "+c.hermes_mb+" MB</span>";
       if(c.uptime_s) chips+="<span class='chip'><b>运行</b> "+Math.floor(c.uptime_s/3600)+"h"+Math.floor(c.uptime_s%3600/60)+"m</span>";
       document.getElementById("cpewrap").innerHTML=chips;
     }
