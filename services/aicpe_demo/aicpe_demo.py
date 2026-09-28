@@ -513,7 +513,7 @@ async function tick(){
     if((s.items||[]).length) document.getElementById("barIn").style.width=Math.round(done/s.items.length*100)+"%";
     document.getElementById("stat").textContent=s.summary||(s.phase==="running"?"演示进行中…":"等待开始");
     var lg=document.getElementById("log");
-    lg.textContent=(s.log||[]).join("\n"); lg.scrollTop=lg.scrollHeight;
+    lg.textContent=(s.log||[]).join("\\n"); lg.scrollTop=lg.scrollHeight;
     if(s.done && !_sumShown){ _sumShown=true;
       var sm=document.getElementById("sum"); sm.style.display="block";
       sm.innerHTML="🎉 "+s.summary+"　<span class='small'>报告："+s.report+"</span>";
