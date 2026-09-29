@@ -269,6 +269,7 @@ def cmd_watch(args):
     apply_ = "--apply" in args
     net_each = "--net" in args
     last_heal = 0.0
+    heal_times = []
     print("[watch] 启动：间隔 %ds，自愈=%s（Ctrl+C 退出）" % (interval, "开" if apply_ else "仅观察"))
     while True:
         s = snapshot()
@@ -277,10 +278,24 @@ def cmd_watch(args):
         rec = {"type": "watch", "verdict": v, "rsrp": s.get("rsrp"), "cell": s.get("cell"),
                "reg": s.get("reg"), "notes": notes, "net": net}
         if v != "ok" and apply_ and (time.time() - last_heal) > HEAL_COOLDOWN:
-            print("[watch] 诊断异常(%s) → 触发自愈" % v)
-            cmd_heal(["--force"])
-            last_heal = time.time()
-            rec["action"] = "heal"
+            # 复核一次（5s 后重测）：防单次抖动/瞬态误触发自愈
+            time.sleep(5)
+            s2 = snapshot()
+            net2 = probe_net(3) if net_each else None
+            v2, _n2 = diagnose(s2, net2)
+            hour_heals = [t for t in heal_times if time.time() - t < 3600]
+            if v2 == "ok":
+                rec["action"] = "confirm-ok-skip"
+                print("[watch] %s 复核已恢复，跳过自愈" % v)
+            elif len(hour_heals) >= 4:
+                rec["action"] = "rate-limit-skip"
+                print("[watch] 1 小时内自愈已达 4 次上限，本轮跳过")
+            else:
+                print("[watch] 诊断异常(%s → %s) → 触发自愈" % (v, v2))
+                rec["action"] = "heal"
+                cmd_heal(["--force"])
+                last_heal = time.time()
+                heal_times.append(time.time())
         log_event(rec)
         print("[%s] verdict=%s rsrp=%s cell=%s reg=%s" % (
             time.strftime("%H:%M:%S"), v, s.get("rsrp"),

@@ -174,6 +174,54 @@ def cpe_info():
             d["hermes_mb"] = int(round(tot_kb / 1024.0)); d["hermes_procs"] = nproc
     except Exception:
         pass
+    # 网络诊断与小区自愈（radiodiag 状态文件 + 审计日志）
+    try:
+        import os as _os
+        diag = {"verdict": None, "heal_today": 0, "recent": []}
+        try:
+            rd = json.load(open("/data/ai_cpe/radiodiag_state.json"))
+            diag["verdict"] = rd.get("verdict")
+            diag["rsrp"] = rd.get("rsrp")
+            diag["ts"] = str(rd.get("ts", ""))[11:16]
+            cell = rd.get("cell") or {}
+            if cell.get("nci"):
+                diag["cell"] = str(cell["nci"])
+        except Exception:
+            pass
+        today = time.strftime("%Y-%m-%d")
+        heals = []
+        try:
+            lp = "/data/ai_cpe/radiodiag_log.jsonl"
+            sz = _os.path.getsize(lp)
+            with open(lp, "rb") as f:
+                if sz > 131072:
+                    f.seek(sz - 131072)
+                for ln in f.read().decode("utf-8", "ignore").splitlines():
+                    if '"heal"' not in ln:
+                        continue
+                    try:
+                        ev = json.loads(ln)
+                    except Exception:
+                        continue
+                    if ev.get("type") != "heal":
+                        continue
+                    if ev.get("result") == "dry-run":
+                        continue                      # 演练不计入自愈统计
+                    ts = str(ev.get("ts", ""))
+                    if ts.startswith(today):
+                        diag["heal_today"] += 1
+                    b = ev.get("before") or {}; a = ev.get("after") or {}
+                    heals.append("%s %s RSRP %s→%s%s" % (
+                        ts[11:16],
+                        "✅" if ev.get("success") else "⚠️",
+                        b.get("rsrp"), a.get("rsrp"),
+                        (" · 已换小区" if ev.get("cell_changed") else "")))
+        except OSError:
+            pass
+        diag["recent"] = heals[-3:]
+        d["radiodiag"] = diag
+    except Exception:
+        pass
     _CPE_CACHE["t"] = now; _CPE_CACHE["d"] = d
     return d
 
@@ -668,6 +716,16 @@ async function tick(){
       if(c.mem_total_mb) chips+="<span class='chip'><b>内存</b> 总 "+c.mem_total_mb+" MB · 剩余 "+c.mem_avail_mb+" MB</span>";
       if(c.hermes_mb) chips+="<span class='chip'><b>Hermes 占用</b> "+c.hermes_mb+" MB</span>";
       if(c.uptime_s) chips+="<span class='chip'><b>运行</b> "+Math.floor(c.uptime_s/3600)+"h"+Math.floor(c.uptime_s%3600/60)+"m</span>";
+      var rd2=c.radiodiag||{};
+      if(rd2.verdict){
+        var vmap={ok:["正常","#31d17a"],weak:["弱信号","#ffd479"],severe:["严重弱信号","#ff7f7f"],congested:["拥塞","#ff9f7f"],down:["掉网","#ff7f7f"]};
+        var vm=vmap[rd2.verdict]||[String(rd2.verdict),"#cfe0f5"];
+        chips+="<span class='chip'><b>网络诊断</b> <span style='color:"+vm[1]+";font-weight:700'>"+vm[0]+"</span>"+(rd2.rsrp!==undefined&&rd2.rsrp!==null?" · RSRP "+rd2.rsrp+" dBm":"")+(rd2.cell?" · 小区 "+rd2.cell:"")+(rd2.ts?" · "+rd2.ts:"")+"</span>";
+        chips+="<span class='chip'><b>网络自愈</b> 今日 "+rd2.heal_today+" 次</span>";
+        if(rd2.recent&&rd2.recent.length){ chips+="<div style='flex-basis:100%;font-size:12px;color:#b9cbe6;margin-top:3px'><b style='color:#7fb7ff'>自愈记录</b>： "+rd2.recent.join("　｜　")+"</div>"; }
+      } else {
+        chips+="<span class='chip'><b>网络诊断</b> <span style='color:#8fa6c4'>服务未运行</span></span>";
+      }
       document.getElementById("cpewrap").innerHTML=chips;
     }
     var lg=document.getElementById("log");

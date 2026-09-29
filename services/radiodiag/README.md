@@ -1,6 +1,7 @@
 # radiodiag —— RG660MK 5G 网络实时诊断与小区自愈
 
 > 2026-09-29 落地并实机验证通过。设备侧零依赖（仅用固件原生命令）。
+> **已上线**：常驻服务（60s 巡检 + 自动自愈，开机自启）+ 看板集成（网络诊断芯片 + 自愈流水）。
 
 ## 1. 目标
 
@@ -38,25 +39,42 @@ mipc_wan_cli --nw_radio_state_set 1   # 射频开 → 触发重新搜网/选网
 ```sh
 python3 /data/ai_cpe/radiodiag.py status            # 快照 JSON
 python3 /data/ai_cpe/radiodiag.py check             # 诊断结论（含 ping 探测）
-python3 /data/ai_cpe/radiodiag.py heal [--force] [--dry]   # 自愈（--dry 演练）
+python3 /data/ai_cpe/radiodiag.py heal [--force] [--dry]   # 自愈（--dry 演练；--force 演示入口）
 python3 /data/ai_cpe/radiodiag.py watch --interval 60 [--apply]  # 常驻监视（--apply 自动自愈）
 python3 /data/ai_cpe/radiodiag.py history [N]       # 审计日志
 ```
 
-状态文件（供看板集成）：`/data/ai_cpe/radiodiag_state.json`
+**常驻服务**（已部署，procd）：
+
+```sh
+/etc/init.d/radiodiag status|start|stop|restart|enable|disable
+logread | grep radiodiag           # 服务日志（每轮巡检一行）
+```
+服务形态 = `watch --interval 60 --apply --net`，保守阈值（env 由 init 注入）：
+`RSRP_WEAK=-97 RSRP_SEVERE=-107 LOSS_PCT=40 RTT_MS=250 JITTER_MS=120 HEAL_COOLDOWN=300`。
+自动自愈防误触发：异常后复核一次（5s 重测）仍异常才动作；冷却 300s；每小时 ≤4 次。
+
+状态文件（看板集成）：`/data/ai_cpe/radiodiag_state.json`
 审计日志（JSONL）：`/data/ai_cpe/radiodiag_log.jsonl`
 
 阈值（环境变量可覆盖）：`RSRP_SEVERE=-105` `RSRP_WEAK=-95` `LOSS_PCT=10` `RTT_MS=200` `JITTER_MS=100` `HEAL_COOLDOWN=180`
 
-## 5. 实测记录（2026-09-29）
+## 5. 看板集成（aicpe_demo 8099）
+
+`/state` 的 `cpe.radiodiag` 字段：`{verdict, rsrp, cell, ts, heal_today, recent[]}`；
+页面 CPE 面板显示「网络诊断」芯片（色标：正常/弱信号/严重/拥塞/掉网）+「网络自愈 今日 N 次」+ 自愈记录流水行。
+（演练 dry-run 不计入自愈统计。）
+
+## 6. 实测记录（2026-09-29）
 
 - `heal --force` 两次真机执行：射频循环 → 重注册耗时 **9s / 10s**，WAN 均正常恢复（PDN 新会话）。
 - 小区对比：`0594FCB484 → 0594FCB484`（本环境为单强小区，重选后保持**最优小区**，RSRP 稳定 -70~-74 dBm；符合预期）。
-- `watch` 常驻：5s 间隔观察模式连续运行正常，状态文件/审计日志实时写入。
+- `watch` 常驻：观察模式与 apply 模式均验证；**13:52 服务化上线**，首轮巡检正常（RSRP -68 / RTT 45ms）。
+- 看板：真实浏览器验证——芯片「网络诊断 正常 · RSRP -68 · 小区 0594FCB484」与自愈流水渲染正确。
 - 演示建议：现场用 `heal --force` 展示全流程（约 30~60 秒，含 WAN 短暂切换）。
 
-## 6. 后续可选（未做，待定）
+## 7. 后续可选
 
-- [ ] 看板集成：CPE 面板增加「网络诊断」芯片（读状态文件）+ 自愈事件流水。
-- [ ] 常驻服务（procd）：`watch --interval 60 --apply`，实现真正的“实时自动自愈”。
+- [x] 看板集成（2026-09-29 上线）
+- [x] 常驻服务 + 自动自愈（2026-09-29 上线，S96 开机自启）
 - [ ] 若固件升级开放邻区接口（QENG/等效），可升级为“基于邻区测量择优切换”。
