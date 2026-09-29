@@ -1,0 +1,73 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>RG660MK-EU 资源占用报表</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b1322;color:#e8f0fb;font:15px/1.65 -apple-system,'PingFang SC','Microsoft YaHei',sans-serif}
+.page{width:1240px;margin:0 auto;padding:42px 44px 30px;background:
+ radial-gradient(1200px 420px at 20% -10%,#16294a 0%,transparent 60%),#0b1322}
+header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #1d2f4d;padding-bottom:20px}
+.t1{font-size:34px;font-weight:800;letter-spacing:.5px}
+.t1 i{font-style:normal;color:#63a4ff}
+.t2{font-size:13.5px;color:#9db1cd;margin-top:8px}
+.brand{font-size:12px;color:#7c93b5;text-align:right;line-height:1.7}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin:26px 0 10px}
+.kpi{background:#111c30;border:1px solid #1d2f4d;border-radius:13px;padding:16px 18px}
+.kpi .k{font-size:12.5px;color:#9db1cd}
+.kpi .v{font-size:26px;font-weight:800;margin-top:5px}
+.kpi .s{font-size:11.5px;color:#7c93b5;margin-top:4px}
+h2{font-size:16px;color:#a9c2e8;font-weight:700;margin:32px 0 14px;letter-spacing:.5px}
+h2 span{color:#7c93b5;font-weight:400;font-size:12.5px;margin-left:10px}
+.engs{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.eng{background:#111c30;border:1px solid #1d2f4d;border-radius:13px;padding:18px 20px 15px}
+.en{font-size:14.5px;font-weight:700;color:#cfe0f7}
+.em{font-size:31px;font-weight:800;margin:8px 0 3px}
+.em b{color:#fff}
+.es{font-size:12.5px;color:#9db1cd}
+.et{font-size:12px;color:#7c93b5;margin-top:9px;border-top:1px dashed #1d2f4d;padding-top:9px}
+.bar{display:flex;height:36px;border-radius:9px;overflow:hidden;border:1px solid #1d2f4d}
+.seg{height:100%;border-right:1px solid #0b1322}
+.lgs{margin-top:11px;display:flex;flex-wrap:wrap;gap:8px 16px}
+.lg{font-size:12.5px;color:#a9c2e8;display:inline-flex;align-items:center;gap:7px}
+.lg i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.lg b{color:#fff}
+table{width:100%;border-collapse:collapse;background:#111c30;border:1px solid #1d2f4d;border-radius:13px;overflow:hidden}
+th,td{padding:13px 14px;text-align:left;border-bottom:1px solid #16233c;font-size:13.5px}
+th{background:#152340;color:#9db1cd;font-size:12.5px;font-weight:600}
+tr:last-child td{border-bottom:0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:9px}
+.cnt{font-size:11.5px;color:#7c93b5;margin-left:7px}
+.desc{color:#8ba1c2;font-size:12.5px}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.cv{color:#cfe0f7}
+.cv.mid{color:#fbbf24}
+.cv.hi{color:#f87171;font-weight:700}
+footer{margin-top:26px;border-top:1px solid #1d2f4d;padding-top:16px;color:#7c93b5;font-size:12.5px;line-height:2.05}
+footer b{color:#9db1cd}
+.note{background:#101a2e;border:1px solid #1d2f4d;border-radius:11px;padding:13px 17px;margin-top:18px;font-size:12.8px;color:#9db1cd;line-height:1.85}
+</style></head><body><div class="page">
+<header>
+  <div><div class="t1">RG660MK-EU <i>·</i> 资源占用报表</div>
+  <div class="t2">设备侧实时采样快照 ｜ 2026-09-29 10:32:43 ｜ 开机 5 分 ｜ 常驻服务全量计入</div></div>
+  <div class="brand">数据源：设备 /proc 实时采样<br>生成：Hermes Agent · 2026-09-29 10:34</div>
+</header>
+<div class="kpis">
+  <div class="kpi"><div class="k">内存总量</div><div class="v">1452 MB</div><div class="s">LPDDR · 4 核 CPU</div></div>
+  <div class="kpi"><div class="k">内存已用 / 剩余</div><div class="v">766 / 686 MB</div><div class="s">剩余可用 47%</div></div>
+  <div class="kpi"><div class="k">CPU 占用（整机）</div><div class="v">13.5%</div><div class="s">近 10 秒采样 · 负载 4.51/3.36/1.58</div></div>
+  <div class="kpi"><div class="k">SoC 温度</div><div class="v">55.1 °C</div><div class="s">阈值 95°C 降频 / 115°C 保护</div></div>
+  <div class="kpi"><div class="k">进程 / 运行时长</div><div class="v">60 个</div><div class="s">开机 5 分</div></div>
+</div>
+<h2>三大 AI 引擎占用 <span>用户点名统计</span></h2>
+<div class="engs"><div class="eng" style="border-top:3px solid #63a4ff"><div class="en">🧠 Hermes 智能体</div><div class="em"><b>224.7</b> MB</div><div class="es">占总内存 15.5% ｜ CPU 1.2% ｜ 12 线程</div><div class="et">飞书智能助手 · 工具编排 · 问答</div></div><div class="eng" style="border-top:3px solid #4ade80"><div class="en">🎙️ Paraformer 语音识别</div><div class="em"><b>156.3</b> MB</div><div class="es">占总内存 10.8% ｜ CPU 4.5% ｜ 4 线程</div><div class="et">全程常驻 · 0.08–0.7 秒 / 句（实测）</div></div><div class="eng" style="border-top:3px solid #fbbf24"><div class="en">👁️ YOLO 视觉推理</div><div class="em"><b>21.4</b> MB</div><div class="es">占总内存 1.5% ｜ CPU 0.0% ｜ 1 线程</div><div class="et">检测 + 姿态 · 随演示调用推理</div></div></div>
+<h2>内存分布（RSS 口径，总量 1452 MB）</h2>
+<div class="bar"><div class="seg" style="width:15.48%;min-width:4px;background:#63a4ff" title="Hermes 智能体 225 MB (15.5%)"></div><div class="seg" style="width:10.76%;min-width:4px;background:#4ade80" title="Paraformer 语音识别 156 MB (10.8%)"></div><div class="seg small" style="width:1.47%;min-width:4px;background:#fbbf24" title="YOLO 视觉推理 21 MB (1.5%)"></div><div class="seg small" style="width:2.06%;min-width:4px;background:#c084fc" title="语音助手 30 MB (2.1%)"></div><div class="seg small" style="width:1.67%;min-width:4px;background:#5eead4" title="视频流服务 camav 24 MB (1.7%)"></div><div class="seg small" style="width:1.25%;min-width:4px;background:#93c5fd" title="摄像头预览 camview 18 MB (1.3%)"></div><div class="seg small" style="width:1.41%;min-width:4px;background:#f9a8d4" title="智能家居控制 20 MB (1.4%)"></div><div class="seg small" style="width:0.27%;min-width:4px;background:#bef264" title="Matter 设备端（本机） 4 MB (0.3%)"></div><div class="seg small" style="width:1.17%;min-width:4px;background:#cbd5e1" title="文件服务 17 MB (1.2%)"></div><div class="seg" style="width:9.12%;min-width:4px;background:#64748b" title="系统 / 其他 132 MB (9.1%)"></div><div class="seg" style="width:8.10%;min-width:4px;background:#3b4a63" title="内核/缓存/其他 118 MB (8.1%)"></div><div class="seg" style="width:47.25%;min-width:4px;background:#182640" title="空闲 686 MB (47.2%)"></div></div>
+<div class="lgs"><span class="lg"><i style="background:#63a4ff"></i>Hermes 智能体 <b>225</b>MB</span><span class="lg"><i style="background:#4ade80"></i>Paraformer 语音识别 <b>156</b>MB</span><span class="lg"><i style="background:#fbbf24"></i>YOLO 视觉推理 <b>21</b>MB</span><span class="lg"><i style="background:#c084fc"></i>语音助手 <b>30</b>MB</span><span class="lg"><i style="background:#5eead4"></i>视频流服务 camav <b>24</b>MB</span><span class="lg"><i style="background:#93c5fd"></i>摄像头预览 camview <b>18</b>MB</span><span class="lg"><i style="background:#f9a8d4"></i>智能家居控制 <b>20</b>MB</span><span class="lg"><i style="background:#bef264"></i>Matter 设备端（本机） <b>4</b>MB</span><span class="lg"><i style="background:#cbd5e1"></i>文件服务 <b>17</b>MB</span><span class="lg"><i style="background:#64748b"></i>系统 / 其他 <b>132</b>MB</span><span class="lg"><i style="background:#3b4a63"></i>内核/缓存 <b>118</b>MB</span><span class="lg"><i style="background:#182640;border:1px solid #2b3f60"></i>空闲 <b>686</b>MB</span></div>
+<h2>服务明细 <span>CPU 为单核口径（top 惯例）· 采样窗口 10.0 秒</span></h2>
+<table><tr><th>应用 / 服务</th><th>角色</th><th style="text-align:right">内存 MB</th><th style="text-align:right">占总内存</th><th style="text-align:right">CPU</th><th style="text-align:right">线程</th><th style="text-align:right">已运行</th></tr>
+<tr><td><span class="dot" style="background:#63a4ff"></span><b>Hermes 智能体</b></td><td class="desc">AI 大脑 · 飞书助手 / 工具编排 / 会话</td><td class="num">224.7</td><td class="num">15.5%</td><td class="num"><span class="cv ">1.2%</span></td><td class="num">12</td><td class="num">4 分</td></tr><tr><td><span class="dot" style="background:#4ade80"></span><b>Paraformer 语音识别</b></td><td class="desc">常驻 ASR 服务（sherpa-onnx :6006）</td><td class="num">156.3</td><td class="num">10.8%</td><td class="num"><span class="cv mid">4.5%</span></td><td class="num">4</td><td class="num">4 分</td></tr><tr><td><span class="dot" style="background:#64748b"></span><b>系统 / 其他</b><span class="cnt">×49</span></td><td class="desc">内核 · 网络 · 蓝牙 · 日志 · 基带等</td><td class="num">132.4</td><td class="num">9.1%</td><td class="num"><span class="cv mid">4.4%</span></td><td class="num">133</td><td class="num">5 分</td></tr><tr><td><span class="dot" style="background:#c084fc"></span><b>语音助手</b></td><td class="desc">唤醒 / VAD / 对话编排 / 播报</td><td class="num">29.9</td><td class="num">2.1%</td><td class="num"><span class="cv hi">17.0%</span></td><td class="num">1</td><td class="num">4 分</td></tr><tr><td><span class="dot" style="background:#5eead4"></span><b>视频流服务 camav</b></td><td class="desc">摄像头流 / 抓帧（:8092）</td><td class="num">24.3</td><td class="num">1.7%</td><td class="num"><span class="cv ">0.0%</span></td><td class="num">1</td><td class="num">4 分</td></tr><tr><td><span class="dot" style="background:#fbbf24"></span><b>YOLO 视觉推理</b></td><td class="desc">目标检测 / 姿态估计（ai_service 常驻）</td><td class="num">21.4</td><td class="num">1.5%</td><td class="num"><span class="cv ">0.0%</span></td><td class="num">1</td><td class="num">4 分</td></tr><tr><td><span class="dot" style="background:#f9a8d4"></span><b>智能家居控制</b><span class="cnt">×2</span></td><td class="desc">本地 MQTT broker + agent（Matter 真灯）</td><td class="num">20.4</td><td class="num">1.4%</td><td class="num"><span class="cv ">0.0%</span></td><td class="num">4</td><td class="num">1 分</td></tr><tr><td><span class="dot" style="background:#93c5fd"></span><b>摄像头预览 camview</b><span class="cnt">×2</span></td><td class="desc">画面预览推流（:8090）</td><td class="num">18.2</td><td class="num">1.3%</td><td class="num"><span class="cv mid">9.1%</span></td><td class="num">5</td><td class="num">4 分</td></tr><tr><td><span class="dot" style="background:#cbd5e1"></span><b>文件服务</b></td><td class="desc">固件 / 文件分发（:8098）</td><td class="num">17.0</td><td class="num">1.2%</td><td class="num"><span class="cv ">0.0%</span></td><td class="num">1</td><td class="num">4 分</td></tr><tr><td><span class="dot" style="background:#bef264"></span><b>Matter 设备端（本机）</b></td><td class="desc">CPE 自身作为 Matter 设备接入</td><td class="num">3.9</td><td class="num">0.3%</td><td class="num"><span class="cv ">0.0%</span></td><td class="num">1</td><td class="num">4 分</td></tr></table>
+<div class="note">🛡️ <b>快照注解</b>：本次采样于清晨设备重启 5 分 后（服务已全部就绪）。Hermes 智能体 RSS 会随会话活动增长（昨日 8 小时运行观测 230 → 290 MB，属 Python 进程正常驻留形态）；演示套件当刻未运行，未计入。</div>
+<footer>
+  <b>口径说明</b>：内存 = 进程 RSS（物理驻留，含共享库；本内核未启用 smaps，无 PSS 公平口径）。CPU = ΔCPU时间 / 采样窗口，单核口径（各进程值 ÷ 4 核 ≈ 对整机的贡献）；整机占用取 /proc/stat 全核。负载（load）含不可中断 IO 等待，与 CPU% 口径不同，故 1 分钟负载略高于 CPU 占用属正常。内核/缓存 = 已用内存 − 应用 RSS 合计。<br>
+  <b>设备</b>：RG660MK-EU ｜ MediaTek T930 + Wi-Fi MT7992 ｜ Linux 5.15.134 ｜ aarch64 &nbsp;&nbsp;·&nbsp;&nbsp;
+  <b>采样</b>：2026-09-29 10:32:43 &nbsp;&nbsp;·&nbsp;&nbsp; <b>生成</b>：Hermes Agent（自动报表）
+</footer>
+</div></body></html>
