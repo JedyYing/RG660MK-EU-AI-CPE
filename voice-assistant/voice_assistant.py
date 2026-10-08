@@ -48,7 +48,7 @@ VOICE = "zh-CN-XiaoxiaoNeural"
 RATE = 48000
 LISTEN_SECS = 5
 RMS_THRESHOLD = 200
-ACTIVE_TIMEOUT = 24
+ACTIVE_TIMEOUT = 8
 ASR_TIMEOUT = 8
 # 热词 prompt 开关（whisper --prompt）：默认关。2026-09-20 晚真机 A/B 证据：
 # 全量热词 prompt 会把含混的真实语音解码成热词碎片（"你好小皮"→"阿梅，鲁，河田"），
@@ -71,6 +71,7 @@ SHERPA_TIMEOUT = int(os.environ.get("VOICE_SHERPA_TIMEOUT", "30"))
 # 常驻识别服务（sherpa-onnx-offline-websocket-server，由 /etc/init.d/sherpa-asr 管理）
 SHERPA_WS = os.environ.get("VOICE_SHERPA_WS", "ws://127.0.0.1:6006")
 TTS_TIMEOUT = 5
+TTS_TRIES = int(os.environ.get("VOICE_TTS_TRIES", "3"))   # 2026-10-08: edge-tts 端点偶发连接重置，多试几次再降级
 TTS_CACHE = os.environ.get("VOICE_TTS_CACHE", "/data/ai_cpe/tts_cache")
 FAST_TIMEOUT_TEXT = "这次处理有点慢，请再试一次。"
 CACHED_SPEECH = {"在呢，请说", "我在听，请说", "请再说一下，我没听清",
@@ -87,6 +88,99 @@ EXIT_WORDS = ["休息", "睡觉", "退下", "再见", "拜拜", "晚安"]
 # "小皮，休息" -> 休眠；休眠后不轻易启动，直到听到"你好小皮"（完整称呼）。
 SLEEP_WORDS = ["休息", "睡觉", "退下"]
 WORK_WORDS = ["启动工作", "开始工作"]
+
+# ---- KWS 声学唤醒门（2026-10-06 加固）----
+# 用 sherpa-onnx keyword-spotter 对「刚录到的那句」做声学匹配，命中才算唤醒；
+# 不再依赖「整句 ASR 再比对文字」（慢且会被背景噪声误识别 ⇒ 自说自话）。
+KWS_DIR = "/data/ai_cpe/sherpa-onnx/model"
+KWS_KEYWORDS_FILE = os.environ.get("KWS_KEYWORDS", KWS_DIR + "/keywords_pipi.txt")
+KWS_WAKEONLY_FILE = os.environ.get("KWS_WAKEONLY", KWS_DIR + "/keywords_wakeonly.txt")
+
+
+def _to16k(src, dst="/tmp/kws16.wav"):
+    """把录音转成 KWS 要求的 16kHz 单声道 S16 再检测（本机录音是 48kHz，不能直接喂）。"""
+    import audioop
+    with wave.open(src) as w:
+        sr, ch, sw = w.getframerate(), w.getnchannels(), w.getsampwidth()
+        frames = w.readframes(w.getnframes())
+    if ch > 1:
+        frames = audioop.tomono(frames, sw, 0.5, 0.5)
+    if sw != 2:
+        frames = audioop.lin2lin(frames, sw, 2)
+    if sr != 16000:
+        frames, _ = audioop.ratecv(frames, 2, 1, sr, 16000, None)
+    with wave.open(dst, "wb") as o:
+        o.setnchannels(1); o.setsampwidth(2); o.setframerate(16000)
+        o.writeframes(frames)
+    return dst
+
+
+# ---- 回声自激抑制（2026-10-06）：播放与录音同用 CM564，
+# 音箱输出会被自己的麦克风收回，导致 ①永远等不到静音（录满 12s）②听见自己 ⇒ 自说自话。
+MUTE_UNTIL = [0.0]
+MUTE_TAIL_S = 2.5          # 播报结束后再静默多久才重新"开耳"
+
+
+def mute_for(secs):
+    MUTE_UNTIL[0] = max(MUTE_UNTIL[0], time.monotonic() + secs)
+
+
+def mute_set(secs):
+    """直接设定（可缩短）：播报结束用它把静音窗收紧回 MUTE_TAIL_S。"""
+    MUTE_UNTIL[0] = time.monotonic() + secs
+
+
+def wait_muted():
+    """播放期间/刚播完，不录音（返回 True 表示刚才是静音窗）。"""
+    now = time.monotonic()
+    if now < MUTE_UNTIL[0]:
+        time.sleep(min(1.0, MUTE_UNTIL[0] - now))
+        return True
+    return False
+
+
+def is_garbage(text):
+    """ASR 在噪声/回声上的幻觉判定（实测样本：'二告人人法法法法法法法法法人人人的法的的的'）。
+    判据用“连续重复串占比”：正常中文极少出现同一字连续 ≥3 次，幻觉串里占比很高。"""
+    t = re.sub(r"[\s，。,.!！?？、]", "", text or "")
+    if len(t) < 4:
+        return False                     # 短句交给路由（已知指令在那儿处理），此处不拦
+    runs = 0
+    i = 0
+    while i < len(t):
+        j = i
+        while j + 1 < len(t) and t[j + 1] == t[i]:
+            j += 1
+        if j - i + 1 >= 3:
+            runs += j - i + 1
+        i = j + 1
+    if runs / len(t) >= 0.4:
+        return True
+    from collections import Counter
+    c = Counter(t)
+    if len(c) <= 3 and len(t) >= 8:
+        return True
+    return False
+
+
+def kws_hit(wav, keywords_file=None, timeout=10):
+    """返回 True=这段音频里检出了唤醒词。失败/超时一律返回 False（宁可漏也不误启动）。"""
+    kf = keywords_file or KWS_KEYWORDS_FILE
+    if not os.path.exists(kf):
+        return False
+    try:
+        w16 = _to16k(wav)
+    except Exception as e:
+        print("[KWS] resample err %s" % type(e).__name__, flush=True)
+        return False
+    try:
+        r = subprocess.run(["/bin/sh", "/data/ai_cpe/kws_spot.sh", w16],
+                           capture_output=True, text=True, timeout=timeout,
+                           env=dict(os.environ, KWS_KEYWORDS=kf))
+        return '"keyword"' in (r.stdout or "")
+    except Exception as e:
+        print("[KWS] err %s" % type(e).__name__, flush=True)
+        return False
 
 # ---- 双超时(设计文档 §4)----
 WAIT_PROMPT_SECS = 30      # 30 秒仍无结果 -> 先播"请稍等。"
@@ -896,17 +990,26 @@ def prepare_tts(text, timeout=TTS_TIMEOUT):
     os.close(fd)
     async def synth():
         await asyncio.wait_for(edge_tts.Communicate(text, VOICE).save(temporary), timeout)
-    try:
-        asyncio.run(synth())
-        if not os.path.getsize(temporary):
-            raise ValueError("empty TTS audio")
-        if cached:
-            os.replace(temporary, target)
-            return target, False
-        return temporary, True
-    except Exception:
-        os.unlink(temporary)
-        raise
+    last_err = None
+    for _try in range(max(1, TTS_TRIES)):
+        try:
+            asyncio.run(synth())
+            if not os.path.getsize(temporary):
+                raise ValueError("empty TTS audio")
+            if cached:
+                os.replace(temporary, target)
+                return target, False
+            return temporary, True
+        except Exception as e:
+            last_err = e
+            print("[TTS] try %d/%d failed: %s" % (_try + 1, TTS_TRIES, type(e).__name__), flush=True)
+            try:
+                os.truncate(temporary, 0)   # 清掉半截音频再重试，避免复用残缺数据
+            except OSError:
+                pass
+            time.sleep(0.5)
+    os.unlink(temporary)
+    raise last_err
 
 
 def speak(text):
@@ -924,6 +1027,7 @@ def speak(text):
     started = time.monotonic()
     disposable = False
     mp3 = None
+    mute_for(30.0)          # 播报期间不开耳（结束后再收紧为 MUTE_TAIL_S）
     try:
         try:
             mp3, disposable = prepare_tts(text)
@@ -951,6 +1055,7 @@ def speak(text):
     except Exception as e:
         print("speak error:", e, flush=True)
     finally:
+        mute_set(MUTE_TAIL_S)      # 播完立刻收紧（不能用 max，否则会聋 30 秒）
         if disposable and mp3:
             os.unlink(mp3)
 
@@ -1092,7 +1197,7 @@ def classify(text, _accent_tried=False):
 def dispatch(intent, slots, text):
     """按分类结果执行(有副作用)。返回 (reply, need_hermes)。"""
     if intent == "EMPTY":
-        return "请再说一下，我没听清", False
+        return "", False        # 静默（用户要求：平时不要乱说话）
     if intent == "DEVICE_CONTROL":
         tool = slots["tool"]
         if tool == "control_bulb":
@@ -1252,43 +1357,81 @@ def main():
     while True:
         # IDLE/休眠: VAD 监听唤醒词（流式端点检测，说完即停；无人说话则持续等待）
         # 唤醒收尾等待 800ms；固定确认语音在部署时预热到本地。
-        if not vad_record("/tmp/voice_rec.wav", max_s=8, start_wait_s=86400, end_sil_ms=800):
+        if wait_muted():
             continue
-        # 待机唤醒转写不加热词 prompt: 唤醒词不在热词表内,加了只会 +2.2s 且空耗 CPU。
-        text = transcribe("/tmp/voice_rec.wav", use_prompt=False)
+        # 尾部静音放宽到 1400ms：容忍“你好…小皮”中间的停顿（用户反馈第一遍常被切掉）
+        if not vad_record("/tmp/voice_rec.wav", max_s=8, start_wait_s=86400, end_sil_ms=1400):
+            continue
+        if wait_muted():
+            continue
         if asleep:
-            # 休眠态：不轻易启动——只等完整唤醒语（你好小皮/你好小提…），其余一律无视。
-            print("[sleep-listen] %r" % text, flush=True)
-            if not is_sleep_wake(text):
-                continue
-            print(">>> WAKE(sleep)", flush=True)
+            # 休眠态：KWS 只认完整“你好小皮”（keywords_wakeonly 表里只有完整称呼），其余一律静默无视。
+            if not kws_hit("/tmp/voice_rec.wav", KWS_WAKEONLY_FILE):
+                _t = transcribe("/tmp/voice_rec.wav", use_prompt=False)
+                print("[miss] sleep kws=miss asr=%r" % _t, flush=True)
+                if not is_sleep_wake(_t):
+                    continue
+                text = _t
+                print(">>> WAKE(sleep,asr)", flush=True)
+            else:
+                text = transcribe("/tmp/voice_rec.wav", use_prompt=False)
+                print(">>> WAKE(sleep)", flush=True)
         else:
-            print("[listen] %r" % text, flush=True)
-            if not is_wake(text):
-                continue
-            print(">>> WAKE", flush=True)
+            # 平时（非休眠）：KWS 声学门为主，未命中时用 ASR 文本兜底（严格：须含完整“你好小皮”）
+            if not kws_hit("/tmp/voice_rec.wav", KWS_KEYWORDS_FILE):
+                # 未命中留证：给下一次排查用（保留最近 3 条）
+                try:
+                    import shutil as _sh
+                    _rm = audioop.rms(open("/tmp/voice_rec.wav", "rb").read()[-2000:], 2)
+                    _dur = 0.0
+                    with wave.open("/tmp/voice_rec.wav") as _w:
+                        _dur = _w.getnframes() / float(_w.getframerate() or 1)
+                    print("[miss] dur=%.1fs kws=miss" % _dur, flush=True)
+                    _sh.copy("/tmp/voice_rec.wav", "/tmp/va_miss_%d.wav" % int(time.time()))
+                except Exception:
+                    pass
+                _t = transcribe("/tmp/voice_rec.wav", use_prompt=False)
+                print("[miss] asr=%r" % _t, flush=True)
+                if not is_sleep_wake(_t):      # 兜底也要“你好”+小皮族完整称呼，避免噪声误启动
+                    continue
+                text = _t
+                print(">>> WAKE(asr-fallback)", flush=True)
+            else:
+                text = transcribe("/tmp/voice_rec.wav", use_prompt=False)
+                print("[wake-asr] %r" % text, flush=True)
         clean = strip_wake(text)
         # "小皮，休息" -> 休眠（"不要轻易启动"，直到再次听到"你好小皮"）
         if clean and any(w in clean for w in SLEEP_WORDS):
-            speak("好的，我休息了")
+            speak("好的")
             asleep = True
             continue
-        # "你好小皮，启动工作" -> 工作确认
-        if clean and any(w in clean for w in WORK_WORDS):
-            speak("好的，开始工作")
-        elif clean:
-            respond(clean)
-        else:
+        # 只喊唤醒词（含 '小皮你好小皮小' 剥离后的残渣）⇒ 应答“在呢，请说”，不要送去问答
+        if len(clean) <= 2:
             speak("在呢，请说")
+        # "你好小皮，启动工作" -> 工作确认
+        elif any(w in clean for w in WORK_WORDS):
+            speak("好的，开始工作")
+        else:
+            respond(clean)
+        _drop = [0]
         while True:
             # VAD 录一句；ACTIVE_TIMEOUT 内无人说话则自动退出对话
+            if wait_muted():
+                continue
             if not vad_record("/tmp/voice_rec.wav", start_wait_s=ACTIVE_TIMEOUT):
-                speak("好的，先不打扰你了")
+                # 静默退场（不播报）
                 break
             t = transcribe("/tmp/voice_rec.wav")
             print("[TURN? ] ASR_TEXT=%r" % t, flush=True)
+            if is_garbage(t):
+                _drop[0] += 1
+                print("[drop] 幻觉/杂音 %r (第%d次)" % (t[:24], _drop[0]), flush=True)
+                if _drop[0] >= 2:
+                    break          # 连续捡到垃圾 ⇒ 静默退场，回到只认唤醒词的待机
+                continue
+            _drop[0] = 0
             if not t:
-                speak("请再说一下，我没听清")
+                # 静默（用户要求：不要自说自话）
                 continue
             # 休息指令：进入休眠（不轻易启动），与普通告别区分
             if any(w in t for w in SLEEP_WORDS):
@@ -1303,8 +1446,7 @@ def main():
                 continue
             clean = strip_wake(t)
             if not clean:
-                speak("我在听，请说")
-                continue
+                break          # 静默退场
             try:
                 # 每轮独立: turn_id 隔离 + 30/60 秒双超时统一在 handle_turn 内管理
                 respond(clean)
