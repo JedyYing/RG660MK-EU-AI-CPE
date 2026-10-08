@@ -72,9 +72,12 @@ def build_report(transport, extra: dict | None = None) -> dict:
         "incidents": [{
             "ts": "2026-10-08",
             "what": "AT+ECELLMEAS=1 / AT+ECELL=1 开启流式测量上报后，设备在数分钟内"
-                    "AT 全通道无响应、USB-Ethernet 链路掉载波（疑似重启/挂死）",
+                    "AT 全通道无响应、USB-Ethernet 链路掉载波",
+            "root_cause_update": "当日稍后现场核实：CPE 处于断电（关机）状态 —— 失联与"
+                                 "掉载波由断电直接解释，无证据支持与流式指令存在因果",
             "mitigation": "采集一律轮询式只读；ATTransport 内置硬护栏拒绝任何"
-                          "非 0 参数的 ECELLMEAS/ECELL 写命令（allow_streaming_modes=false）",
+                          "非 0 参数的 ECELLMEAS/ECELL 写命令（allow_streaming_modes=false）。"
+                          "禁令保留理由：设计保守约束 + 本系统无流式上报需求",
         }],
     }
     ctrl = report["control_commands"]

@@ -24,8 +24,9 @@
 - 默认 Shadow 模式，`executor_enabled: false`；执行器为 allowlist + 结构化参数，禁止拼接任意 AT 字符串。
 - 所有 AT 通道**只读轮询**，禁止开启流式上报模式：`AT+ECELLMEAS=1` / `AT+ECELL=1` 被
   `ATTransport` 正则硬护栏拒绝（`allow_streaming_modes: false`）。
-  2026-10-08 现场：开启流式测量后数分钟内设备 AT 全静默 + USB 链路掉载波；
-  因果未证实（该设备本身有周期性重启特性），但保留禁令与事故记录（见 `executor/capability.py` 的 incidents）。
+  2026-10-08 现场：开启流式测量后数分钟内设备 AT 全静默 + USB 链路掉载波；**当日稍后核实
+  CPE 处于断电状态 —— 失联由断电解释，无证据支持与流式指令有因果**。禁令按设计保守约束保留
+  （本系统无流式需求），事故记录见 `executor/capability.py` 的 incidents。
 - 连续 AT 失败 ≥3 → `modem_ok=false`（状态机 guard 拦截动作）；执行器连续失败 ≥2 →
   运行期自动降级 Shadow（事件 `auto_degrade`）。
 - 所有缺失值保留显式 `missing` 标记，绝不填 0（schema `missing` 字段 + 决策日志）。
