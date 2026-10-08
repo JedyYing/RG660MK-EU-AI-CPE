@@ -1,0 +1,70 @@
+# ai-net-manager 主配置（Phase 1）
+# 设备: RG660MK-EU (OpenWrt 23.05, aarch64, python3.11, 纯标准库)
+schema_version: 1
+
+service:
+  # shadow | recommend | execute
+  # execute 需要 rules.yaml safety.executor_enabled=true 且 capability 探测通过
+  mode: shadow
+  sample_interval_s: 1        # radio 采样周期（AT 口压力敏感，勿低于 1s）
+  neighbour_interval_s: 5     # 邻区测量周期
+  decision_interval_s: 2
+  feature_window_s: 10        # 默认推理窗；另有 5/30s 窗
+  data_dir: /data/ai_net/data
+  log_dir: /data/ai_net/log
+  state_file: /data/ai_net/state.json
+  pid_file: /var/run/ai_net.pid
+
+modem:
+  # 启动时按序探测，第一个可用的生效。全部失败则 service 以 degraded 模式运行（仅 QoE 采集）
+  backends:
+    - atci_socket             # /dev/adb_atci_socket：atcid 代理，天然串行化，多客户端安全（首选）
+    - ccci_at                 # /dev/ccci_at：MTK AP-MD AT 通道（次选）
+    - mipc_cli                # mipc_wan_cli 子进程（兜底，开销大）
+  atci_socket: /dev/adb_atci_socket
+  ccci_at: /dev/ccci_at
+  mipc_bin: /usr/bin/mipc_wan_cli
+  command_timeout_s: 6
+  reg_interval_s: 10          # AT+C5GREG? 节奏（注册态/TAC/NCI）
+  ecsq_interval_s: 30         # AT+ECSQ? 节奏（服务小区 RSRP 标准语义校准）
+  lock_file: /var/lock/ai_net_at.lock
+  # 硬约束：禁止开启流式上报（AT+ECELLMEAS=1 / AT+ECELL=1），只允许轮询式读取
+  allow_streaming_modes: false
+  # 每次 AT 命令的原始回包存盘（调试/解析回归用）
+  save_raw: true
+  raw_dir: /data/ai_net/data/raw_at
+
+qoe:
+  wan_if: auto                # auto=按默认路由探测（ccmni 网卡会周期迁移，禁止硬编码）
+  probe_targets:              # 必须用 IP 字面量：域名解析失败会伪造 loss 信号
+    - 223.5.5.5
+    - 119.29.29.29
+  probe_interval_s: 1
+  probe_window_s: 10
+  probe_timeout_ms: 800
+  conntrack_path: /proc/net/nf_conntrack
+  conntrack_interval_s: 2
+
+storage:
+  jsonl_rotate_mb: 200
+  raw_at_keep_days: 3
+  sqlite_path: /data/ai_net/data/ai_net.sqlite
+
+# 训练产物（PC 侧训练 → 设备推理）；缺失时分类器回退启发式 heuristic-v1
+models:
+  traffic: /data/ai_net/models/traffic_clf.json    # 六类业务分类（GBDT/纯 Python 树）
+  qoe: /data/ai_net/models/qoe_ranker.json         # 候选排序（可选，缺省用规则评分）
+
+# 本地只读状态接口（设计 12 章）：仅 127.0.0.1
+api:
+  enabled: true
+  host: 127.0.0.1
+  port: 8787
+
+logging:
+  level: info                 # debug | info | warn
+  jsonl:
+    - radio
+    - qoe
+    - features
+    - decision

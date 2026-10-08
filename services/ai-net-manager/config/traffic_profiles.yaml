@@ -1,0 +1,25 @@
+# 业务画像：QoE 权重与选网偏好（设计文档 5.3 / 6.3）
+schema_version: 1
+
+classes: [gaming, video, conference, voip, camera, backup]
+unknown_threshold: 0.6          # 置信度低于此值使用 generic
+
+# qoe_score = 100*(w_radio*radio + w_throughput*thr + w_latency*lat + w_stability*stab) - switch_cost
+weights:
+  gaming:     { radio: 0.10, throughput: 0.15, latency: 0.45, stability: 0.30 }
+  video:      { radio: 0.15, throughput: 0.40, latency: 0.15, stability: 0.30 }
+  conference: { radio: 0.10, throughput: 0.25, latency: 0.35, stability: 0.30 }
+  voip:       { radio: 0.10, throughput: 0.10, latency: 0.45, stability: 0.35 }
+  camera:     { radio: 0.15, throughput: 0.35, latency: 0.20, stability: 0.30 }
+  backup:     { radio: 0.20, throughput: 0.60, latency: 0.05, stability: 0.15 }
+  generic:    { radio: 0.20, throughput: 0.30, latency: 0.30, stability: 0.20 }
+
+# 选网关注点（design 5.3 摘要，用于决策解释输出）
+focus:
+  gaming:     [rtt, jitter, loss]
+  video:      [dl_throughput, stall, rsrq, sinr]
+  conference: [rtt, jitter, loss, ul_dl_balance]
+  voip:       [jitter, loss, rtt]
+  camera:     [ul_throughput, sinr, bler]
+  backup:     [throughput, switch_cost]
+  generic:    [radio, throughput, latency, stability]

@@ -1,0 +1,122 @@
+{
+ "trained_at": "2026-10-08T13:19:15+0800",
+ "data_source": "synthetic_rule_archetypes",
+ "data_warning": "合成/弱标注数据：仅验证「训练→导出→端侧推理」链路与指标口径，精度不代表现场效果；现场标注数据到位后需重训",
+ "n_train": 1200,
+ "n_val": 300,
+ "feature_order": [
+  "dl_mbps",
+  "ul_mbps",
+  "ul_ratio",
+  "udp_ratio",
+  "tcp_ratio",
+  "pkt_size_p50",
+  "small_pkt_ratio",
+  "new_flow_ratio",
+  "n_active",
+  "rtc_port",
+  "small_pkt_udp"
+ ],
+ "params": {
+  "rounds": 40,
+  "depth": 3,
+  "lr": 0.25,
+  "seed": 20261008
+ },
+ "model_version": "gbdt-r40-d3-lr0.25-synthetic_rule_archetype",
+ "model_sha256": "196f733bb75d1e89543878f667ebcddcfa325f7853db7b8002c70391429a9d67",
+ "model_file": "models/traffic_clf.json",
+ "val_metrics": {
+  "accuracy": 0.98,
+  "per_class": {
+   "gaming": {
+    "precision": 0.965,
+    "recall": 1.0,
+    "f1": 0.982,
+    "support": 55
+   },
+   "video": {
+    "precision": 0.98,
+    "recall": 1.0,
+    "f1": 0.99,
+    "support": 49
+   },
+   "conference": {
+    "precision": 1.0,
+    "recall": 0.914,
+    "f1": 0.955,
+    "support": 58
+   },
+   "voip": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "support": 39
+   },
+   "camera": {
+    "precision": 0.939,
+    "recall": 1.0,
+    "f1": 0.968,
+    "support": 46
+   },
+   "backup": {
+    "precision": 1.0,
+    "recall": 0.981,
+    "f1": 0.99,
+    "support": 53
+   }
+  },
+  "confusion": {
+   "gaming": {
+    "gaming": 55,
+    "video": 0,
+    "conference": 0,
+    "voip": 0,
+    "camera": 0,
+    "backup": 0
+   },
+   "video": {
+    "gaming": 0,
+    "video": 49,
+    "conference": 0,
+    "voip": 0,
+    "camera": 0,
+    "backup": 0
+   },
+   "conference": {
+    "gaming": 2,
+    "video": 0,
+    "conference": 53,
+    "voip": 0,
+    "camera": 3,
+    "backup": 0
+   },
+   "voip": {
+    "gaming": 0,
+    "video": 0,
+    "conference": 0,
+    "voip": 39,
+    "camera": 0,
+    "backup": 0
+   },
+   "camera": {
+    "gaming": 0,
+    "video": 0,
+    "conference": 0,
+    "voip": 0,
+    "camera": 46,
+    "backup": 0
+   },
+   "backup": {
+    "gaming": 0,
+    "video": 1,
+    "conference": 0,
+    "voip": 0,
+    "camera": 0,
+    "backup": 52
+   }
+  }
+ },
+ "baseline_heuristic_val_accuracy": 0.5833,
+ "ab_verdict": "model_ge_baseline"
+}
