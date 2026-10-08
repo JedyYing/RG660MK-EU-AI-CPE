@@ -1,0 +1,55 @@
+#!/bin/sh /etc/rc.common
+# ai-net-manager procd 服务（OpenWrt 23.05 / RG660MK-EU）
+# 安装：deploy/install.sh 会拷贝到 /etc/init.d/ai-net-manager 并 enable
+# 说明：代码与数据都在 /data（overlay 仅 21.4M，不放代码）；日志走 logd 由 procd 转发
+USE_PROCD=1
+START=95
+STOP=10
+
+APP_DIR=/data/ai_net/app
+CFG_DIR=/data/ai_net/config
+PY=/usr/bin/python3
+PID_FILE=/var/run/ai_net.pid
+STATE_FILE=/data/ai_net/state.json
+
+start_service() {
+	[ -d "$APP_DIR/src/ai_net" ] || {
+		echo "ai-net-manager: missing $APP_DIR/src/ai_net" >&2
+		return 1
+	}
+	mkdir -p /data/ai_net/log /data/ai_net/data /data/ai_net/models
+	procd_open_instance
+	procd_set_param command "$PY" -u -m ai_net.service --config "$CFG_DIR"
+	procd_set_param env PYTHONPATH="$APP_DIR/src:$APP_DIR"
+	procd_set_param env PYTHONUNBUFFERED=1
+	procd_set_param cwd /data/ai_net
+	# 崩溃自愈：5s 重启节流，1h 内最多 5 次（与设计"失败自愈但不过度重启"一致）
+	procd_set_param respawn 3600 5 5
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_set_param limits nofile="1024 1024"
+	procd_close_instance
+}
+
+stop_service() {
+	# 优雅退出：SIGTERM 触发 service.shutdown()（落 state + 存小区历史）
+	[ -f "$PID_FILE" ] && kill -TERM "$(cat $PID_FILE)" 2>/dev/null
+	sleep 1
+}
+
+service_triggers() {
+	procd_add_reload_trigger "ai-net-manager"
+}
+
+status_service() {
+	if [ -f "$PID_FILE" ] && kill -0 "$(cat $PID_FILE)" 2>/dev/null; then
+		echo "ai-net-manager: running (pid $(cat $PID_FILE))"
+		[ -f "$STATE_FILE" ] && {
+			echo "--- state ---"
+			cat "$STATE_FILE"
+		}
+	else
+		echo "ai-net-manager: not running"
+		return 1
+	fi
+}

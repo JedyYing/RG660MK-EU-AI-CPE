@@ -1,0 +1,36 @@
+# Rule Engine 配置（设计文档 7.1 / 7.2 / 7.3）
+schema_version: 1
+
+selection:
+  min_dwell_time_s: 60          # 进入当前小区后最小驻留
+  switch_cooldown_s: 120        # 任何切换后的冷却
+  min_score_gain: 12            # 候选分数至少高出（0..100）
+  min_gain_hold_s: 10           # 优势持续时长
+  min_candidate_rsrp: -115      # 候选 RSRP 硬门限 (dBm)
+  max_switches_10min: 3         # 防 ping-pong
+  rollback_window_s: 30         # 切换后观察窗
+  rollback_score_drop: 15       # 观察窗内 QoE 跌幅 → 回滚
+  bad_qoe_hold_s: 5             # 坏 QoE 持续判定
+
+# 业务相关阈值覆盖（design 7.2/7.3）
+profiles:
+  gaming:     { min_score_gain: 16, min_gain_hold_s: 15 }
+  video:      { min_score_gain: 12, min_gain_hold_s: 10 }
+  conference: { min_score_gain: 16, min_gain_hold_s: 15 }
+  voip:       { min_score_gain: 16, min_gain_hold_s: 15 }
+  camera:     { min_score_gain: 14, min_gain_hold_s: 12 }
+  backup:     { min_score_gain: 8,  min_gain_hold_s: 5 }
+  generic:    { min_score_gain: 12, min_gain_hold_s: 10 }
+
+safety:
+  executor_enabled: false       # 人工确认 Modem capability 后方可置 true
+  max_consecutive_action_failures: 2
+  auto_disable_on_modem_error: true
+  # 执行器允许的动作白名单（结构化参数，禁止任意 AT 字符串）
+  allowed_actions:
+    - lock_cell                 # AT+EMMCHLCK=1,<rat>,0,<arfcn>,<pci>,0
+    - unlock_cell               # AT+EMMCHLCK=0
+    - noop
+  lock_verification:
+    verify_delay_s: 20          # 锁后等待再核验服务小区
+    unregistered_grace_s: 65    # 与 dingyifei/H5000M 观察一致：约 65s 未注册自动回退

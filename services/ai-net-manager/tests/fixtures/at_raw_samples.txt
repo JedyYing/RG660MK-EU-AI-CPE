@@ -1,0 +1,39 @@
+# raw AT 回包样本（含 echo / URC / 终止符），供 transport 分类测试
+--- ECELLMEAS 正常（含 echo 与 +EDMFAPP URC 干扰） ---
+AT+ECELLMEAS?
+
++EDMFAPP: 6,24,2
+
++ECELLMEAS: 11,426030,784,-317,-46,29,"594FCB484",1,"46011","CHN-CT",1,38880
+
++EDMFAPP: 6,24,2
+
++ECELLMEAS: 11,426030,493,-395,-52,2,"5959A0401",1,"46011","CHN-CT",1,38880
+
+OK
+
+--- 未知命令（CME ERROR 4 = unknown command，本固件无 QENG 的判定依据） ---
+AT+QENG="servingcell"
+
++CME ERROR: 4
+
+--- EMMCHLCK 查询 ---
+AT+EMMCHLCK?
+
++EMMCHLCK: 0
+
+OK
+
+--- EMMCHLCK 能力探测 ---
+AT+EMMCHLCK=?
+
++EMMCHLCK: (0-3),(0,2,7,11),(0,1),(0-2279165),(0-1007)
+
+OK
+
+--- C5GREG（示例格式，字段序按 TS 27.007） ---
+AT+C5GREG?
+
++C5GREG: 2,1,"1A2B3C","594FCB484",11
+
+OK

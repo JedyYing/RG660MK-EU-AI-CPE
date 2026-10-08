@@ -1,0 +1,305 @@
+{
+ "n_radio": 90,
+ "n_decisions": 4,
+ "decisions": [
+  {
+   "t_s": 35.0,
+   "decision": {
+    "decision_id": "f4a9a83aabf8",
+    "ts_ms": 1791436916666,
+    "state": "EVALUATE_CANDIDATES",
+    "trigger": "score_gain",
+    "serving_cell": {
+     "cell_id": "594FCB484",
+     "band": "n1",
+     "pci": 784,
+     "arfcn": 426030,
+     "rat": "NR5G-SA",
+     "tac": "594FCB484"
+    },
+    "candidates": [
+     {
+      "key": "11:426030:493",
+      "cell_id": "5959A0401",
+      "score": 82.8,
+      "score_source": "rule+history",
+      "rsrp_dbm": -86.0,
+      "passed_hard_filter": true,
+      "reasons": [
+       "radio=0.80",
+       "rsrp=0.89",
+       "rsrq=1.00",
+       "sinr=0.45",
+       "hist_rsrp_mean=-86.0(n=36)"
+      ],
+      "schema_version": 1
+     },
+     {
+      "key": "11:426030:492",
+      "cell_id": "5959A0400",
+      "score": 67.5,
+      "score_source": "rule+history",
+      "rsrp_dbm": -100.0,
+      "passed_hard_filter": true,
+      "reasons": [
+       "radio=0.69",
+       "rsrp=0.65",
+       "rsrq=1.00",
+       "sinr=0.45",
+       "hist_rsrp_mean=-100.0(n=36)"
+      ],
+      "schema_version": 1
+     }
+    ],
+    "qoe_before": {
+     "score": 93.3
+    },
+    "qoe_after": null,
+    "traffic_class": "generic",
+    "traffic_confidence": 0.0,
+    "model_version": "heuristic-v1",
+    "rules_version": "rules.yaml",
+    "executor_level": "L0",
+    "action": {
+     "type": "noop",
+     "params": {}
+    },
+    "action_result": null,
+    "blocked_by": [
+     "dwell(60s<35s)"
+    ],
+    "rollback": false,
+    "rollback_reason": null,
+    "schema_version": 1
+   },
+   "serving_vs_best": 16.2,
+   "best_baseline_gain": 21.9
+  },
+  {
+   "t_s": 45.0,
+   "decision": {
+    "decision_id": "ef2192e9c334",
+    "ts_ms": 1791436916672,
+    "state": "EVALUATE_CANDIDATES",
+    "trigger": "score_gain",
+    "serving_cell": {
+     "cell_id": "594FCB484",
+     "band": "n1",
+     "pci": 784,
+     "arfcn": 426030,
+     "rat": "NR5G-SA",
+     "tac": "594FCB484"
+    },
+    "candidates": [
+     {
+      "key": "11:426030:493",
+      "cell_id": "5959A0401",
+      "score": 82.8,
+      "score_source": "rule+history",
+      "rsrp_dbm": -86.0,
+      "passed_hard_filter": true,
+      "reasons": [
+       "radio=0.80",
+       "rsrp=0.89",
+       "rsrq=1.00",
+       "sinr=0.45",
+       "hist_rsrp_mean=-86.0(n=46)"
+      ],
+      "schema_version": 1
+     },
+     {
+      "key": "11:426030:492",
+      "cell_id": "5959A0400",
+      "score": 67.5,
+      "score_source": "rule+history",
+      "rsrp_dbm": -100.0,
+      "passed_hard_filter": true,
+      "reasons": [
+       "radio=0.69",
+       "rsrp=0.65",
+       "rsrq=1.00",
+       "sinr=0.45",
+       "hist_rsrp_mean=-100.0(n=46)"
+      ],
+      "schema_version": 1
+     }
+    ],
+    "qoe_before": {
+     "score": 92.5
+    },
+    "qoe_after": null,
+    "traffic_class": "generic",
+    "traffic_confidence": 0.0,
+    "model_version": "heuristic-v1",
+    "rules_version": "rules.yaml",
+    "executor_level": "L0",
+    "action": {
+     "type": "noop",
+     "params": {}
+    },
+    "action_result": null,
+    "blocked_by": [
+     "dwell(60s<45s)"
+    ],
+    "rollback": false,
+    "rollback_reason": null,
+    "schema_version": 1
+   },
+   "serving_vs_best": 20.4,
+   "best_baseline_gain": 26.1
+  },
+  {
+   "t_s": 55.0,
+   "decision": {
+    "decision_id": "7b839c8a1ac1",
+    "ts_ms": 1791436916687,
+    "state": "EVALUATE_CANDIDATES",
+    "trigger": "score_gain",
+    "serving_cell": {
+     "cell_id": "594FCB484",
+     "band": "n1",
+     "pci": 784,
+     "arfcn": 426030,
+     "rat": "NR5G-SA",
+     "tac": "594FCB484"
+    },
+    "candidates": [
+     {
+      "key": "11:426030:493",
+      "cell_id": "5959A0401",
+      "score": 82.8,
+      "score_source": "rule+history",
+      "rsrp_dbm": -86.0,
+      "passed_hard_filter": true,
+      "reasons": [
+       "radio=0.80",
+       "rsrp=0.89",
+       "rsrq=1.00",
+       "sinr=0.45",
+       "hist_rsrp_mean=-86.0(n=56)"
+      ],
+      "schema_version": 1
+     },
+     {
+      "key": "11:426030:492",
+      "cell_id": "5959A0400",
+      "score": 67.5,
+      "score_source": "rule+history",
+      "rsrp_dbm": -100.0,
+      "passed_hard_filter": true,
+      "reasons": [
+       "radio=0.69",
+       "rsrp=0.65",
+       "rsrq=1.00",
+       "sinr=0.45",
+       "hist_rsrp_mean=-100.0(n=56)"
+      ],
+      "schema_version": 1
+     }
+    ],
+    "qoe_before": {
+     "score": 91.5
+    },
+    "qoe_after": null,
+    "traffic_class": "generic",
+    "traffic_confidence": 0.0,
+    "model_version": "heuristic-v1",
+    "rules_version": "rules.yaml",
+    "executor_level": "L0",
+    "action": {
+     "type": "noop",
+     "params": {}
+    },
+    "action_result": null,
+    "blocked_by": [
+     "dwell(60s<55s)"
+    ],
+    "rollback": false,
+    "rollback_reason": null,
+    "schema_version": 1
+   },
+   "serving_vs_best": 25.4,
+   "best_baseline_gain": 31.1
+  },
+  {
+   "t_s": 65.0,
+   "decision": {
+    "decision_id": "9a9e6a09d214",
+    "ts_ms": 1791436916703,
+    "state": "EXECUTE",
+    "trigger": "score_gain",
+    "serving_cell": {
+     "cell_id": "594FCB484",
+     "band": "n1",
+     "pci": 784,
+     "arfcn": 426030,
+     "rat": "NR5G-SA",
+     "tac": "594FCB484"
+    },
+    "candidates": [
+     {
+      "key": "11:426030:493",
+      "cell_id": "5959A0401",
+      "score": 82.8,
+      "score_source": "rule+history",
+      "rsrp_dbm": -86.0,
+      "passed_hard_filter": true,
+      "reasons": [
+       "radio=0.80",
+       "rsrp=0.89",
+       "rsrq=1.00",
+       "sinr=0.45",
+       "hist_rsrp_mean=-86.0(n=66)"
+      ],
+      "schema_version": 1
+     },
+     {
+      "key": "11:426030:492",
+      "cell_id": "5959A0400",
+      "score": 67.5,
+      "score_source": "rule+history",
+      "rsrp_dbm": -100.0,
+      "passed_hard_filter": true,
+      "reasons": [
+       "radio=0.69",
+       "rsrp=0.65",
+       "rsrq=1.00",
+       "sinr=0.45",
+       "hist_rsrp_mean=-100.0(n=66)"
+      ],
+      "schema_version": 1
+     }
+    ],
+    "qoe_before": {
+     "score": 90.5
+    },
+    "qoe_after": null,
+    "traffic_class": "generic",
+    "traffic_confidence": 0.0,
+    "model_version": "heuristic-v1",
+    "rules_version": "rules.yaml",
+    "executor_level": "L0",
+    "action": {
+     "type": "lock_cell",
+     "params": {
+      "rat": 11,
+      "arfcn": 426030,
+      "pci": 493
+     },
+     "result": {
+      "ok": true,
+      "detail": "shadow: not executed (no modem write)"
+     }
+    },
+    "action_result": null,
+    "blocked_by": [],
+    "rollback": false,
+    "rollback_reason": null,
+    "schema_version": 1
+   },
+   "serving_vs_best": 30.4,
+   "best_baseline_gain": 36.1
+  }
+ ],
+ "final_state": "VERIFY"
+}
