@@ -31,7 +31,7 @@ case "$MODE" in
     wait_device
     $SSH "mkdir -p $REMOTE/reports"
     $SSH "cd $REMOTE && PYTHONPATH=$REMOTE/app/src:$REMOTE/app python3 -u -m ai_net.executor.capability --out $REMOTE/reports/modem_capability.json"
-    scp -q "$DEVICE:$REMOTE/reports/modem_capability.json" "$HERE/reports/modem_capability.json"
+    $SSH "cat $REMOTE/reports/modem_capability.json" > "$HERE/reports/modem_capability.json"
     echo "→ $HERE/reports/modem_capability.json" ;;
   --enable-execute)
     echo "⚠ execute 会真实写 Modem（AT+EMMCHLCK）。请同时确认 $HERE/config/rules.yaml"
@@ -41,15 +41,25 @@ case "$MODE" in
     echo "配置改动需随下次 install 同步；此处仅重启服务。" ;;
   install|"")
     wait_device
-    echo "== 同步代码/配置（不覆盖设备端数据目录）"
+    echo "== 同步代码/配置（tar over ssh；设备无 rsync）"
+    push_dir() {  # push_dir <local_dir> <remote_dir>
+      $SSH "mkdir -p '$2'"
+      tar -C "$1" --exclude '__pycache__' -czf - . | $SSH "tar -C '$2' -xzf -"
+    }
+    push_file() { # push_file <local_file> <remote_path>
+      $SSH "cat > '$2'" < "$1"
+    }
     $SSH "mkdir -p $REMOTE/app $REMOTE/config $REMOTE/reports $REMOTE/models"
-    rsync -a --delete --exclude '__pycache__' "$HERE/src/" "$DEVICE:$REMOTE/app/src/"
+    push_dir "$HERE/src" "$REMOTE/app/src"
+    push_dir "$HERE/schemas" "$REMOTE/app/schemas"
+    push_dir "$HERE/tools" "$REMOTE/app/tools"
     for f in main.yaml rules.yaml traffic_profiles.yaml; do
-      [ -f "$HERE/config/$f" ] && scp -q "$HERE/config/$f" "$DEVICE:$REMOTE/config/$f"
+      [ -f "$HERE/config/$f" ] && push_file "$HERE/config/$f" "$REMOTE/config/$f"
     done
-    rsync -a --exclude '__pycache__' "$HERE/tools/" "$DEVICE:$REMOTE/app/tools/" 2>/dev/null || true
+    # python3.11 stdlib 补齐（设备缺 decimal/fractions/statistics；纯 py 文件放 /data，不动 overlay）
+    [ -d "$HERE/vendor/python311" ] && push_dir "$HERE/vendor/python311" "$REMOTE/lib/python311"
     echo "== 安装 init 脚本"
-    scp -q "$HERE/deploy/ai-net-manager.init" "$DEVICE:/etc/init.d/ai-net-manager"
+    push_file "$HERE/deploy/ai-net-manager.init" "/etc/init.d/ai-net-manager"
     $SSH "chmod +x /etc/init.d/ai-net-manager"
     echo "== 设备环境自检（Step 0）"
     $SSH "sh -s" <<'EOS' | tee "$HERE/reports/env_probe.txt"

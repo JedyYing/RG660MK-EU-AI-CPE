@@ -31,7 +31,7 @@ import re
 # ---------------------------------------------------------------------------
 CMD_ECELLMEAS_QUERY = "AT+ECELLMEAS?"      # 只读
 CMD_C5GREG_QUERY = "AT+C5GREG?"            # 只读；如需 NCI 且 ? 不足时用 =2（URC 模式，低风险）
-CMD_C5GREG_URC = "AT+C5GREG=2"
+CMD_C5GREG_URC = "AT+C5GREG=2"              # ⛔ 写类，未经用户在场授权一律不得发送（2026-10-08 事故后政策）；当前无任何调用点
 CMD_ECSQ_QUERY = "AT+ECSQ?"                # 标准 CESQ 语义（如固件支持）
 CMD_EMMCHLCK_QUERY = "AT+EMMCHLCK?"        # 锁状态 0/1
 CMD_EMMCHLCK_TEST = "AT+EMMCHLCK=?"        # 仅探测（capability probe 用）
