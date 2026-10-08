@@ -70,14 +70,22 @@ def build_report(transport, extra: dict | None = None) -> dict:
         "read_commands": probe_read(transport),
         "control_commands": probe_control(transport),
         "incidents": [{
-            "ts": "2026-10-08",
-            "what": "AT+ECELLMEAS=1 / AT+ECELL=1 开启流式测量上报后，设备在数分钟内"
-                    "AT 全通道无响应、USB-Ethernet 链路掉载波",
-            "root_cause_update": "当日稍后现场核实：CPE 处于断电（关机）状态 —— 失联与"
-                                 "掉载波由断电直接解释，无证据支持与流式指令存在因果",
+            "ts": "2026-10-08 12:51:37~12:58:59",
+            "what": "现场探测中发送 AT+ECELLMEAS=1 / AT+ECELL=1（写类命令，开启流式测量"
+                    "上报），设备随即持续上抛 +ECELLMEAS 帧；约 12:54 起 AT 全通道"
+                    "（ccci_at/mipc/adb socket）无响应（12:55 数据面仍通）；12:58:59 主机侧"
+                    "USB-Ethernet 掉载波，失联 2h25m；用户现场发现模组自动关机且无法启动，"
+                    "不得已刷机（设备侧崩溃日志随之清空，无法再做转储分析）",
+            "root_cause_update": "时间线高度吻合（写命令后约 7 分钟设备死亡）+ 机理合理"
+                                 "（无界 URC 洪泛压垮 AT/modem 子系统，AT 静默先于整机死亡）。"
+                                 "因该机有周期性重启前科、崩溃现场已被刷机清空，因果无法直接"
+                                 "证明；但撤回此前「失联由断电解释、无证据支持因果」的结论 ——"
+                                 "断电是现象不是解释，流式写命令列首要嫌疑。教训：探测阶段执行了"
+                                 "超出只读范围的写类 AT，此后再无此例外",
             "mitigation": "采集一律轮询式只读；ATTransport 内置硬护栏拒绝任何"
-                          "非 0 参数的 ECELLMEAS/ECELL 写命令（allow_streaming_modes=false）。"
-                          "禁令保留理由：设计保守约束 + 本系统无流式上报需求",
+                          "非 0 参数的 ECELLMEAS/ECELL 写命令（allow_streaming_modes=false）；"
+                          "人工探测/运维同样只允许 =?/? 只读命令，写类 AT（含锁小区）仅在用户"
+                          "在场明确授权后单条执行。禁令保留理由：设计保守约束 + 本系统无流式上报需求",
         }],
     }
     ctrl = report["control_commands"]
@@ -87,7 +95,7 @@ def build_report(transport, extra: dict | None = None) -> dict:
         "level": "L3_available" if lock_ok else "L0_only",
         "rationale": ("EMMCHLCK 可用且域合法（(0-3),(0,2,7,11),(0,1),(0-2279165),(0-1007)）；"
                       "QNWLOCK 不存在（CME ERROR 4）。写形态 AT+EMMCHLCK=1,<rat>,0,<arfcn>,<pci>,0"
-                      " 与 AT+EMMCHLCK=0（撤销），锁定跨重启保留。"
+                      " 与 AT+EMMCHLCK=0（撤销）；锁定跨重启保留（社区资料，待本机往返验证）。"
                       if lock_ok else "未发现可用锁小区命令，保持 Shadow/Recommend。"),
         "executor_enabled_default": False,
         "gate": "rules.yaml safety.executor_enabled=false（默认）；人工确认后置 true 且 mode=execute",
