@@ -50,15 +50,20 @@
   （含 L3 锁小区 `AT+EMMCHLCK=1/=0`）仅在用户在场明确授权后、单条执行、即刻回读。
 - L3 锁的首次写入仍按设计：先 capability 审计 → 现场授权 → 锁→回读→解锁往返验证。
 
-## 未决 / 待观察（刷机后只读复测，2026-10-08 15:53）
+## 未决 / 待观察（刷机后只读复测，2026-10-08 15:53–16:35）
 
 - 固件串号不变（`RG660MKEU00AAR01A01G4G_OCPU_AA01_01.350.01.350`，AT+QGMR）、EMMCHLCK 域不变、
   当前无锁（`+EMMCHLCK: 0`）。
-- ⚠ `AT+ECELLMEAS?` 当前返回 `CME ERROR 0`（崩溃前可用）——**禁止用 `=1` 去"修复"**，仅继续只读观察。
-- `AT+ECSQ?` 返回 `0`（OP-1 单位标定仍开放）。
-- 设备侧 python3 3.11.7 存在但 stdlib 不全（缺 decimal → statistics 不可用；yaml 导入失败），
-  部署前需补齐（纯 py 文件 sideload 或 opkg）。
-- WAN 已恢复（ccmni2 + CGNAT 默认路由）、SIM READY、`+C5GREG: 0,1` 已注册。
+- ⚠ **OP-2：`AT+ECELLMEAS?` 持续返回 `CME ERROR 0`（崩溃前可用）**；`=?` 仅回 OK；`emdlogger1`/`mnld`
+  在跑。推测测量引擎需要一次"启用事件"后 `?` 才有缓存可读（历史会话可能由 `=1`/主机工程工具触发）——
+  **禁止用 `=1` 验证**。当前 radio 走 missing；由此产生的 `modem_ok=false` 会拦截执行器动作，属安全行为。
+  待办：向 Quectel/MTK 求证非流式启用方式。
+- `AT+ECSQ?` 仅回裸 `0`（OP-1 单位标定仍开放）。
+- python3 stdlib 已补齐（`vendor/python311/{decimal,_pydecimal,fractions,statistics}.py` →
+  `/data/ai_net/lib/python311`；设备端 `statistics.mean([1,2,3])==2` 验证通过）。
+- WAN 正常（ccmni2 + CGNAT）、SIM READY、`+C5GREG: 0,1` 已注册；ai-net-manager 已部署（shadow）运行中。
+- 旁证（另一会话独立取证，与本复盘一致）：其最后一次成功接触设备 11:43，11:43–13:08 未下任何命令；
+  13:08 网卡已 NO-CARRIER；`/sys/fs/pstore` 为空（真掉电，非内核崩溃）。
 
 ## 附录：12:51:37 原始命令（会话记录节选）
 

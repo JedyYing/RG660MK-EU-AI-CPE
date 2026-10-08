@@ -1,0 +1,98 @@
+{
+  "generated_at": "2026-10-08T16:32:10+0800",
+  "device": {
+    "model": "RG660MK-EU (MediaTek T930)",
+    "fw_modem": "R01.QUECTEL_UNLOCK.177C2E9B701 (2026-08-28)"
+  },
+  "at_backends": [
+    {
+      "name": "atci_socket",
+      "ok": true,
+      "elapsed_ms": 2,
+      "detail": "OK"
+    },
+    {
+      "name": "ccci_at",
+      "ok": true,
+      "elapsed_ms": 153,
+      "detail": "AT\r | \r | OK"
+    },
+    {
+      "name": "mipc_cli",
+      "ok": true,
+      "elapsed_ms": 11,
+      "detail": "AT response:\r | OK"
+    }
+  ],
+  "read_commands": {
+    "ECELLMEAS": {
+      "query": "AT+ECELLMEAS?",
+      "ok": false,
+      "error": "+CME ERROR: 0",
+      "lines": 1,
+      "sample": "AT response:",
+      "elapsed_ms": 9,
+      "backend": "mipc_cli"
+    },
+    "C5GREG": {
+      "query": "AT+C5GREG?",
+      "ok": true,
+      "error": null,
+      "lines": 1,
+      "sample": "+C5GREG: 0,1",
+      "elapsed_ms": 3,
+      "backend": "atci_socket"
+    },
+    "ECSQ": {
+      "query": "AT+ECSQ?",
+      "ok": true,
+      "error": null,
+      "lines": 1,
+      "sample": "+ECSQ: 0",
+      "elapsed_ms": 2,
+      "backend": "atci_socket"
+    }
+  },
+  "control_commands": {
+    "QNWLOCK": {
+      "probe": "AT+QNWLOCK=?",
+      "available": false,
+      "error": "+CME ERROR: 4",
+      "raw": "AT response:\r\n+CME ERROR: 4"
+    },
+    "EMMCHLCK": {
+      "probe": "AT+EMMCHLCK=?",
+      "available": true,
+      "domain": "+EMMCHLCK: (0-3),(0,2,7,11),(0,1),(0-2279165),(0-1007)",
+      "state_now": 0,
+      "error": null,
+      "write_form_verified": null
+    },
+    "AT+QENG=?": {
+      "available": false,
+      "error": "+CME ERROR: 4"
+    },
+    "AT+QNWINFO": {
+      "available": false,
+      "error": "+CME ERROR: 4"
+    },
+    "AT+QCAINFO": {
+      "available": false,
+      "error": "+CME ERROR: 4"
+    }
+  },
+  "incidents": [
+    {
+      "ts": "2026-10-08 12:51:37~12:58:59",
+      "what": "现场探测中发送 AT+ECELLMEAS=1 / AT+ECELL=1（写类命令，开启流式测量上报），设备随即持续上抛 +ECELLMEAS 帧；约 12:54 起 AT 全通道（ccci_at/mipc/adb socket）无响应（12:55 数据面仍通）；12:58:59 主机侧USB-Ethernet 掉载波，失联 2h25m；用户现场发现模组自动关机且无法启动，不得已刷机（设备侧崩溃日志随之清空，无法再做转储分析）",
+      "root_cause_update": "时间线高度吻合（写命令后约 7 分钟设备死亡）+ 机理合理（无界 URC 洪泛压垮 AT/modem 子系统，AT 静默先于整机死亡）。因该机有周期性重启前科、崩溃现场已被刷机清空，因果无法直接证明；但撤回此前「失联由断电解释、无证据支持因果」的结论 ——断电是现象不是解释，流式写命令列首要嫌疑。教训：探测阶段执行了超出只读范围的写类 AT，此后再无此例外",
+      "mitigation": "采集一律轮询式只读；ATTransport 内置硬护栏拒绝任何非 0 参数的 ECELLMEAS/ECELL 写命令（allow_streaming_modes=false）；人工探测/运维同样只允许 =?/? 只读命令，写类 AT（含锁小区）仅在用户在场明确授权后单条执行。禁令保留理由：设计保守约束 + 本系统无流式上报需求"
+    }
+  ],
+  "executor_recommendation": {
+    "level": "L3_available",
+    "rationale": "EMMCHLCK 可用且域合法（(0-3),(0,2,7,11),(0,1),(0-2279165),(0-1007)）；QNWLOCK 不存在（CME ERROR 4）。写形态 AT+EMMCHLCK=1,<rat>,0,<arfcn>,<pci>,0 与 AT+EMMCHLCK=0（撤销）；锁定跨重启保留（社区资料，待本机往返验证）。",
+    "executor_enabled_default": false,
+    "gate": "rules.yaml safety.executor_enabled=false（默认）；人工确认后置 true 且 mode=execute"
+  }
+}

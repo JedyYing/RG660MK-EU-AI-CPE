@@ -1,0 +1,46 @@
+== uname: Linux OpenWrt 5.15.134 #0 SMP Mon Oct 9 21:45:35 2023 aarch64 GNU/Linux
+== os-release:
+NAME="OpenWrt"
+VERSION="23.05.0"
+ID="openwrt"
+ID_LIKE="lede openwrt"
+== python: Python 3.11.7
+== /data 空间:
+Filesystem                Size      Used Available Use% Mounted on
+/dev/block/user_data      2.7G    763.2M      1.8G  29% /data
+/dev/mmcblk0p23          21.4M    998.0K     18.7M   5% /overlay
+== AT 通道:
+srwxr-xr-x    1 root     root             0 Oct  8  2026 /dev/adb_atci_socket
+crw-------    1 root     root      246,  34 Jan  1  2010 /dev/ccci_at
+crw-rw----    1 root     dialout   246,  45 Jan  1  2010 /dev/ttyCMIPC2
+== 现有 modem 进程:
+10334 root     10844 S    /usr/bin/atcid
+11113 root      2932 S    /usr/bin/mipc_submonitor
+== ccmni 网卡:
+ccmni0           DOWN           5a:62:11:2b:c9:c3 <NOARP> 
+ccmni1           DOWN           5e:fb:71:7a:89:28 <NOARP> 
+ccmni2           UNKNOWN        f6:95:e9:6d:4b:16 <NOARP,UP,LOWER_UP> 
+ccmni3           DOWN           c2:a8:13:a6:21:f3 <NOARP> 
+ccmni4           DOWN           26:39:b2:62:e2:33 <NOARP> 
+ccmni5           DOWN           aa:bc:aa:97:e9:33 <NOARP> 
+ccmni6           DOWN           b6:8f:0c:3a:f9:ca <NOARP> 
+ccmni7           DOWN           5e:eb:92:63:c9:02 <NOARP> 
+ccmni8           DOWN           22:d9:2f:5b:64:2d <NOARP> 
+ccmni9           DOWN           86:1e:5c:4d:f5:a7 <NOARP> 
+ccmni10          DOWN           fe:97:bf:e8:e7:e5 <NOARP> 
+ccmni11          DOWN           16:87:8f:1e:65:2a <NOARP> 
+ccmni12          DOWN           82:3d:29:35:55:4e <NOARP> 
+ccmni13          DOWN           c2:f4:5b:35:36:e7 <NOARP> 
+ccmni14          DOWN           8a:d3:99:c5:73:33 <NOARP> 
+ccmni15          DOWN           52:85:2d:d7:6e:1d <NOARP> 
+ccmni16          DOWN           72:ff:f1:db:e6:b9 <NOARP> 
+ccmni17          DOWN           56:88:69:29:4a:6c <NOARP> 
+ccmni18          DOWN           e2:0d:49:aa:36:4f <NOARP> 
+ccmni19          DOWN           b6:c9:d8:b2:50:6e <NOARP> 
+ccmni20          DOWN           be:d2:2a:27:95:ea <NOARP> 
+== 默认路由:
+default via 10.240.223.130 dev ccmni2 proto static src 10.240.223.129 
+10.240.223.128/29 dev ccmni2 proto kernel scope link src 10.240.223.129 
+192.168.1.0/24 dev br-lan proto kernel scope link src 192.168.1.1 
+== conntrack:
+-r--r-----    1 root     root             0 Oct  8 16:29 /proc/net/nf_conntrack

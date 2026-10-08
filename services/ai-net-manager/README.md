@@ -19,6 +19,12 @@
 当前默认 `provisional_div10`（val/10）为待验证假设，设备恢复后用
 `tools/calibrate_ecellmeas.py`（ECSQ 交叉标定，只读）定标。
 
+⚠ **开放问题 OP-2**：刷机后 `AT+ECELLMEAS?` 持续返回 `+CME ERROR: 0`（崩溃前可用）；
+`AT+ECELLMEAS=?` 仅回 OK；`emdlogger1`/`mnld` 在跑。推测测量引擎需要一次"启用事件"
+（历史会话可能由 `=1` 或主机工程工具触发）后 `?` 才有缓存可读 —— **禁止用 `=1` 验证此假设**
+（见事故复盘）。解决前：radio 采样按 missing 处理，`modem_ok` 因 ECELLMEAS 失败保持 false →
+执行器 guard 拦截一切动作（安全侧行为）。待办：向 Quectel/MTK 求证非流式启用方式。
+
 ## 安全约束（来自设计文档，硬性）
 
 - 默认 Shadow 模式，`executor_enabled: false`；执行器为 allowlist + 结构化参数，禁止拼接任意 AT 字符串。
@@ -97,12 +103,13 @@ deploy/install.sh --probe      # 只读 capability probe 并取回报告
 
 ## 当前状态（2026-10-08 晚）
 
-- 已完成：本地全链路实现 + 用例通过 + 回放/训练工具（合成数据打通链路，模型 `models/traffic_clf.json` 已生成）。
+- 已完成：本地全链路实现 + 用例通过 + 回放/训练工具。
 - 事故：12:51 流式写命令 → 12:58:59 掉载波 → 现场模组自动关机且无法启动 → 用户刷机恢复
   （15:24 重新上线，见 `reports/incident_2026-10-08_at_streaming.md`）。
-- 刷机后只读复测：固件串号不变（`...350.01.350`，QGMR）；`AT+EMMCHLCK` 域不变、当前 `0`（无锁）；
-  `AT+QNWLOCK` 仍 CME ERROR 4；**`AT+ECELLMEAS?` 当前返回 CME ERROR 0（待观察，禁止用 `=1` 去"修复"）**；
-  `AT+ECSQ?` 返回 0（OP-1 仍开放）。设备侧 python3 3.11.7 在，但 stdlib 不全（缺 decimal → statistics
-  不可用、yaml 导入失败），部署前需补齐。
-- 下一步（全部只读/本地）：python3 依赖补齐 → Step 0 环境自检落 `reports/env_probe.txt` → capability 重测落盘 →
-  ECELLMEAS 定标（OP-1）→ 24h shadow 采集 → 现场标注数据重训 → 回放/数据质量报告。
+- **已部署（shadow）**：`/data/ai_net`（src + schemas + config + tools + `vendor/python311` stdlib 补齐
+  + 合成训练模型 `traffic_clf.json`）；procd 服务 `ai-net-manager` 运行中，API `127.0.0.1:8787` 正常
+  （mode=shadow）；Step0 落 `reports/env_probe.txt`，capability 落 `reports/modem_capability.json`。
+- 刷机后只读复测：固件串号不变（`...350.01.350`，QGMR）；EMMCHLCK 域不变、当前无锁；QNWLOCK 仍无；
+  ⚠ `AT+ECELLMEAS?` → CME ERROR 0（**OP-2**，radio 暂无观测源）；`AT+ECSQ?` 仅回裸 `0`（OP-1）。
+- 下一步：解决 OP-2 观测源（找安全启用路径，禁止 `=1`）→ ECELLMEAS 定标（OP-1）→ 24h shadow 采集 →
+  现场标注数据重训 → 回放/数据质量报告；L3 锁往返验证等用户现场授权。
