@@ -24,9 +24,13 @@
 - 默认 Shadow 模式，`executor_enabled: false`；执行器为 allowlist + 结构化参数，禁止拼接任意 AT 字符串。
 - 所有 AT 通道**只读轮询**，禁止开启流式上报模式：`AT+ECELLMEAS=1` / `AT+ECELL=1` 被
   `ATTransport` 正则硬护栏拒绝（`allow_streaming_modes: false`）。
-  2026-10-08 现场：开启流式测量后数分钟内设备 AT 全静默 + USB 链路掉载波；**当日稍后核实
-  CPE 处于断电状态 —— 失联由断电解释，无证据支持与流式指令有因果**。禁令按设计保守约束保留
-  （本系统无流式需求），事故记录见 `executor/capability.py` 的 incidents。
+  ⚠ 2026-10-08 12:51:37 现场探测时发送了 `AT+ECELLMEAS=1` / `AT+ECELL=1`（写类命令）：
+  设备随即持续上抛 `+ECELLMEAS` 帧，约 12:54 AT 全通道静默，12:58:59 掉载波失联 2h25m；
+  用户现场发现模组自动关机且无法启动，遂刷机。**因果无法直接证明（该机有周期性重启前科、
+  崩溃日志已随刷机清空），但时间线高度吻合，列首要嫌疑** —— 详见
+  `reports/incident_2026-10-08_at_streaming.md` 与 `executor/capability.py` incidents。
+  即日起：**人工探测与程序采集一律只读（`=?`/`?`），写类 AT（含 L3 锁小区）仅在用户在场
+  明确授权后执行**。
 - 连续 AT 失败 ≥3 → `modem_ok=false`（状态机 guard 拦截动作）；执行器连续失败 ≥2 →
   运行期自动降级 Shadow（事件 `auto_degrade`）。
 - 所有缺失值保留显式 `missing` 标记，绝不填 0（schema `missing` 字段 + 决策日志）。
@@ -91,9 +95,14 @@ deploy/install.sh --restart    # 重启
 deploy/install.sh --probe      # 只读 capability probe 并取回报告
 ```
 
-## 当前状态（2026-10-08）
+## 当前状态（2026-10-08 晚）
 
-- 已完成：本地全链路实现 + 35 用例通过 + 回放/训练工具（合成数据打通链路，模型 `models/traffic_clf.json` 已生成）。
-- 阻塞：**CPE 离线**（13:05 起 USB 网卡 NO-CARRIER、设备不在 lsusb 枚举；疑似挂死后未自恢复，需现场断电重启）。
-- 待设备恢复：Step 0 环境自检落 `reports/env_probe.txt` → capability probe（EMMCHLCK/QNWLOCK 结论落盘）→
-  ECELLMEAS 单位定标（OP-1）→ 24h shadow 采集 → 现场标注数据替换合成数据重训 → 回放/数据质量报告。
+- 已完成：本地全链路实现 + 用例通过 + 回放/训练工具（合成数据打通链路，模型 `models/traffic_clf.json` 已生成）。
+- 事故：12:51 流式写命令 → 12:58:59 掉载波 → 现场模组自动关机且无法启动 → 用户刷机恢复
+  （15:24 重新上线，见 `reports/incident_2026-10-08_at_streaming.md`）。
+- 刷机后只读复测：固件串号不变（`...350.01.350`，QGMR）；`AT+EMMCHLCK` 域不变、当前 `0`（无锁）；
+  `AT+QNWLOCK` 仍 CME ERROR 4；**`AT+ECELLMEAS?` 当前返回 CME ERROR 0（待观察，禁止用 `=1` 去"修复"）**；
+  `AT+ECSQ?` 返回 0（OP-1 仍开放）。设备侧 python3 3.11.7 在，但 stdlib 不全（缺 decimal → statistics
+  不可用、yaml 导入失败），部署前需补齐。
+- 下一步（全部只读/本地）：python3 依赖补齐 → Step 0 环境自检落 `reports/env_probe.txt` → capability 重测落盘 →
+  ECELLMEAS 定标（OP-1）→ 24h shadow 采集 → 现场标注数据重训 → 回放/数据质量报告。
