@@ -1,0 +1,3 @@
+libtrm_init.
+libtrm_deinit.
+RAT 5G, RSRP=-67

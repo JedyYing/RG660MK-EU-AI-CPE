@@ -1,0 +1,274 @@
+########## RG660MK AI选网 Step0 环境勘察 2026-10-09 16:34:27 ##########
+===== A. 系统 =====
+Linux OpenWrt 5.15.134 #0 SMP Mon Oct 9 21:45:35 2023 aarch64 GNU/Linux
+DISTRIB_ID='OpenWrt'
+DISTRIB_RELEASE='23.05.0'
+DISTRIB_REVISION='r23497-6637af95aa'
+DISTRIB_TARGET='gem6xxx/evb6988_cpe_mt7992_emmc'
+Python 3.11.7
+
+===== B. 工具可用性 =====
+mipc_wan_cli: /usr/bin/mipc_wan_cli
+ql_datacall: /usr/bin/ql_datacall
+atinout: 缺
+microcom: 缺
+picocom: 缺
+ping: /usr/bin/ping
+ping6: /bin/ping6
+ss: 缺
+netstat: 缺
+tcpdump: /usr/bin/tcpdump
+ifstatus: /sbin/ifstatus
+ubus: /bin/ubus
+
+===== C. mipc_wan_cli 帮助（能力表） =====
+libtrm_init.
+
+
+
+
+
+
+libtrm_deinit.
+Usage: below options are supported:51
+sim_mapping
+apn_provision_by_sim
+data_call_deact
+data_call_act
+apn_ia_get
+at_cmd
+get_imeisv
+help
+sim_pin_info_get
+modem_poweroff
+check_ia
+data_call_deact_apn
+sim_verify_pin
+nw_radio_state_get
+check_nw_status
+apn_ia_set
+apn_profile_set
+apn_profile_get
+sim_get_state
+data_call_get
+get_imei
+data_call_act_type
+nw_radio_state_set
+modem_poweroff_with_cause
+apn_ia_check
+get_sim_insert
+nw_change_hw_radio
+nw_get_rat
+nw_set_rat
+ims_get_config
+ims_set_config
+ims_get_status
+show_sim_status
+show_register_status
+dtmf_detect
+set_speech
+nw_show_register_rat
+nw_get_signal
+get_retry_timer
+check_retry_timer
+ql_set_radio_on
+get_call_status
+dial_request
+detect_and_dial
+answer_ringing
+answer_waiting
+merge_request
+play_tone
+swap_request
+hangup_foreground
+hangup_all
+
+===== D. 信号/状态 =====
+-- nw_get_signal:
+libtrm_init.
+libtrm_deinit.
+RAT 5G, RSRP=-67-- check_nw_status:
+libtrm_init.
+libtrm_deinit.
+MIPC_NW_REGISTER_STATE_HOME-- nw_radio_state_get:
+libtrm_init.
+SIM16 SW radio state:MIPC_NW_RADIO_STATE_ON
+libtrm_deinit.
+
+===== E. 服务小区（C5GREG=2 + ?） =====
+AT response:
++C5GREG: 1,"590D0A","0594FCB484",11,4,"01.000000"
+
+OK
+
+---
+AT response:
++C5GREG: 2,1,"590D0A","0594FCB484",11,4,"01.000000"
+
+OK
+
+
+===== F. 其他 AT 能力探测（只读） =====
+--- AT+CESQ
+ash: timeout: not found
+--- AT+CSQ
+ash: timeout: not found
+--- AT+CREG?
+ash: timeout: not found
+--- AT+QNWINFO
+ash: timeout: not found
+--- AT+QENG=servingcell
+ash: timeout: not found
+--- AT+QCAINFO
+ash: timeout: not found
+
+===== G. 网络接口/路由 =====
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0             UP             ea:68:e8:53:6a:31 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1             UP             ea:68:e8:53:6a:30 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+ccmni0           DOWN           6e:69:26:6b:93:5d <NOARP> 
+ccmni1           DOWN           4e:8d:79:31:9d:aa <NOARP> 
+ccmni2           UNKNOWN        66:a4:f9:22:0d:90 <NOARP,UP,LOWER_UP> 
+ccmni3           DOWN           b6:23:ef:b4:22:1b <NOARP> 
+ccmni4           DOWN           9a:35:5f:3d:e8:99 <NOARP> 
+ccmni5           DOWN           9e:15:9f:81:7c:74 <NOARP> 
+ccmni6           DOWN           2a:76:3d:91:81:a1 <NOARP> 
+ccmni7           DOWN           92:37:5b:6a:f5:ae <NOARP> 
+ccmni8           DOWN           ca:e5:16:be:41:11 <NOARP> 
+ccmni9           DOWN           36:fc:e0:94:7e:c5 <NOARP> 
+ccmni10          DOWN           8a:e4:f6:15:9a:b0 <NOARP> 
+---
+default via 10.150.163.26 dev ccmni2 proto static src 10.150.163.25 
+10.150.163.24/29 dev ccmni2 proto kernel scope link src 10.150.163.25 
+192.168.1.0/24 dev br-lan proto kernel scope link src 192.168.1.1 
+
+===== H. conntrack/流量源 =====
+-r--r-----    1 root     root             0 Oct  9 16:34 /proc/net/nf_conntrack
+nf_conntrack 行数: 291
+ipv4     2 tcp      6 46 TIME_WAIT src=127.0.0.1 dst=127.0.0.1 sport=56642 dport=6006 dscp=0 packets=21 bytes=141654 src=127.0.0.1 dst=127.0.0.1 sport=6006 dport=56642 dscp=0 packets=22 bytes=1511 [ASSURED] mark=0 zone=0 use=2
+ipv4     2 tcp      6 82 TIME_WAIT src=192.168.1.244 dst=192.168.1.1 sport=53230 dport=8099 dscp=0 packets=26 bytes=1736 src=192.168.1.1 dst=192.168.1.244 sport=8099 dport=53230 dscp=0 packets=10 bytes=34966 [ASSURED] mark=0 zone=0 use=2
+ipv4     2 tcp      6 280 ESTABLISHED src=192.168.1.1 dst=192.168.1.244 sport=58104 dport=1883 dscp=0 packets=419 bytes=34246 src=192.168.1.244 dst=192.168.1.1 sport=1883 dport=58104 dscp=0 packets=418 bytes=21753 [ASSURED] mark=0 zone=0 use=2
+
+===== I. WAN 状态摘要 =====
+{
+	"up": true,
+	"pending": false,
+	"available": true,
+	"autostart": true,
+	"dynamic": false,
+	"uptime": 12436,
+	"l3_device": "ccmni2",
+	"proto": "ql_datacall",
+	"updated": [
+		"addresses",
+		"routes",
+		"prefixes",
+		"data"
+	],
+	"metric": 0,
+	"dns_metric": 0,
+	"delegation": true,
+	"ipv4-address": [
+		{
+			"address": "10.150.163.25",
+			"mask": 29
+		}
+	],
+
+===== J. USB音频/摄像头仍在位? =====
+1-1
+1-1.1
+1-1.1:1.0
+1-1.1:1.1
+1-1.2
+1-1.2:1.0
+1-1.2:1.1
+1-1.2:1.2
+STEP0 DONE
+########## Step0 补充探测 2026-10-09 16:34:56 ##########
+===== A. 更多 mipc 只读命令 =====
+--- mipc_wan_cli --nw_get_rat
+SIM16 RAT Mode Value: 19
+Current: 4/5G
+--- mipc_wan_cli --show_register_status
+MIPC_NW_REGISTER_STATE_HOME
+--- mipc_wan_cli --nw_show_register_rat
+Current registered: 5G, RAT=0x8000
+--- mipc_wan_cli --show_sim_status
+MIPC_SIM_STATUS_COMPLETE_READY
+--- mipc_wan_cli --data_call_get
+{ "CID": 1, "APN": "ims", "PDP_TYPE": 2, "v4_count": 0, "v4_dns_count": 0, "v6_count": 1, "v6_addr": "2408:850d:ad40:343e:18dc:c425:cedb:145d", "v6_prefix": 64, "v6_dns_count": 2, "v6_dns1": "2408:8888:0000:8888:0000:0000:0000:0008", "v6_dns2": "2408:8899:0000:8899:0000:0000:0000:0008", "v4_mtu": 0, "v6_mtu": 0, "iface": "ccmni1" }
+
+===== B. AT 能力探测（只读，本轮不带 timeout） =====
+--- AT+CESQ
+AT response:
++CESQ: 99,99,255,255,255,255,65,90,89
+
+OK
+
+--- AT+CSQ
+AT response:
++CSQ: 29, 99
+
+OK
+
+--- AT+CREG?
+AT response:
++CREG: 0,0
+
+OK
+
+--- AT+CGREG?
+AT response:
++CGREG: 0,0
+
+OK
+
+--- AT+C5GREG?
+AT response:
++C5GREG: 2,1,"590D0A","0594FCB484",11,4,"01.000000"
+
+OK
+
+--- AT+QNWINFO
+AT response:
++CME ERROR: 4
+
+--- AT+QCAINFO
+AT response:
++CME ERROR: 4
+
+--- AT+QENG="servingcell"
+AT response:
++CME ERROR: 4
+
+--- AT+QENG="neighbourcell"
+AT response:
++CME ERROR: 4
+
+
+===== C. 流量与ping样本 =====
+-- /proc/net/dev ccmni2:
+ccmni2: 273666786  436403    0    0    0     0          0         0 276320878  640771    0    0    0     0       0          0
+ccmni20:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+-- ping 样本:
+
+--- 223.5.5.5 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2002ms
+rtt min/avg/max/mdev = 13.494/48.313/93.250/33.336 ms
+-- ping 网关:
+--- 10.150.163.26 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1001ms
+
+
+===== D. conntrack 样本(5行) =====
+ipv4     2 tcp      6 14 TIME_WAIT src=127.0.0.1 dst=127.0.0.1 sport=56642 dport=6006 dscp=0 packets=21 bytes=141654 src=127.0.0.1 dst=127.0.0.1 sport=6006 dport=56642 dscp=0 packets=22 bytes=1511 [ASSURED] mark=0 zone=0 use=2
+ipv4     2 tcp      6 49 TIME_WAIT src=192.168.1.244 dst=192.168.1.1 sport=53230 dport=8099 dscp=0 packets=26 bytes=1736 src=192.168.1.1 dst=192.168.1.244 sport=8099 dport=53230 dscp=0 packets=10 bytes=34966 [ASSURED] mark=0 zone=0 use=2
+ipv4     2 tcp      6 278 ESTABLISHED src=192.168.1.1 dst=192.168.1.244 sport=58104 dport=1883 dscp=0 packets=420 bytes=34327 src=192.168.1.244 dst=192.168.1.1 sport=1883 dport=58104 dscp=0 packets=419 bytes=21805 [ASSURED] mark=0 zone=0 use=2
+ipv4     2 tcp      6 7 TIME_WAIT src=192.168.1.244 dst=192.168.1.1 sport=50516 dport=8099 dscp=0 packets=8 bytes=766 src=192.168.1.1 dst=192.168.1.244 sport=8099 dport=50516 dscp=0 packets=6 bytes=5134 [ASSURED] mark=0 zone=0 use=2
+ipv4     2 tcp      6 42 TIME_WAIT src=192.168.1.244 dst=192.168.1.1 sport=53128 dport=8099 dscp=0 packets=8 bytes=766 src=192.168.1.1 dst=192.168.1.244 sport=8099 dport=53128 dscp=0 packets=6 bytes=5134 [ASSURED] mark=0 zone=0 use=2
+
+===== E. CPU 负载基线 =====
+ 16:35:00 up  3:28,  load average: 4.70, 4.87, 5.11
+4.70 4.87 5.12 1/342 29072
+STEP0B DONE

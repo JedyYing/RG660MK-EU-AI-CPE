@@ -101,6 +101,12 @@ deploy/install.sh --restart    # 重启
 deploy/install.sh --probe      # 只读 capability probe 并取回报告
 ```
 
+> **状态注记（2026-10-09 晚）**: 设备运行态已切至并行实现的 `services/ai_net_manager`
+> （其 radio 源为本机实测可用的 mipc/AT+C5GREG 路径；评测数据 2026-10-09）。本项目 procd 服务
+> 已**停用 + 禁自启**，文件/数据完整保留于 `/data/ai_net`。恢复: 先停新版（`/etc/init.d/ai-net stop`），
+> 再 `/etc/init.d/ai-net-manager enable && /etc/init.d/ai-net-manager start`。本项目 OP-1/OP-2 与
+> EMMCHLCK L3 路径仍为后续资产。
+
 ## 当前状态（2026-10-08 晚）
 
 - 已完成：本地全链路实现 + 用例通过 + 回放/训练工具。

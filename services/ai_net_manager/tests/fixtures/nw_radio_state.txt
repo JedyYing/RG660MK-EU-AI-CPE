@@ -1,0 +1,3 @@
+libtrm_init.
+SIM16 SW radio state:MIPC_NW_RADIO_STATE_ON
+libtrm_deinit.

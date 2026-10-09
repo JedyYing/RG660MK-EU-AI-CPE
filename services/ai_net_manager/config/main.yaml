@@ -1,0 +1,33 @@
+# ai-net-manager 主配置（设备侧消费 main.json，本文件为权威可读版本）
+schema_version: "1.0"
+mode: shadow                  # shadow | recommend | execute
+device:
+  name: RG660MK
+  platform: mtk-mipc
+sampling_s:                   # 设计 §16 默认值（设备负载偏高时上调）
+  radio: 1.0
+  cell: 5.0
+  qoe: 1.0
+  flows: 2.0
+  decision: 2.0
+windows_s: [5, 10, 30]
+default_window_s: 10
+qoe_probe:
+  icmp_targets:
+    - {name: alidns, host: 223.5.5.5}
+  tcp_targets:
+    - {name: feishu, host: open.feishu.cn, port: 443}
+  ping_count: 1
+wan_iface: ccmni2
+storage:
+  dir: /data/ai_cpe/ai_net/data
+  rotate_mb: 20
+api: {host: 0.0.0.0, port: 8123}
+executor:
+  enabled: false              # 设计 §7.3: 默认关闭
+thresholds:
+  bad_qoe_score: 40
+  good_qoe_score: 70
+feature_flags:
+  neighbour_api: false        # 本固件无邻区 API
+  cesq_raw: true

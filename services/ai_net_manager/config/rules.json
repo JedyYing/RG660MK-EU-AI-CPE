@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "selection": {
+    "min_dwell_time_s": 60,
+    "switch_cooldown_s": 120,
+    "min_score_gain": 12,
+    "min_gain_hold_s": 10,
+    "min_candidate_rsrp": -115,
+    "max_switches_10min": 3,
+    "rollback_window_s": 30,
+    "rollback_score_drop": 15
+  },
+  "profiles": {
+    "conference": {"min_score_gain": 16, "min_gain_hold_s": 15},
+    "voip": {"min_score_gain": 16, "min_gain_hold_s": 15},
+    "gaming": {"min_score_gain": 14, "min_gain_hold_s": 12},
+    "backup": {"min_score_gain": 8, "min_gain_hold_s": 5},
+    "camera": {"min_score_gain": 12, "min_gain_hold_s": 10},
+    "video": {"min_score_gain": 12, "min_gain_hold_s": 10}
+  },
+  "safety": {
+    "executor_enabled": false,
+    "max_consecutive_action_failures": 2,
+    "auto_disable_on_modem_error": true
+  }
+}

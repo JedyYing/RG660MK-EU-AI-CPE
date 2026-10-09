@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "mode": "shadow",
+  "device": {"name": "RG660MK", "platform": "mtk-mipc"},
+  "sampling_s": {"radio": 1.0, "cell": 5.0, "qoe": 1.0, "flows": 2.0, "decision": 2.0},
+  "windows_s": [5, 10, 30],
+  "default_window_s": 10,
+  "qoe_probe": {
+    "icmp_targets": [{"name": "alidns", "host": "223.5.5.5"}],
+    "tcp_targets": [{"name": "feishu", "host": "open.feishu.cn", "port": 443}],
+    "ping_count": 1
+  },
+  "wan_iface": "ccmni2",
+  "storage": {"dir": "/data/ai_cpe/ai_net/data", "rotate_mb": 20},
+  "api": {"host": "0.0.0.0", "port": 8123},
+  "executor": {"enabled": false},
+  "thresholds": {"bad_qoe_score": 40, "good_qoe_score": 70},
+  "feature_flags": {"neighbour_api": false, "cesq_raw": true}
+}

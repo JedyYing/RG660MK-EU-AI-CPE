@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "classes": ["gaming", "video", "conference", "voip", "camera", "backup"],
+  "generic": {
+    "weights": {"throughput": 0.3, "latency": 0.3, "stability": 0.3},
+    "targets": {"dl_mbps": 10, "ul_mbps": 3, "rtt_ms": 80}
+  },
+  "profiles": {
+    "gaming": {"weights": {"throughput": 0.15, "latency": 0.45, "stability": 0.30}, "targets": {"dl_mbps": 3, "ul_mbps": 1, "rtt_ms": 40}, "min_conf": 0.6},
+    "video": {"weights": {"throughput": 0.40, "latency": 0.15, "stability": 0.30}, "targets": {"dl_mbps": 15, "ul_mbps": 1, "rtt_ms": 120}, "min_conf": 0.6},
+    "conference": {"weights": {"throughput": 0.25, "latency": 0.35, "stability": 0.30}, "targets": {"dl_mbps": 4, "ul_mbps": 4, "rtt_ms": 60}, "min_conf": 0.6},
+    "voip": {"weights": {"throughput": 0.10, "latency": 0.45, "stability": 0.35}, "targets": {"dl_mbps": 0.5, "ul_mbps": 0.5, "rtt_ms": 60}, "min_conf": 0.6},
+    "camera": {"weights": {"throughput": 0.35, "latency": 0.20, "stability": 0.30}, "targets": {"dl_mbps": 1, "ul_mbps": 10, "rtt_ms": 120}, "min_conf": 0.6},
+    "backup": {"weights": {"throughput": 0.60, "latency": 0.05, "stability": 0.15}, "targets": {"dl_mbps": 50, "ul_mbps": 20, "rtt_ms": 300}, "min_conf": 0.6}
+  }
+}

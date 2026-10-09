@@ -1,0 +1,33 @@
+# 安全规则（设计 §7.3；设备侧消费 rules.json）
+selection:
+  min_dwell_time_s: 60        # 进入小区后至少驻留
+  switch_cooldown_s: 120      # 任何切换后冷却
+  min_score_gain: 12          # 候选至少高的分数
+  min_gain_hold_s: 10         # 优势连续保持
+  min_candidate_rsrp: -115    # 候选 RSRP 门槛 dBm
+  max_switches_10min: 3
+  rollback_window_s: 30
+  rollback_score_drop: 15
+profiles:                     # 业务差异化门槛（覆盖 selection 默认）
+  conference:
+    min_score_gain: 16
+    min_gain_hold_s: 15
+  voip:
+    min_score_gain: 16
+    min_gain_hold_s: 15
+  gaming:
+    min_score_gain: 14
+    min_gain_hold_s: 12
+  backup:
+    min_score_gain: 8
+    min_gain_hold_s: 5
+  camera:
+    min_score_gain: 12
+    min_gain_hold_s: 10
+  video:
+    min_score_gain: 12
+    min_gain_hold_s: 10
+safety:
+  executor_enabled: false
+  max_consecutive_action_failures: 2
+  auto_disable_on_modem_error: true

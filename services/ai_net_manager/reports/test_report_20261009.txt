@@ -1,0 +1,36 @@
+=== ai_net_manager 测试报告 2026-10-09 16:52:05 ===
+
+--- 单元测试 (tests/run_all.py) ---
+PASS test_parsers.py::test_conntrack_parse
+PASS test_parsers.py::test_parse_cell_forms
+PASS test_parsers.py::test_parse_cesq
+PASS test_parsers.py::test_parse_radio
+PASS test_parsers.py::test_parse_reg
+PASS test_parsers.py::test_parse_signal
+PASS test_parsers.py::test_ping_ok_and_loss
+PASS test_parsers.py::test_qeng_unsupported_detect
+PASS test_parsers.py::test_rat_normalize
+PASS test_replay.py::test_replay_smoke
+PASS test_rules.py::test_all_allowed
+PASS test_rules.py::test_backup_profile_more_aggressive
+PASS test_rules.py::test_cooldown_blocks
+PASS test_rules.py::test_dwell_blocks
+PASS test_rules.py::test_gain_threshold_generic_and_conference
+PASS test_rules.py::test_hold_blocks
+PASS test_rules.py::test_max_switches
+PASS test_rules.py::test_rsrp_floor
+---- 18/18 passed ----
+
+--- 解析器验证 (tools/validate_at_parser.py) ---
+PASS signal 5G/-67
+PASS reg HOME
+PASS radio ON
+PASS cell (mode2)
+PASS cell (short)
+PASS cesq 9 fields
+PASS qeng unsupported marked
+PASS ping rtt
+PASS ping loss -> None
+PASS conntrack 3 flows
+PASS conntrack established bytes
+---- 11/11 passed ----
