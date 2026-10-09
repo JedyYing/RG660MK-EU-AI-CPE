@@ -1,12 +1,34 @@
 #!/bin/sh
-# vision_runner_wrapper.sh - 根据 operation 分发到不同 runner
-# 读取 stdin JSON，检查 operation 字段，调用对应的 binary
-
+# vision_runner_wrapper.sh —— operation 分发器【修复版，2026-09-10 归档】
+#
+#   face        → face_runner    （先把 models 的 string 值转成 {"path": string}，否则 rc=1）
+#   detect/pose → vision_runner  （原样直通）
+#
+# 背景：ai_service 下发的请求里 models.face_detect / face_embed 是【字符串】，
+#       而 face_runner 期望 {"face_detect":{"path":"..."}} 对象格式——不转换时 face_runner
+#       直接 rc=1（stderr 只剩 "img=... fd= fe=" 空值，易误判为模型缺失）。
+#       detect/pose 无需转换。
+#
+# ⚠️ 仓库 voice-assistant/init.d/vision_runner_wrapper 是修复前旧版（无转换），勿用。
+# 部署：scp 本文件到 /data/ai_cpe/demo/bin/vision_runner_wrapper && chmod +x
+# 验证：hermes_ai_tool.py face --payload '{"input":{"path":"/data/ai_cpe/demo/media/x.jpg"}}'
+#       返回 {"ok":true,...}（~370ms 量级）即通。
 INPUT=$(cat)
-OPERATION=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('operation',''))" 2>/dev/null)
+OPERATION=$(echo "$INPUT" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("operation",""))' 2>/dev/null)
 
 if [ "$OPERATION" = "face" ]; then
-    echo "$INPUT" | /data/ai_cpe/demo/ai_runtime/face/face_runner
+    CONVERTED=$(echo "$INPUT" | python3 -c '
+import sys, json
+d = json.load(sys.stdin)
+models = d.get("models", {})
+for k in ("face_detect", "face_embed"):
+    v = models.get(k)
+    if isinstance(v, str):
+        models[k] = {"path": v}
+d["models"] = models
+print(json.dumps(d))
+' 2>/dev/null)
+    echo "$CONVERTED" | /data/ai_cpe/demo/ai_runtime/face/face_runner 2>/dev/null
 else
     echo "$INPUT" | /data/ai_cpe/demo/bin/vision_runner
 fi

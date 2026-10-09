@@ -1,7 +1,7 @@
 {
  "driver": "matter",
  "matter": {
-  "node_id": 2,
+  "node_id": null,
   "endpoint": 1,
   "chip_tool": "/data/ai_cpe/matter/bin/chip-tool",
   "kvs": "/data/ai_cpe/matter/kvs/chip_kvs"
@@ -9,5 +9,5 @@
  "local": {
   "led": "5g_evb_voice"
  },
- "_note": "node_id 填上（配网成功后）即自动切到 Matter 真灯；清空则回退板载 LED/虚拟执行器。"
+ "_note": "node_id 填上（配网成功后）即自动切到 Matter 真灯；清空则回退板载 LED/虚拟执行器。旧配网记录：node 2（2026-09-28）。"
 }

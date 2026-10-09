@@ -31,7 +31,7 @@ done
 if [ "$OK" = 1 ]; then echo "已持久化 Matter 存储 -> $KDIR（重启不丢）"; else echo "配网失败：请确认 ① 灯泡已通电且在 2.4G SSID 上 ② 已打开配网窗口(commissioning window) ③ PIN 正确 ④ PAA 证书在 /data/ai_cpe/matter/paa"; exit 1; fi
 
 echo "== 配网成功，写入 config.json（driver=matter, node_id=$NODE） =="
-/data/ai_cpe/hermes/venv/bin/python - <<PY
+/usr/bin/python3 - <<PY
 import json
 p = "$CFG"
 cfg = json.load(open(p, encoding="utf-8"))
@@ -41,6 +41,6 @@ cfg["matter"].setdefault("endpoint", 1)
 json.dump(cfg, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print("已更新:", p)
 PY
-/etc/init.d/mqtt_bridge restart >/dev/null 2>&1 || true
+/etc/init.d/smarthome restart >/dev/null 2>&1 || true
 echo "== 验证 =="
-/data/ai_cpe/hermes/venv/bin/python /data/ai_cpe/smarthome.py status
+/usr/bin/python3 /data/ai_cpe/smarthome.py status
