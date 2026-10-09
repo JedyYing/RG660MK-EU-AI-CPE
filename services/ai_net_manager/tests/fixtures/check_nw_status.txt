@@ -1,0 +1,3 @@
+libtrm_init.
+MIPC_NW_REGISTER_STATE_HOME
+libtrm_deinit.

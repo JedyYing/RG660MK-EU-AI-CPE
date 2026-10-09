@@ -1,0 +1,75 @@
+{
+ "ts_ms": 1791535406355,
+ "platform": "mtk-mipc",
+ "read": {
+  "nw_get_signal": {
+   "status": "ok",
+   "rc": 0,
+   "sample": ""
+  },
+  "nw_get_rat": {
+   "status": "ok",
+   "rc": 0,
+   "sample": "SIM16 RAT Mode Value: 19"
+  },
+  "check_nw_status": {
+   "status": "ok",
+   "rc": 0,
+   "sample": ""
+  },
+  "nw_radio_state_get": {
+   "status": "ok",
+   "rc": 0,
+   "sample": "SIM16 SW radio state:MIPC_NW_RADIO_STATE_ON"
+  },
+  "show_register_status": {
+   "status": "ok",
+   "rc": 0,
+   "sample": ""
+  },
+  "at_cesq": {
+   "status": "ok",
+   "rc": 0,
+   "sample": "AT response:"
+  },
+  "at_c5greg": {
+   "status": "ok",
+   "rc": 0,
+   "sample": "AT response:"
+  },
+  "at_qeng_servingcell": {
+   "status": "unsupported",
+   "rc": 0,
+   "sample": "AT response:"
+  },
+  "at_qeng_neighbourcell": {
+   "status": "unsupported",
+   "rc": 0,
+   "sample": "AT response:"
+  },
+  "at_qcainfo": {
+   "status": "unsupported",
+   "rc": 0,
+   "sample": "AT response:"
+  },
+  "at_qnwinfo": {
+   "status": "unsupported",
+   "rc": 0,
+   "sample": "AT response:"
+  }
+ },
+ "mutating": {
+  "nw_radio_state_set": {
+   "status": "present-untested",
+   "note": "存在性来自 mipc_wan_cli 帮助表；未执行（变更类）"
+  },
+  "nw_change_hw_radio": {
+   "status": "present-untested",
+   "note": "存在性来自 mipc_wan_cli 帮助表；未执行（变更类）"
+  },
+  "nw_set_rat": {
+   "status": "present-untested",
+   "note": "存在性来自 mipc_wan_cli 帮助表；未执行（变更类）"
+  }
+ }
+}

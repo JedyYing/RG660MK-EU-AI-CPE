@@ -1,0 +1,3 @@
+ipv4     2 tcp      6 46 TIME_WAIT src=127.0.0.1 dst=127.0.0.1 sport=56642 dport=6006 dscp=0 packets=21 bytes=141654 src=127.0.0.1 dst=127.0.0.1 sport=6006 dport=56642 dscp=0 packets=22 bytes=1511 [ASSURED] mark=0 zone=0 use=2
+ipv4     2 tcp      6 278 ESTABLISHED src=192.168.1.1 dst=192.168.1.244 sport=58104 dport=1883 dscp=0 packets=420 bytes=34327 src=192.168.1.244 dst=192.168.1.1 sport=1883 dport=58104 dscp=0 packets=419 bytes=21805 [ASSURED] mark=0 zone=0 use=2
+ipv4     2 udp      17 52 src=10.150.163.25 dst=114.114.114.114 sport=48765 dport=53 packets=3 bytes=219 src=114.114.114.114 dst=10.150.163.25 sport=53 dport=48765 packets=3 bytes=235 mark=0 use=1

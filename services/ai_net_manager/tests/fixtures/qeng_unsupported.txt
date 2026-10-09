@@ -1,0 +1,2 @@
+AT response:\r
++CME ERROR: 4\r

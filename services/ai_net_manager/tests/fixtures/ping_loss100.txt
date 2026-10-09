@@ -1,0 +1,4 @@
+PING 10.150.163.26 (10.150.163.26): 56 data bytes
+
+--- 10.150.163.26 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1001ms
