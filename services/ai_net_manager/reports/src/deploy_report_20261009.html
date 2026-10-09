@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>AI 选网 Phase 1 部署报告 — RG660MK-EU</title>
+<title>AI 选网 Phase 1 部署报告 — RG660MK-EU（V2）</title>
 <style>
   @page { size: A4; margin: 16mm 14mm 15mm; }
   * { box-sizing: border-box; }
@@ -61,46 +61,52 @@
   <div class="meta">日期：2026-10-09 ｜ 设备：RG660MK-EU 5G CPE ｜ 依据：《AI_Smart_Cell_Selection_Phase1_Design_v1.0》（§15 执行路径）<br>
   交付位置：repo <code>RG660MK-EU-AI-CPE/services/ai_net_manager/</code>（代码 ∪ 配置 ∪ 工具 ∪ 测试 ∪ 报告）</div>
 
+  <div class="callout">
+    <b>版本 V2 更新点（2026-10-09 20:30）：</b>① 运行时长与全部效果数据刷新至<b>连续 3.6 小时</b>（无线样本 1.2 万+、决策 6,620、RSRP 覆盖率 100%、运行期零错误）；
+    ② 新增 <b>§1.2 小区锁定状态直答（未锁定）</b>；③ 全部数字以 20:25 设备实测为准。V1 版（17:13）留存于桌面与仓库。
+  </div>
+
   <div class="callout green">
     <b>一句话结论：</b>按设计文档全链路落地的「AI 选网」<b>Shadow 版已常驻运行</b>：1Hz 采集"无线 + 网络 + 业务流"，
     每 2 秒特征窗评估 QoE 与候选小区，安全规则闸门裁决——<b>只记录、只建议，绝不控制网络</b>（严格只读，零写类 AT）。
-    交付范围内的部署与验证已闭环；模型训练按设计节奏等待 ≥24–72h 数据积累（管线已就位）。
+    截至 V2 快照：连续运行 3.6 h、零错误、零切换、零建议（单小区环境，属预期）。交付范围内的部署与验证已闭环；模型训练按设计节奏等待 ≥24–72 h 数据积累（管线已就位）。
   </div>
 
   <div class="cards">
-    <div class="card"><div class="big green">−65 dBm</div>
-      <div class="cap">服务小区 RSRP<br>注册 HOME（实测）</div></div>
-    <div class="card"><div class="big">61.9 / 100</div>
-      <div class="cap">QoE 实时评分<br>（radio 子分 1.0）</div></div>
-    <div class="card"><div class="big">126</div>
-      <div class="cap">活动业务流（WAN 99）<br>采样 1 Hz 持续落盘</div></div>
+    <div class="card"><div class="big green">−72 dBm</div>
+      <div class="cap">服务小区 RSRP（20:25 实测）<br>注册 HOME · 近 300 样本均值 −66.9</div></div>
+    <div class="card"><div class="big">68.3 / 100</div>
+      <div class="cap">QoE 实时评分（radio 0.98）<br>时延 / 稳定子分均 &gt; 0.93</div></div>
+    <div class="card"><div class="big">12,488</div>
+      <div class="cap">无线样本（3.6 h 连续）<br>决策 6,620 · 五类数据 40,550 行</div></div>
     <div class="card"><div class="big green">18 / 18</div>
-      <div class="cap">单元测试通过<br>解析验证 11 / 11</div></div>
+      <div class="cap">单元测试通过<br>近 500 样本 RSRP 覆盖率 100%</div></div>
   </div>
 
   <h3>本报告包含</h3>
   <table>
     <tr><th style="width:38mm">章节</th><th>内容</th></tr>
-    <tr><td>一、运行状态</td><td>实测证据表 + 数据流架构</td></tr>
+    <tr><td>一、运行状态</td><td>实测证据表 + 数据流架构 + 小区锁定直答（§1.2）</td></tr>
     <tr><td>二、设计适配</td><td>设备实测 vs 设计假设（四项差异处置）</td></tr>
     <tr><td>三、期间发现与处置</td><td>历史版本冲突裁定 · 关键 bug 修复 · 安全红线</td></tr>
     <tr><td>四、闭环状态对照</td><td>按设计 §14.3 逐项勾稽（含待数据/待授权项）</td></tr>
     <tr><td>五、交付物与验收</td><td>清单 · 1 分钟验收命令 · 后续清单</td></tr>
   </table>
-  <div class="foot">数据来源：设备侧实测快照（2026-10-09 16:43–16:53，可复现：见第六节验收命令）。</div>
+  <div class="foot">数据来源：设备侧实测快照（2026-10-09 16:43–20:25，可复现：见第六节验收命令）。版本：V2（2026-10-09 20:30）／V1（17:13）保留。</div>
 </div>
 
 <div class="page">
   <h2>一、运行状态（实测证据）</h2>
   <table>
     <tr><th style="width:34mm">项</th><th>值</th></tr>
-    <tr><td>服务</td><td>procd <code>ai-net</code>（S98 开机自启、崩溃自动拉起）；路径 <code>/data/ai_cpe/ai_net</code></td></tr>
+    <tr><td>服务</td><td>procd <code>ai-net</code>（S98 开机自启、崩溃自动拉起）；路径 <code>/data/ai_cpe/ai_net</code>；<b>连续运行 3.6 h 零重启</b>（运行日志零错误）</td></tr>
     <tr><td>只读 API</td><td><code>http://192.168.1.1:8123/v1/status</code>（另有 /v1/radio、/v1/candidates、/v1/decision）</td></tr>
-    <tr><td>服务小区</td><td>NCI <span class="num">0594FCB484</span> ／ TAC <span class="num">590D0A</span> ／ RSRP <span class="num">−65 dBm</span> ／ 注册 <b>HOME</b></td></tr>
-    <tr><td>QoE 评分</td><td><span class="num">61.9 / 100</span>（radio 子分 1.0；权重按"当前业务类别"自动切换）</td></tr>
-    <tr><td>业务流</td><td>活动 <span class="num">126</span> 条（WAN 侧 <span class="num">99</span>），含手机访问 8090 的视频流</td></tr>
-    <tr><td>网络探测</td><td>ping RTT <span class="num">13.5 ms</span>（抖动、丢包入窗统计）</td></tr>
-    <tr><td>数据落盘</td><td>radio 560+ ／ qoe 430+ ／ flows 240+ ／ decisions 300+ 条，持续增长（20 MB 自动轮转）</td></tr>
+    <tr><td>服务小区</td><td>NCI <span class="num">0594FCB484</span> ／ TAC <span class="num">590D0A</span> ／ RSRP <span class="num">−72 dBm</span> ／ 注册 <b>HOME</b></td></tr>
+    <tr><td>QoE 评分</td><td><span class="num">68.3 / 100</span>（radio 0.98 · 时延 0.94 · 稳定 0.99；吞吐子分低＝当前链路空闲）</td></tr>
+    <tr><td>10s 窗特征（最新）</td><td>RSRP 均值 <span class="num">−64.0 dBm</span> · RTT P50 <span class="num">17.2 ms</span> / P95 <span class="num">23.4 ms</span> · 抖动 P95 <span class="num">7.5 ms</span> · 丢包 <span class="num">0%</span></td></tr>
+    <tr><td>业务流（最新快照）</td><td>活动 <span class="num">118</span> 条（WAN 侧 <span class="num">86</span>，含手机访问 8090 的视频流）；下行 <span class="num">642 kbps</span> / 上行 <span class="num">63 kbps</span></td></tr>
+    <tr><td>数据资产</td><td>五类 JSONL 合计 <span class="num">40,550 行 / 56.1 MB</span>：radio 12,488 ／ qoe 12,030 ／ flows 2,792 ／ window 6,620 ／ decisions 6,620（20 MB 自动轮转）</td></tr>
+    <tr><td>数据质量</td><td>近 500 样本 RSRP 覆盖率 <b>100%</b>（bug 修复后持续保持）；近 300 样本区间 <span class="num">−74 … −65 dBm</span></td></tr>
   </table>
 
   <h3>数据流（Shadow 全链路）</h3>
@@ -116,6 +122,14 @@
     <div class="aarrow">➜</div>
     <div class="abox cloud"><div class="t">④ 记录（Shadow）</div>
       <div class="d">decisions.jsonl + status.json + API；执行器禁用——不产生任何网络动作</div></div>
+  </div>
+
+  <h3>1.2 小区锁定状态（直答：未锁定）</h3>
+  <div class="callout green">
+    <b>结论：没有锁定任何小区。</b>依据（四项互证）：① API 原始字段 <code>"executor": {"mode":"shadow","enabled":false}</code>；
+    ② 累计 <b>6,620 条决策全部 action=none</b>、状态全 NORMAL、0 建议、0 切换；③ 全程零写类 / 流式 AT（安全红线）；
+    ④ 本固件不含 AT+QNWLOCK（§二），旧方案依赖的 ECELLMEAS / EMMCHLCK 在固件升级后已失效且旧服务已停用禁启。
+    开启锁小区＝需能力验证 + 现场授权 + 执行器另开（Phase 1 范围外，接口已保留）。
   </div>
 
   <div class="callout">
@@ -135,7 +149,7 @@
     <tr><td>CA 信息（AT+QCAINFO）</td><td>不支持</td>
         <td>missing 字段显式标记，绝不填 0（设计 §3.3）</td></tr>
     <tr><td>锁小区（AT+QNWLOCK）</td><td>不支持</td>
-        <td>执行器保持禁用（Phase 1 默认即为禁用状态）</td></tr>
+        <td>执行器保持禁用（Phase 1 默认即为禁用状态）——当前状态：未锁定（§1.2）</td></tr>
   </table>
 
   <h2>三、期间发现与处置</h2>
@@ -147,7 +161,7 @@
         <td>旧版<b>停用 + 禁自启</b>（文件与数据完整保留于 <code>/data/ai_net</code>，恢复一条命令，双方 README 已注明）</td></tr>
     <tr><td>关键 bug 修复</td>
         <td>采样中 RSRP 整列丢失：子进程 stdout/stderr 拼接时（信号行无结尾换行）与驱动噪音粘成一行，被过滤器整行误删</td>
-        <td>修复（补换行 + 过滤器只匹配行首）+ 回归；修复后近 60 条样本 RSRP 覆盖 <b>100%</b></td></tr>
+        <td>修复（补换行 + 过滤器只匹配行首）+ 回归；修复后覆盖率 <b>100%</b> 并持续保持（近 500 样本复核）</td></tr>
     <tr><td>安全红线对齐</td>
         <td>10-08 曾有"流式 AT 命令→模组失联→刷机"事故复盘（首要嫌疑）</td>
         <td>本项目全程只读探测，零写类 / 流式 AT；红线写入 README 与测试纪律</td></tr>
@@ -159,19 +173,19 @@
   <table>
     <tr><th style="width:52mm">验收项</th><th style="width:24mm">状态</th><th>说明 / 证据</th></tr>
     <tr><td>持续采集并落盘<br>（radio/QoE/业务特征）</td><td class="ok">✅ 已闭环</td>
-        <td>1Hz 采样连续写入 5 类 JSONL；字段覆盖率报表可一键生成（近 60 样本 RSRP 100%）</td></tr>
+        <td>1Hz 采样连续写入 5 类 JSONL（累计 40,550 行）；近 500 样本 RSRP 覆盖率 100%；3.6 h 零错误</td></tr>
     <tr><td>规则引擎 + 状态机 + 回放</td><td class="ok">✅ 已闭环</td>
-        <td>设计 §7/§9 全量安全规则；18 单测全过；replay 工具可重裁历史决策</td></tr>
+        <td>设计 §7/§9 全量安全规则；18 单测全过；replay 工具可重裁历史决策（6,620 条决策全程可回放）</td></tr>
     <tr><td>只读采集 + 能力探测</td><td class="ok">✅ 已闭环</td>
         <td>capability 报告 7 项可用 / 4 项固件不支持（如实记录）；零写类命令</td></tr>
     <tr><td>Shadow 建议输出</td><td class="ok">✅ 已闭环</td>
         <td>decisions.jsonl + 只读 API 持续输出（当前单小区环境无候选＝预期）</td></tr>
     <tr><td>Traffic Classifier 训练</td><td class="pend">🟡 待数据</td>
-        <td>设计明确要求 ≥24–72h Shadow 数据后训练；数据正在积累，训练管线（tools/train_*.py）已就位</td></tr>
+        <td>设计明确要求 ≥24–72h Shadow 数据后训练；数据正在积累（已 4 万+ 行），训练管线（tools/train_*.py）已就位</td></tr>
     <tr><td>QoE / 候选 Ranker 训练</td><td class="pend">🟡 待数据</td>
-        <td>同上；已内置 RSRP-only / 规则-only 对照基线，训练后可直接 A/B</td></tr>
+        <td>同上；已内置 RSRP-only / 规则-only 对照基线（当前 98.0 / 100.0），训练后可直接 A/B</td></tr>
     <tr><td>执行器开启（L3 锁小区）</td><td class="wait">⏸ 设计默认关闭</td>
-        <td>需能力验证 + 现场授权后另开（Phase 1 范围外，接口已保留）</td></tr>
+        <td>当前 <code>enabled=false</code>、未锁定任何小区（§1.2）；需能力验证 + 现场授权后另开（Phase 1 范围外，接口已保留）</td></tr>
   </table>
   <div class="callout amber">
     <b>诚实边界：</b>"已闭环"＝部署、运行、可观测、可回放、已入库；"待数据"两项是设计文档本身规定的后置里程碑，
@@ -187,14 +201,14 @@
     <li><code>config/</code>：main / rules / traffic_profiles（YAML 权威 + JSON 设备副本，<code>tools/yaml2json.py</code> 同步）</li>
     <li><code>tools/</code>：replay（回放重裁）／data_quality_report（覆盖率报表）／validate_at_parser／train_*（训练管线）</li>
     <li><code>tests/</code>：18 用例全过（解析／规则／回放）+ 真实设备回包 fixtures</li>
-    <li><code>reports/</code>：env_probe／modem_capability／data_quality／replay_report／test_report／deploy_report（本报告）</li>
+    <li><code>reports/</code>：env_probe／modem_capability／data_quality／replay_report／test_report／deploy_report（本报告 V2）</li>
     <li>部署脚本 <code>deploy_ai_net.sh</code>（幂等重放）+ procd 模板 <code>ai_net.init</code></li>
   </ul>
 
   <h2>六、验收方式（1 分钟）</h2>
   <div class="callout">
     <b>设备上或局域网</b>：<br>
-    <code>curl -s http://192.168.1.1:8123/v1/status</code> —— 实时总览（小区、RSRP、QoE、流、状态机）<br>
+    <code>curl -s http://192.168.1.1:8123/v1/status</code> —— 实时总览（小区、RSRP、QoE、流、状态机、executor 开关）<br>
     <code>curl -s http://192.168.1.1:8123/v1/decision</code> —— 最新一次裁决（含 top_features 可解释字段）<br>
     或直接看数据：<code>/data/ai_cpe/ai_net/data/*.jsonl</code> 与 <code>status.json</code>
   </div>
@@ -209,7 +223,8 @@
 
   <div class="foot">
     本 PDF 由 <code>services/ai_net_manager/reports/src/deploy_report_20261009.html</code> 渲染生成，可改后重出。<br>
-    技术明细见同目录 <code>deploy_report_20261009.md</code>、<code>README.md</code>（含双版本裁定与安全红线全文）。
+    技术明细见同目录 <code>deploy_report_20261009.md</code>、<code>README.md</code>（含双版本裁定与安全红线全文）。<br>
+    版本：V2（2026-10-09 20:30）——快照与运行时长更新 + 新增 §1.2 小区锁定直答；V1（17:13）留存。
   </div>
 </div>
 
