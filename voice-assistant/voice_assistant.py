@@ -593,46 +593,48 @@ def safe_calc(expr):
 
 
 def get_weather_now(city):
-    """优先原天气服务；失败时通过独立 HTTPS 服务查询，始终校验证书。"""
+    """优先 open-meteo（中文描述稳定；wttr.in 的 lang_zh 自 2026-10 起退化为英文）。
+    失败回退 wttr.in；仍失败向上抛错由上层提示。"""
     try:
-        url = "https://wttr.in/" + urllib.parse.quote(city) + "?format=j1&lang=zh"
-        with urllib.request.urlopen(url, timeout=2) as response:
-            cur = json.load(response)["current_condition"][0]
-        desc = (cur.get("lang_zh") or cur["weatherDesc"])[0]["value"]
+        coordinates = {"上海": (31.23, 121.47), "北京": (39.90, 116.41)}
+        if city in coordinates:
+            lat, lon = coordinates[city]
+        else:
+            url = "https://geocoding-api.open-meteo.com/v1/search?" + urllib.parse.urlencode(
+                {"name": city, "count": 5, "language": "zh"})
+            with urllib.request.urlopen(url, timeout=8) as response:
+                places = json.load(response).get("results", [])
+            place = next((p for p in places if p.get("country_code") in ("CN", "TW", "HK", "MO")), None)
+            if place is None:
+                return "没有查到这个城市的天气位置，请换一个城市名。"
+            lat, lon = place["latitude"], place["longitude"]
+        url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode({
+            "latitude": lat, "longitude": lon,
+            "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code",
+            "timezone": "Asia/Shanghai"})
+        with urllib.request.urlopen(url, timeout=4) as response:
+            cur = json.load(response)["current"]
+        descriptions = {0: "晴", 1: "晴间多云", 2: "多云", 3: "阴", 45: "有雾", 48: "有雾凇",
+                        51: "小毛毛雨", 53: "毛毛雨", 55: "较强毛毛雨", 56: "冻毛毛雨", 57: "冻毛毛雨",
+                        61: "小雨", 63: "中雨", 65: "大雨", 66: "冻雨", 67: "冻雨",
+                        71: "小雪", 73: "中雪", 75: "大雪", 77: "雪粒", 80: "阵雨", 81: "阵雨",
+                        82: "强阵雨", 85: "阵雪", 86: "强阵雪", 95: "雷雨", 96: "雷雨伴冰雹", 99: "雷雨伴冰雹"}
+        code = cur["weather_code"]
+        values = [cur[k] for k in ("temperature_2m", "apparent_temperature", "relative_humidity_2m")]
+        if code not in descriptions or any(v is None for v in values):
+            raise ValueError("incomplete weather data")
+        print("[WEATHER] source=open-meteo city=%s time=%s" % (city, cur["time"]), flush=True)
         return "%s现在%s，气温%s度，体感%s度，湿度百分之%s" % (
-            city, desc, cur["temp_C"], cur["FeelsLikeC"], cur["humidity"])
+            city, descriptions[code], *values)
     except Exception as e:
-        print("[WEATHER] primary failed: %s" % e, flush=True)
-    coordinates = {"上海": (31.23, 121.47), "北京": (39.90, 116.41)}
-    if city in coordinates:
-        lat, lon = coordinates[city]
-    else:
-        url = "https://geocoding-api.open-meteo.com/v1/search?" + urllib.parse.urlencode(
-            {"name": city, "count": 5, "language": "zh"})
-        with urllib.request.urlopen(url, timeout=8) as response:
-            places = json.load(response).get("results", [])
-        place = next((p for p in places if p.get("country_code") in ("CN", "TW", "HK", "MO")), None)
-        if place is None:
-            return "没有查到这个城市的天气位置，请换一个城市名。"
-        lat, lon = place["latitude"], place["longitude"]
-    url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode({
-        "latitude": lat, "longitude": lon,
-        "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code",
-        "timezone": "Asia/Shanghai"})
+        print("[WEATHER] open-meteo failed: %s" % e, flush=True)
+    # ---- 回退：wttr.in（注意其 lang_zh 可能为英文）----
+    url = "https://wttr.in/" + urllib.parse.quote(city) + "?format=j1&lang=zh"
     with urllib.request.urlopen(url, timeout=4) as response:
-        cur = json.load(response)["current"]
-    descriptions = {0: "晴", 1: "晴间多云", 2: "多云", 3: "阴", 45: "有雾", 48: "有雾凇",
-                    51: "小毛毛雨", 53: "毛毛雨", 55: "较强毛毛雨", 56: "冻毛毛雨", 57: "冻毛毛雨",
-                    61: "小雨", 63: "中雨", 65: "大雨", 66: "冻雨", 67: "冻雨",
-                    71: "小雪", 73: "中雪", 75: "大雪", 77: "雪粒", 80: "阵雨", 81: "阵雨",
-                    82: "强阵雨", 85: "阵雪", 86: "强阵雪", 95: "雷雨", 96: "雷雨伴冰雹", 99: "雷雨伴冰雹"}
-    code = cur["weather_code"]
-    values = [cur[k] for k in ("temperature_2m", "apparent_temperature", "relative_humidity_2m")]
-    if code not in descriptions or any(v is None for v in values):
-        raise ValueError("incomplete weather data")
-    print("[WEATHER] source=open-meteo city=%s time=%s" % (city, cur["time"]), flush=True)
+        cur = json.load(response)["current_condition"][0]
+    desc = (cur.get("lang_zh") or cur["weatherDesc"])[0]["value"]
     return "%s现在%s，气温%s度，体感%s度，湿度百分之%s" % (
-        city, descriptions[code], *values)
+        city, desc, cur["temp_C"], cur["FeelsLikeC"], cur["humidity"])
 
 
 # ---- L1 实时行情(设计文档 §2.1,与 get_weather_now 同款主备结构)----
