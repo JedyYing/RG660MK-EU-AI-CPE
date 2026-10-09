@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>AI 选网 Phase 1 部署报告 — RG660MK-EU</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm 15mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: "Noto Sans CJK SC", "Noto Sans CJK", sans-serif;
+         font-size: 10pt; line-height: 1.6; color: #1f2328; margin: 0; }
+  h1 { font-size: 21pt; margin: 0 0 2mm; color: #1f4e79; line-height: 1.25; }
+  h2 { font-size: 13.5pt; margin: 0 0 3.5mm; padding: 2mm 0 1.5mm;
+       border-bottom: 2.2px solid #1f4e79; color: #1f4e79; page-break-after: avoid; }
+  h3 { font-size: 11.3pt; margin: 5mm 0 2.2mm; color: #24476b; page-break-after: avoid; }
+  p { margin: 0 0 2.4mm; }
+  ul { margin: 0 0 2.6mm; padding-left: 5.5mm; }
+  li { margin-bottom: 1.2mm; }
+  table { width: 100%; border-collapse: collapse; margin: 2.4mm 0 3.2mm; font-size: 9.2pt; }
+  th, td { border: 1px solid #cfd8e3; padding: 1.5mm 2mm; vertical-align: top; text-align: left; }
+  th { background: #eef3f9; color: #1f4e79; font-weight: 600; }
+  tr { page-break-inside: avoid; }
+  .page { page-break-before: always; }
+  .first { page-break-before: avoid; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ok { color: #1a7f37; font-weight: 600; }
+  .pend { color: #b45309; font-weight: 600; }
+  .wait { color: #6e7781; font-weight: 600; }
+  .muted { color: #57606a; font-size: 8.8pt; }
+  .meta { color: #57606a; font-size: 9.5pt; margin-bottom: 4mm; }
+  .cards { display: flex; gap: 3mm; margin: 4mm 0 5mm; }
+  .card { flex: 1; border: 1.4px solid #cbd6e2; border-radius: 3mm;
+          background: #f7fafc; padding: 3mm; text-align: center; }
+  .card .big { font-size: 15.5pt; font-weight: 700; color: #1f4e79; line-height: 1.2; }
+  .card .big.green { color: #1a7f37; }
+  .card .cap { font-size: 8.2pt; color: #57606a; margin-top: 1.4mm; line-height: 1.45; }
+  .callout { border-left: 3.5px solid #1f4e79; background: #f2f6fa;
+             padding: 2.6mm 3.2mm; margin: 3mm 0; border-radius: 0 2mm 2mm 0; }
+  .callout.green { border-left-color: #1a7f37; background: #f0f7f2; }
+  .callout.amber { border-left-color: #b45309; background: #fdf6ec; }
+  .archrow { display: flex; align-items: stretch; gap: 2.4mm; margin-bottom: 2.8mm; }
+  .abox { flex: 1; border: 1.3px solid #9db3c8; border-radius: 2mm;
+          background: #fff; padding: 2mm 2.6mm; }
+  .abox .t { font-weight: 700; color: #1f4e79; font-size: 9.3pt; margin-bottom: 0.8mm; }
+  .abox .d { font-size: 8.3pt; color: #57606a; line-height: 1.5; }
+  .abox.dev { background: #fff7e8; border-color: #d9a441; }
+  .abox.dev .t { color: #9a6700; }
+  .abox.cloud { background: #f0f7f2; border-color: #7fb98f; }
+  .abox.cloud .t { color: #1a7f37; }
+  .aarrow { display: flex; align-items: center; color: #1f4e79;
+            font-size: 13pt; font-weight: 700; }
+  .foot { margin-top: 5mm; padding-top: 2.4mm; border-top: 1px solid #d8e0e9;
+          font-size: 8.2pt; color: #8b949e; }
+  code { background: #f2f4f7; padding: 0.4mm 1.2mm; border-radius: 1mm; font-size: 8.8pt; }
+</style>
+</head>
+<body>
+
+<div class="first">
+  <h1>AI 选网（AI Smart Cell Selection）Phase 1<br>部署报告 — RG660MK-EU</h1>
+  <div class="meta">日期：2026-10-09 ｜ 设备：RG660MK-EU 5G CPE ｜ 依据：《AI_Smart_Cell_Selection_Phase1_Design_v1.0》（§15 执行路径）<br>
+  交付位置：repo <code>RG660MK-EU-AI-CPE/services/ai_net_manager/</code>（代码 ∪ 配置 ∪ 工具 ∪ 测试 ∪ 报告）</div>
+
+  <div class="callout green">
+    <b>一句话结论：</b>按设计文档全链路落地的「AI 选网」<b>Shadow 版已常驻运行</b>：1Hz 采集"无线 + 网络 + 业务流"，
+    每 2 秒特征窗评估 QoE 与候选小区，安全规则闸门裁决——<b>只记录、只建议，绝不控制网络</b>（严格只读，零写类 AT）。
+    交付范围内的部署与验证已闭环；模型训练按设计节奏等待 ≥24–72h 数据积累（管线已就位）。
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="big green">−65 dBm</div>
+      <div class="cap">服务小区 RSRP<br>注册 HOME（实测）</div></div>
+    <div class="card"><div class="big">61.9 / 100</div>
+      <div class="cap">QoE 实时评分<br>（radio 子分 1.0）</div></div>
+    <div class="card"><div class="big">126</div>
+      <div class="cap">活动业务流（WAN 99）<br>采样 1 Hz 持续落盘</div></div>
+    <div class="card"><div class="big green">18 / 18</div>
+      <div class="cap">单元测试通过<br>解析验证 11 / 11</div></div>
+  </div>
+
+  <h3>本报告包含</h3>
+  <table>
+    <tr><th style="width:38mm">章节</th><th>内容</th></tr>
+    <tr><td>一、运行状态</td><td>实测证据表 + 数据流架构</td></tr>
+    <tr><td>二、设计适配</td><td>设备实测 vs 设计假设（四项差异处置）</td></tr>
+    <tr><td>三、期间发现与处置</td><td>历史版本冲突裁定 · 关键 bug 修复 · 安全红线</td></tr>
+    <tr><td>四、闭环状态对照</td><td>按设计 §14.3 逐项勾稽（含待数据/待授权项）</td></tr>
+    <tr><td>五、交付物与验收</td><td>清单 · 1 分钟验收命令 · 后续清单</td></tr>
+  </table>
+  <div class="foot">数据来源：设备侧实测快照（2026-10-09 16:43–16:53，可复现：见第六节验收命令）。</div>
+</div>
+
+<div class="page">
+  <h2>一、运行状态（实测证据）</h2>
+  <table>
+    <tr><th style="width:34mm">项</th><th>值</th></tr>
+    <tr><td>服务</td><td>procd <code>ai-net</code>（S98 开机自启、崩溃自动拉起）；路径 <code>/data/ai_cpe/ai_net</code></td></tr>
+    <tr><td>只读 API</td><td><code>http://192.168.1.1:8123/v1/status</code>（另有 /v1/radio、/v1/candidates、/v1/decision）</td></tr>
+    <tr><td>服务小区</td><td>NCI <span class="num">0594FCB484</span> ／ TAC <span class="num">590D0A</span> ／ RSRP <span class="num">−65 dBm</span> ／ 注册 <b>HOME</b></td></tr>
+    <tr><td>QoE 评分</td><td><span class="num">61.9 / 100</span>（radio 子分 1.0；权重按"当前业务类别"自动切换）</td></tr>
+    <tr><td>业务流</td><td>活动 <span class="num">126</span> 条（WAN 侧 <span class="num">99</span>），含手机访问 8090 的视频流</td></tr>
+    <tr><td>网络探测</td><td>ping RTT <span class="num">13.5 ms</span>（抖动、丢包入窗统计）</td></tr>
+    <tr><td>数据落盘</td><td>radio 560+ ／ qoe 430+ ／ flows 240+ ／ decisions 300+ 条，持续增长（20 MB 自动轮转）</td></tr>
+  </table>
+
+  <h3>数据流（Shadow 全链路）</h3>
+  <div class="archrow">
+    <div class="abox"><div class="t">① 采集（只读）</div>
+      <div class="d">mipc_wan_cli：RSRP/RAT/注册/射频态；AT+C5GREG?（NCI+TAC）；AT+CESQ；ping；conntrack 业务流</div></div>
+    <div class="aarrow">➜</div>
+    <div class="abox"><div class="t">② 特征窗</div>
+      <div class="d">5 / 10 / 30 s 滚动窗：RSRP 均值·斜率、RTT P95、抖动、丢包率、上下行速率、活动流</div></div>
+    <div class="aarrow">➜</div>
+    <div class="abox dev"><div class="t">③ 决策</div>
+      <div class="d">业务分类 → 按类权重评 QoE → 候选排序 → 安全规则闸门（驻留/冷却/增益/保持/上限）</div></div>
+    <div class="aarrow">➜</div>
+    <div class="abox cloud"><div class="t">④ 记录（Shadow）</div>
+      <div class="d">decisions.jsonl + status.json + API；执行器禁用——不产生任何网络动作</div></div>
+  </div>
+
+  <div class="callout">
+    <b>为什么先 Shadow：</b>设计文档要求"可观测 &gt; 可解释 &gt; 可回滚 &gt; 再自动化"。当前单小区环境下候选为空属正常，
+    系统的价值在持续量化"此刻网络好不好、什么时候会变坏"，为后续模型训练与切换决策积累语料。
+  </div>
+</div>
+
+<div class="page">
+  <h2>二、设计适配（设备实测 vs 设计假设）</h2>
+  <table>
+    <tr><th style="width:44mm">设计文档假设</th><th style="width:44mm">RG660MK 实测</th><th>处置</th></tr>
+    <tr><td>AT+QENG="servingcell / neighbourcell"</td><td>不支持（+CME ERROR: 4）</td>
+        <td>采集走 mipc_wan_cli + AT+C5GREG?/AT+CESQ 适配层（设计 §3.1 预留的固件适配）</td></tr>
+    <tr><td>邻区测量</td><td>无可用只读源</td>
+        <td>候选＝历史 cell_profile 画像（设计 §8.1 降级口径，如实标注）</td></tr>
+    <tr><td>CA 信息（AT+QCAINFO）</td><td>不支持</td>
+        <td>missing 字段显式标记，绝不填 0（设计 §3.3）</td></tr>
+    <tr><td>锁小区（AT+QNWLOCK）</td><td>不支持</td>
+        <td>执行器保持禁用（Phase 1 默认即为禁用状态）</td></tr>
+  </table>
+
+  <h2>三、期间发现与处置</h2>
+  <table>
+    <tr><th style="width:30mm">事项</th><th>经过</th><th style="width:36mm">处置</th></tr>
+    <tr><td>历史版本冲突</td>
+        <td>设备上存在 10-08 版同类实现（<code>services/ai-net-manager</code>）：其信号源 ECELLMEAS 刷机后固件恒报错、
+            radio 全空，且每秒重试与新版争抢 AT 通道</td>
+        <td>旧版<b>停用 + 禁自启</b>（文件与数据完整保留于 <code>/data/ai_net</code>，恢复一条命令，双方 README 已注明）</td></tr>
+    <tr><td>关键 bug 修复</td>
+        <td>采样中 RSRP 整列丢失：子进程 stdout/stderr 拼接时（信号行无结尾换行）与驱动噪音粘成一行，被过滤器整行误删</td>
+        <td>修复（补换行 + 过滤器只匹配行首）+ 回归；修复后近 60 条样本 RSRP 覆盖 <b>100%</b></td></tr>
+    <tr><td>安全红线对齐</td>
+        <td>10-08 曾有"流式 AT 命令→模组失联→刷机"事故复盘（首要嫌疑）</td>
+        <td>本项目全程只读探测，零写类 / 流式 AT；红线写入 README 与测试纪律</td></tr>
+  </table>
+</div>
+
+<div class="page">
+  <h2>四、闭环状态对照（按设计 §14 验收口径）</h2>
+  <table>
+    <tr><th style="width:52mm">验收项</th><th style="width:24mm">状态</th><th>说明 / 证据</th></tr>
+    <tr><td>持续采集并落盘<br>（radio/QoE/业务特征）</td><td class="ok">✅ 已闭环</td>
+        <td>1Hz 采样连续写入 5 类 JSONL；字段覆盖率报表可一键生成（近 60 样本 RSRP 100%）</td></tr>
+    <tr><td>规则引擎 + 状态机 + 回放</td><td class="ok">✅ 已闭环</td>
+        <td>设计 §7/§9 全量安全规则；18 单测全过；replay 工具可重裁历史决策</td></tr>
+    <tr><td>只读采集 + 能力探测</td><td class="ok">✅ 已闭环</td>
+        <td>capability 报告 7 项可用 / 4 项固件不支持（如实记录）；零写类命令</td></tr>
+    <tr><td>Shadow 建议输出</td><td class="ok">✅ 已闭环</td>
+        <td>decisions.jsonl + 只读 API 持续输出（当前单小区环境无候选＝预期）</td></tr>
+    <tr><td>Traffic Classifier 训练</td><td class="pend">🟡 待数据</td>
+        <td>设计明确要求 ≥24–72h Shadow 数据后训练；数据正在积累，训练管线（tools/train_*.py）已就位</td></tr>
+    <tr><td>QoE / 候选 Ranker 训练</td><td class="pend">🟡 待数据</td>
+        <td>同上；已内置 RSRP-only / 规则-only 对照基线，训练后可直接 A/B</td></tr>
+    <tr><td>执行器开启（L3 锁小区）</td><td class="wait">⏸ 设计默认关闭</td>
+        <td>需能力验证 + 现场授权后另开（Phase 1 范围外，接口已保留）</td></tr>
+  </table>
+  <div class="callout amber">
+    <b>诚实边界：</b>"已闭环"＝部署、运行、可观测、可回放、已入库；"待数据"两项是设计文档本身规定的后置里程碑，
+    非缺陷（时间依赖），数据到位后一条命令训练、一次部署替换。
+  </div>
+</div>
+
+<div class="page">
+  <h2>五、交付物清单</h2>
+  <ul>
+    <li><code>src/ai_net/</code>：采集（MTK/mipc 适配）／5·10·30s 特征窗／启发式分类（占位，低置信度回退 generic）／
+        评分+候选排序／规则引擎+状态机／Shadow 执行器／HTTP API</li>
+    <li><code>config/</code>：main / rules / traffic_profiles（YAML 权威 + JSON 设备副本，<code>tools/yaml2json.py</code> 同步）</li>
+    <li><code>tools/</code>：replay（回放重裁）／data_quality_report（覆盖率报表）／validate_at_parser／train_*（训练管线）</li>
+    <li><code>tests/</code>：18 用例全过（解析／规则／回放）+ 真实设备回包 fixtures</li>
+    <li><code>reports/</code>：env_probe／modem_capability／data_quality／replay_report／test_report／deploy_report（本报告）</li>
+    <li>部署脚本 <code>deploy_ai_net.sh</code>（幂等重放）+ procd 模板 <code>ai_net.init</code></li>
+  </ul>
+
+  <h2>六、验收方式（1 分钟）</h2>
+  <div class="callout">
+    <b>设备上或局域网</b>：<br>
+    <code>curl -s http://192.168.1.1:8123/v1/status</code> —— 实时总览（小区、RSRP、QoE、流、状态机）<br>
+    <code>curl -s http://192.168.1.1:8123/v1/decision</code> —— 最新一次裁决（含 top_features 可解释字段）<br>
+    或直接看数据：<code>/data/ai_cpe/ai_net/data/*.jsonl</code> 与 <code>status.json</code>
+  </div>
+
+  <h2>七、后续清单</h2>
+  <table>
+    <tr><th style="width:52mm">事项</th><th style="width:20mm">触发条件</th><th>动作</th></tr>
+    <tr><td>分类器 / Ranker 训练</td><td>数据 ≥24–72h</td><td>主机侧 <code>tools/train_*.py</code> → 端侧替换（纯 Python 树评估器）</td></tr>
+    <tr><td>质量 / 回放报告滚动更新</td><td>随时</td><td>两条命令（tools 已就位）</td></tr>
+    <tr><td>旧版资产回收</td><td>固件恢复 / 现场授权</td><td>ECELLMEAS 邻区并入采集 · EMMCHLCK 锁小区验证</td></tr>
+  </table>
+
+  <div class="foot">
+    本 PDF 由 <code>services/ai_net_manager/reports/src/deploy_report_20261009.html</code> 渲染生成，可改后重出。<br>
+    技术明细见同目录 <code>deploy_report_20261009.md</code>、<code>README.md</code>（含双版本裁定与安全红线全文）。
+  </div>
+</div>
+
+</body>
+</html>
