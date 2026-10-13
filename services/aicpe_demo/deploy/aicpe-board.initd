@@ -1,0 +1,28 @@
+#!/bin/sh /etc/rc.common
+# ─────────────────────────────────────────────────────────────────────
+# aicpe-board — AI CPE 功能演示看板（8099）常驻服务
+#   2026-10-13 改造：由"6 小时自动退场的一次性实例"改为 procd 常驻：
+#     - --serve-only 常驻模式：只提供看板，不自动跑检查（页面点「开始演示」才跑）
+#     - respawn 自愈：崩溃/被杀/OOM 自动拉起
+#     - 随设备开机自启（enable 后 S98aicpe-board）
+#   手动全量静音质检入口：sh /data/ai_cpe/hermes/home/aicpe_demo/run_inspection.sh
+# ─────────────────────────────────────────────────────────────────────
+START=98
+STOP=10
+USE_PROCD=1
+
+D=/data/ai_cpe/hermes/home/aicpe_demo
+LOG=$D/demo_board.log
+
+start_service() {
+	procd_open_instance
+	procd_set_param command /bin/sh -c "cd $D && exec /data/hermes/venv/bin/python aicpe_demo.py --serve-only --port 8099 >> $LOG 2>&1"
+	procd_set_param respawn
+	procd_set_param stderr 1
+	procd_close_instance
+}
+
+stop_service() {
+	# procd 会终止实例；这里仅补记一条日志便于排查
+	echo "[$(date '+%F %T')] aicpe-board stop" >> "$LOG" 2>/dev/null
+}
