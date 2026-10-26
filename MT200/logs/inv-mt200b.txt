@@ -1,0 +1,59 @@
+### QNN VERSION ###
+### SKEL LOCATION ###
+/opt/qnn/sdk/dsp/lib/libSnpeHtpV73Skel.so
+/opt/qnn/sdk/dsp/lib/libQnnHtpV73Skel.so
+/usr/lib/rfsa/adsp/hexagon-v75/libQnnHtpV75Skel.so
+/usr/lib/rfsa/adsp/hexagon-v75/libSnpeHtpV75Skel.so
+/usr/lib/rfsa/adsp/hexagon-v68/libQnnHtpV68Skel.so
+/usr/lib/rfsa/adsp/hexagon-v68/libSnpeHtpV68Skel.so
+### DSP DIR ###
+lib
+### EXT CONFIG (full) ###
+{
+  "devices": [
+    {
+      "cores": [
+        {
+          "perf_profile": "burst",
+          "rpc_control_latency": 100
+        }
+      ]
+    }
+  ],
+  "memory": {
+    "mem_type": "shared_buffer"
+  },
+  "context": {
+    "weight_sharing_enabled": true
+  }
+}### LARGE FILES ON DEVICE ###
+1.4G /data/local/tmp/qnn/deepseek-7b/bertcache_kvcache_1_of_5.serialized.bin
+1009M /data/local/tmp/qnn/deepseek-7b/bertcache_kvcache_5_of_5.serialized.bin
+602M /data/local/tmp/qnn/deepseek-7b/bertcache_kvcache_2_of_5.serialized.bin
+602M /data/local/tmp/qnn/deepseek-7b/bertcache_kvcache_4_of_5.serialized.bin
+602M /data/local/tmp/qnn/deepseek-7b/bertcache_kvcache_3_of_5.serialized.bin
+539M /data/local/tmp/qnn/deepseek-qwen-1.5b/bertcache_kvcache_1_of_7.serialized.bin
+998M /data/local/tmp/qnn/deepseek-qwen-7b/bertcache_kvcache_7_of_7.serialized.bin
+1.5G /data/local/tmp/qnn/deepseek-qwen-7b/bertcache_kvcache_1_of_7.serialized.bin
+1.9G /data/local/tmp/gguf/qwen2.5-3b.gguf
+2.3G /data/local/tmp/gguf/qwen3-4b.gguf
+4.5G /data/local/tmp/gguf/qwen3-8b.gguf
+1006M /data/local/tmp/gguf/qwen3vl-2b.gguf
+1.2G /data/local/tmp/gguf/qwen3-1.7b.gguf
+4.2G /data/local/tmp/gguf/qwen2.5-7b.gguf
+### BUNDLE DIRS ###
+/data/local/tmp/qnn/bin/
+/data/local/tmp/qnn/deepseek-7b/
+/data/local/tmp/qnn/deepseek-qwen-1.5b/
+/data/local/tmp/qnn/deepseek-qwen-7b/
+/data/local/tmp/qnn/dsp/
+/data/local/tmp/qnn/lib/
+### SERVICES ###
+active
+active
+77647 python3 /data/local/tmp/npu-openai-bridge.py
+381707 bash -c set -u echo "### QNN VERSION ###" strings /opt/qnn/sdk/lib/libQnnHtp.so 2>/dev/null | grep -m5 -E "^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$" echo "### SKEL LOCATION ###" find /opt/qnn /usr/lib -name "*Skel*.so" 2>/dev/null | head -6 echo "### DSP DIR ###" ls /opt/qnn/sdk/dsp 2>/dev/null | head -6; ls /opt/qnn/sdk/lib/dsp 2>/dev/null | head -6 echo "### EXT CONFIG (full) ###" cat /data/local/tmp/qnn/deepseek-7b/htp_backend_ext_config_sharing.json echo "### LARGE FILES ON DEVICE ###" find /data /opt -xdev -type f -size +500M 2>/dev/null -exec ls -lh {} \; | awk "{print \$5, \$9}" | head -14 echo "### BUNDLE DIRS ###" ls -1d /data/local/tmp/qnn/*/ 2>/dev/null echo "### SERVICES ###" systemctl is-active llama-server dsh-web 2>/dev/null; pgrep -af "npu-openai-bridge|genie" | head -3 echo "### CMA NOW ###" grep -E "^Cma" /proc/meminfo
+### CMA NOW ###
+CmaTotal:         167936 kB
+CmaFree:               0 kB
+[ssh] channel closed code=0 signal=undefined
