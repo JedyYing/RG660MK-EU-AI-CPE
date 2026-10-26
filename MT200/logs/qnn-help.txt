@@ -1,0 +1,54 @@
+=== qnn-net-run help (key opts) ===
+                        --retrieve_context and --model are mutually exclusive.
+  --backend=<val>       Path to a QNN backend to execute the model.
+  [ --input_list=<val> ]
+                        Path to a file listing the inputs for the network.
+                        to be comma-separated list of input list files.
+                        comma-seperated list of input list files.
+  [ --output_dir=<val> ]
+                        The directory to save output to. Defaults to ./output.
+  [ --output_data_type=<val> ]
+                        Please refer to flag --use_native_output_files as this option is deprecated
+  [ --input_data_type=<val> ]
+                        Please refer to flag --use_native_input_files as this option is deprecated
+  [ --native_input_tensor_names=<val> ]
+                        Provide a comma-separated list of input tensor names, 
+                        for which the input files would be read/parsed in native format 
+                        Note that options --use_native_input_files and --native_input_tensor_names
+                          4. backend:  backend-specific profiling level
+                                       specified in the backend extension
+                        --model are mutually exclusive. Only one of the options
+  [ --perf_profile=<val> ]
+                        Specifies perf profile to set. Valid settings are
+                        supports options related to backend extensions and
+                        Loops over the input_list until this amount of time has transpired.
+  [ --num_inferences=<val> ]
+                        Specifies the number of inferences.
+                        Loops over the input_list until the number of inferences has transpired.
+  [ --keep_num_outputs=<val> ]
+                        Specifies the number of outputs to be saved.
+                        Once the number of outputs saved reaches the limit, subsequent outputs are discarded
+  [ --batch_multiplier=<val> ]
+                        Specifies the value with which the batch value in input and output tensors dimensions will be multiplied.
+                        The modified input and output tensors will be used only during the execute graphs.
+                        Please note using this option with a backend that does not support timeout signals results in an error
+                        Please note using this option with a backend that does not support timeout signals results in an error.
+  [ --set_output_tensors=<val> ]
+                        Provide a comma-separated list of intermediate output tensor names, for which the outputs
+                        will be written in addition to final graph output tensors.
+                        Note that options --debug and --set_output_tensors
+  [ --debug ]           Specifies that output from all layers of the network will be saved
+                        Note that options --debug and --set_output_tensors are mutually exclusive.
+=== input_list contents ===
+total 19244
+drw-r--r-- 2 root root    4096 Jul  1 02:36 .
+drw-r--r-- 3 root root    4096 Jul  1 02:36 ..
+-rw-r--r-- 1 root root 4915200 Jul  1 02:36 000000000315.raw
+-rw-r--r-- 1 root root 4915200 Jul  1 02:36 000000000321.raw
+-rw-r--r-- 1 root root 4915200 Jul  1 02:36 000000000322.raw
+-rw-r--r-- 1 root root 4915200 Jul  1 02:36 000000000326.raw
+-rw-r--r-- 1 root root    3599 Jul  1 02:36 input_list_cpu.txt
+-rw-r--r-- 1 root root   10799 Jul  1 02:36 input_list_gpu.txt
+-rw-r--r-- 1 root root   17999 Jul  1 02:36 input_list_npu.txt
+=== snpe-net-run help (iterations) ===
+[ssh] channel closed code=0 signal=undefined

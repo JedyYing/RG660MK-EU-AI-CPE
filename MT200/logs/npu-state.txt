@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/data/local/tmp/npu_state.py", line 41, in <module>
+    os.unlink(STATE)
+IsADirectoryError: [Errno 21] Is a directory: '/tmp/dialog_state.bin'
+[ssh] channel closed code=1 signal=undefined

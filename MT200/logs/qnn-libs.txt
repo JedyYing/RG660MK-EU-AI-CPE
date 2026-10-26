@@ -1,0 +1,26 @@
+-rwxr-xr-x 1 root root  2149080 Jul  1 02:36 libQnnHtp.so
+-rwxr-xr-x 1 root root   608272 Jul  1 02:36 libQnnHtpNetRunExtensions.so
+-rwxr-xr-x 1 root root  3690104 Jul  1 02:36 libQnnHtpOptraceProfilingReader.so
+-rwxr-xr-x 1 root root 72800048 Jul  1 02:36 libQnnHtpPrepare.so
+-rwxr-xr-x 1 root root   169992 Jul  1 02:36 libQnnHtpProfilingReader.so
+-rwxr-xr-x 1 root root    10216 Jul  1 02:36 libQnnHtpV68CalculatorStub.so
+-rwxr-xr-x 1 root root   284664 Jul  1 02:36 libQnnHtpV68Stub.so
+-rwxr-xr-x 1 root root    10216 Jul  1 02:36 libQnnHtpV69CalculatorStub.so
+-rwxr-xr-x 1 root root   284664 Jul  1 02:36 libQnnHtpV69Stub.so
+-rwxr-xr-x 1 root root    10216 Jul  1 02:36 libQnnHtpV73CalculatorStub.so
+--- device dir ---
+total 40356
+drwxrwxr-x 2 root root     4096 Mar 25  2026 .
+drwxrwxr-x 3 root root     4096 Mar 25  2026 ..
+-rw-rw-rw- 1 root root     5656 Oct  1  2025 libCalculator_skel.so
+-rw-rw-rw- 1 root root 12006592 Oct  1  2025 libQnnHtpV73.so
+-rw-rw-rw- 1 root root  9520320 Oct  1  2025 libQnnHtpV73QemuDriver.so
+-rw-rw-rw- 1 root root  9495800 Oct  1  2025 libQnnHtpV73Skel.so
+-rw-rw-rw- 1 root root   293732 Oct  1  2025 libQnnSaver.so
+-rw-rw-rw- 1 root root   195608 Oct  1  2025 libQnnSystem.so
+-rw-rw-rw- 1 root root  9757944 Oct  1  2025 libSnpeHtpV73Skel.so
+-rw-rw-rw- 1 root root    12139 Oct  1  2025 libqnnhtpv73.cat
+-rw-rw-rw- 1 root root    12166 Oct  1  2025 libsnpehtpv73.cat
+--- sdk lib count ---
+53
+[ssh] channel closed code=0 signal=undefined

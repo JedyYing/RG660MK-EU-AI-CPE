@@ -1,0 +1,6 @@
+NPU OpenAI bridge on :8090 (genie /data/local/tmp/qnn/bin/genie-t2t-run)
+--- listen ---
+LISTEN 0      5            0.0.0.0:8090       0.0.0.0:*    users:(("python3",pid=77647,fd=3))                                   
+--- proxy env ---
+--- curl noproxy ---
+{"object": "list", "data": [{"id": "deepseek-7b-npu", "object": "model", "owned_by": "qnn-genie", "meta": {"backend": "QnnHtp", "device": "MT200 Hexagon V73"}}]}[ssh] channel closed code=0 signal=undefined

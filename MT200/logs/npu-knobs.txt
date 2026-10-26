@@ -1,0 +1,9 @@
+case                      prefill    decode   n
+baseline                   184.4    12.25  3
+spill-fill 32             FAILED
+spill-fill 128            FAILED
+spill-fill 256            FAILED
+mmap-budget 256            183.9    12.22  3
+no weight sharing          149.7     8.57  3
+restored original dialog + ext config
+[ssh] channel closed code=0 signal=undefined

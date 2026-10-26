@@ -1,0 +1,7 @@
+--- ps ---
+77645 bash -c (setsid python3 /data/local/tmp/npu-openai-bridge.py >/tmp/npu-bridge.log 2>&1 </dev/null &); sleep 5; echo "--- ps ---"; pgrep -af npu-openai-bridge | head -3; echo "--- log ---"; cat /tmp/npu-bridge.log 2>/dev/null | head -5; echo "--- local ---"; curl -s -m 10 http://127.0.0.1:8090/v1/models | head -c 200; echo; ss -lntp 2>/dev/null | grep 8090
+77647 python3 /data/local/tmp/npu-openai-bridge.py
+--- log ---
+--- local ---
+
+[ssh] channel closed code=1 signal=undefined

@@ -1,0 +1,5 @@
+ctx -> 2048
+rc=1
+0
+no profile
+[ssh] channel closed code=0 signal=undefined

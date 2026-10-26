@@ -1,0 +1,25 @@
+[
+  {
+    "round": 1,
+    "kind": "disk",
+    "result": "PASS",
+    "why": "both-values-exact",
+    "quality": "exact",
+    "wall_s": 213.4,
+    "boot_s": 64.4,
+    "turn_s": 149.0,
+    "first_tool_s": 196.8,
+    "tool_calls": 1,
+    "tool_ok": 1,
+    "reqs": 0,
+    "prefill_tok": 0,
+    "prefill_ms": 0,
+    "prefill_tps": null,
+    "decode_tok": 0,
+    "decode_tps": null,
+    "total_tok": 2992,
+    "cache_read": 2815,
+    "final_head": "C盘已用约140.41 GB，剩余约259.74 GB。",
+    "events_file": "C:/AI/logs/rounds-35b-post\\round-01.jsonl"
+  }
+]

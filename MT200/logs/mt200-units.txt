@@ -1,0 +1,53 @@
+      meig-local:
+        displayName: MeiG Local (llama.cpp)
+        api: openai-completions
+        baseURL: http://127.0.0.1:8080/v1
+        apiKeyEnv: LOCAL_LLM_KEY
+        timeoutMs: 600000
+        streamIdleTimeoutMs: 120000
+        models:
+          - id: qwen3-1.7b
+            name: Qwen3-1.7B (local, CPU)
+            contextWindow: 12288
+            maxTokens: 1024
+- id: agent-default-model
+=== dsh unit ===
+[Unit]
+Description=DeepSeek Harness web (dsh) - local Qwen3-8B
+After=network.target llama-server.service
+Wants=llama-server.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu
+Environment=HOME=/home/ubuntu
+Environment=DSH_HOME=/home/ubuntu/.dsh
+Environment=LOCAL_LLM_KEY=sk-local
+ExecStart=/usr/local/bin/dsh web --host 10.42.0.81 --port 3080 --no-open
+Restart=always
+RestartSec=4
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+=== llama unit ===
+[Unit]
+Description=llama.cpp OpenAI-compatible server (Qwen3-8B, CPU)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+Environment=GGML_HEXAGON_NDEV=0
+ExecStart=/opt/meigine/bin/llama-server -m /data/local/tmp/gguf/qwen3-1.7b.gguf --alias qwen3-1.7b --host 127.0.0.1 --port 8080 -c 12288 -t 4 -np 1 --jinja -ngl 0 --chat-template-kwargs '{"enable_thinking": false}'
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+[ssh] channel closed code=0 signal=undefined

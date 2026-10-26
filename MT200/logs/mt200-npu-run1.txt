@@ -1,0 +1,37 @@
+=== run ===
+[ERROR] "memRegister ERROR(8003)"
+[ERROR] "Failed to register fused tensor buffer for logits for fd: 33"
+[ERROR] "Error mapping tensor to allocation buffers"
+[ERROR] "Unable to MemRegister IO Tensors for graph index = 12"
+[ERROR] "Create From Binary FAILED!"
+[ERROR] "Failed to free device: 14003"
+[ERROR] "Device Free failure"
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:38:dummy call to rpcmem_init, rpcmem APIs will be used from libxdsprpc
+Failure to initialize model. 
+Failed to create the dialog.
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:42:dummy call to rpcmem_deinit, rpcmem APIs will be used from libxdsprpc
+Command exited with non-zero status 1
+	Command being timed: "timeout 240 genie-t2t-run -c deepseek-qwen-1.5b-htp_sharing.json -p 请用一句话说明你是谁。"
+	User time (seconds): 0.58
+	System time (seconds): 2.46
+	Percent of CPU this job got: 71%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:04.26
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 1447516
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 67
+	Minor (reclaiming a frame) page faults: 714706
+	Voluntary context switches: 1867
+	Involuntary context switches: 13
+	Swaps: 0
+	File system inputs: 2801744
+	File system outputs: 0
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 1
+[ssh] channel closed code=0 signal=undefined

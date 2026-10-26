@@ -1,0 +1,25 @@
+[
+  {
+    "round": 1,
+    "kind": "disk",
+    "result": "PASS",
+    "why": "digits-reused-scale-off",
+    "quality": "unit-error",
+    "wall_s": 76.2,
+    "boot_s": 50.2,
+    "turn_s": 26.0,
+    "first_tool_s": 66.6,
+    "tool_calls": 1,
+    "tool_ok": 1,
+    "reqs": 3,
+    "prefill_tok": 2623,
+    "prefill_ms": 7386.4,
+    "prefill_tps": 355.1,
+    "decode_tok": 172,
+    "decode_tps": 26.2,
+    "total_tok": 2945,
+    "cache_read": 2622,
+    "final_head": "C盘的已用空间约为142979031040字节，剩余空间约为286519791616字节，换算成GB约为142979031040/10737",
+    "events_file": "C:/AI/logs/rounds-apikey\\round-01.jsonl"
+  }
+]

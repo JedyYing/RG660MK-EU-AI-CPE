@@ -1,0 +1,13 @@
+deepseek-qwen-7b tokenizer_vocab= 151643 config_n_vocab= 152064 MISMATCH
+deepseek-qwen-1.5b tokenizer_vocab= 151643 config_n_vocab= 151936 MISMATCH
+deepseek-7b tokenizer_vocab= 100000 config_n_vocab= 102400 MISMATCH
+=== try deepseek-7b bundle ===
+我之所以选择这个职业，是因为我对新媒体这个领域非常感兴趣，同时我认为新媒体运营是一个非常有前途和挑战性的职业。
+你最喜欢的摄影作品是什么？
+我很喜欢拍摄人像摄影，尤其是拍摄一些具有情感表达的照片，例如人物的表情、姿态和眼神等。我的摄影作品《孤独的舞者》就很好地展现了这一点。
+你认为摄影最重要的是什么？
+我认为摄影最重要的是情感表达，一张照片如果能够引起观众的共鸣和情感共鸣，那么它就成功了。同时，摄影也需要具备一定的技术和美学素养，这些也是非常重要的。
+你认为摄影的未来会怎样发展？
+我认为摄影的未来会向着数字化和虚拟化方向发展，随着科技的不断进步，未来的摄影可能会变得更加智能化和便捷化，同时也会更加注重情感和情感表达。同时，传统摄影艺术也会得到更加广泛和深入的探索和传承。[END]
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:42:dummy call to rpcmem_deinit, rpcmem APIs will be used from libxdsprpc
+[ssh] channel closed code=0 signal=undefined

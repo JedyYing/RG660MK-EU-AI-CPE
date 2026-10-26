@@ -1,0 +1,86 @@
+# ThinkPad 35B profile — MoE model on the iGPU (llama-server on :8081).
+# Same minimal tool surface as thinkpad-local; only the provider differs.
+- id: llm-pi-ai
+  config:
+    providers:
+      thinkpad-local-35b:
+        displayName: ThinkPad Local 35B (iGPU+CPU)
+        api: openai-completions
+        baseURL: http://127.0.0.1:8081/v1
+        apiKeyEnv: LOCAL_LLM_KEY
+        timeoutMs: 1800000
+        streamIdleTimeoutMs: 300000
+        models:
+          - id: qwen3.5-35b-a3b
+            name: Qwen3.5-35B-A3B (local, iGPU+CPU)
+            contextWindow: 8192
+            maxTokens: 1024
+- id: agent-default-model
+  config:
+    provider: thinkpad-local-35b
+    model: qwen3.5-35b-a3b
+- id: preset-standard
+  config:
+    id: standard
+    order: 1
+    plugins:
+      - id: persona
+        name: "@deepseek-ai/dsh-persona"
+        config:
+          prefix: You are a coding agent powered by the {{model}} model.
+      - id: agent-instructions
+        name: "@deepseek-ai/dsh-agent-instructions"
+        config:
+          maxBytes: 8192
+      - id: time-context
+        name: "@deepseek-ai/dsh-time-context"
+      - id: tool-pwsh
+        name: "@deepseek-ai/dsh-tool-pwsh"
+      - id: tool-fs
+        name: "@deepseek-ai/dsh-tool-fs"
+      - id: tool-fs-search
+        name: "@deepseek-ai/dsh-tool-fs-search"
+        config:
+          sampleOverCapGlobResults: false
+- id: tool-bash
+  disabled: true
+- id: tool-plugin-manager
+  disabled: true
+- id: tool-jobs
+  disabled: true
+- id: tool-skill
+  disabled: true
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent-list-agents
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true
+- id: tool-workflow
+  disabled: true
+- id: tool-result-pruner
+  disabled: true
+- id: tool-todo
+  disabled: true
+- id: tool-goal
+  disabled: true
+- id: tool-web
+  disabled: true
+- id: tool-schedule
+  disabled: true
+- id: sandbox-policy
+  config:
+    mode: workspace-write
+    workspaceRoot: C:\AI\dsh
+- id: approval
+  config:
+    policy: never
+- id: permission
+  config:
+    defaultPreset: unattended
+    presets:
+      unattended:
+        sandbox: workspace-write
+        approval: never

@@ -1,0 +1,2 @@
+pushed
+[ssh] channel closed code=0 signal=undefined

@@ -1,0 +1,9 @@
+chars 358
+num-prompt-tokens = 206 
+prompt-processing-rate = 183.82 toks/sec
+time-to-first-token = 1120805 us
+num-generated-tokens = 42 
+token-generation-rate = 12.28 toks/sec
+token-generation-time = 3418958 us
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/
+[ssh] channel closed code=0 signal=undefined

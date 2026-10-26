@@ -1,0 +1,63 @@
+=== qnn model dirs ===
+total 44
+drwxrwxr-x 8 root root 4096 Mar 26  2026 .
+drwxr-xr-x 5 root root 4096 Oct 23 06:28 ..
+drwxrwxr-x 2 root root 4096 Mar 25  2026 bin
+drwxrwxr-x 2 root root 4096 Mar 26  2026 deepseek-7b
+-rw-r--r-- 1 root root 1571 Mar 26  2026 deepseek-7b_tokens.log
+drwxrwxr-x 2 root root 4096 Oct 23 06:42 deepseek-qwen-1.5b
+drwxrwxr-x 2 root root 4096 Mar 26  2026 deepseek-qwen-7b
+-rw-r--r-- 1 root root 1571 Mar 26  2026 deepseek-qwen-7b_tokens.log
+drwxrwxr-x 3 root root 4096 Mar 25  2026 dsp
+
+--- /data/local/tmp/qnn/deepseek-qwen-7b
+total 4896156
+drwxrwxr-x 2 root root       4096 Mar 26  2026 .
+drwxrwxr-x 8 root root       4096 Mar 26  2026 ..
+-rw-rw-rw- 1 root root 1567936512 Jan  4  2026 bertcache_kvcache_1_of_7.serialized.bin
+-rw-rw-rw- 1 root root  478547968 Jan  4  2026 bertcache_kvcache_2_of_7.serialized.bin
+-rw-rw-rw- 1 root root  478547968 Jan  4  2026 bertcache_kvcache_3_of_7.serialized.bin
+-rw-rw-rw- 1 root root  478547968 Jan  4  2026 bertcache_kvcache_4_of_7.serialized.bin
+-rw-rw-rw- 1 root root  478547968 Jan  4  2026 bertcache_kvcache_5_of_7.serialized.bin
+-rw-rw-rw- 1 root root  478547968 Jan  4  2026 bertcache_kvcache_6_of_7.serialized.bin
+-rw-rw-rw- 1 root root 1045913600 Jan  4  2026 bertcache_kvcache_7_of_7.serialized.bin
+-rw-rw-rw- 1 root root       1858 Mar 26  2026 deepseek-qwen-7b-htp_sharing.json
+-rw-rw-rw- 1 root root        340 May 27  2025 htp-model-config-7b.json
+-rw-rw-rw- 1 root root        333 May 26  2025 htp_backend_ext_config_sharing.json
+-rw-rw-rw- 1 root root    7031660 May 26  2025 tokenizer.json
+--- /data/local/tmp/qnn/deepseek-qwen-1.5b
+total 1382000
+drwxrwxr-x 2 root root      4096 Oct 23 06:42 .
+drwxrwxr-x 8 root root      4096 Mar 26  2026 ..
+-rw-rw-rw- 1 root root 564379648 Dec 31  2025 bertcache_kvcache_1_of_7.serialized.bin
+-rw-rw-rw- 1 root root  98398208 Dec 31  2025 bertcache_kvcache_2_of_7.serialized.bin
+-rw-rw-rw- 1 root root  98398208 Dec 31  2025 bertcache_kvcache_3_of_7.serialized.bin
+-rw-rw-rw- 1 root root  98398208 Dec 31  2025 bertcache_kvcache_4_of_7.serialized.bin
+-rw-rw-rw- 1 root root  98398208 Dec 31  2025 bertcache_kvcache_5_of_7.serialized.bin
+-rw-rw-rw- 1 root root  98398208 Dec 31  2025 bertcache_kvcache_6_of_7.serialized.bin
+-rw-rw-rw- 1 root root 351735808 Dec 31  2025 bertcache_kvcache_7_of_7.serialized.bin
+-rw-rw-rw- 1 root root      1877 Mar 26  2026 deepseek-qwen-1.5b-htp_sharing.json
+-rw-rw-rw- 1 root root       340 May 27  2025 htp-model-config-1.5b.json
+-rw-rw-rw- 1 root root       323 Oct 23 06:42 htp_backend_ext_config_sharing.json
+-rw-r--r-- 1 root root       333 Oct 23 06:42 htp_backend_ext_config_sharing.json.bak
+-rw-rw-rw- 1 root root   7031660 May 27  2025 tokenizer.json
+=== genie configs ===
+/data/local/tmp/qnn/deepseek-7b/htp_backend_ext_config_sharing.json
+/data/local/tmp/qnn/deepseek-7b/htp-model-config-7b.json
+/data/local/tmp/qnn/deepseek-7b/tokenizer.json
+/data/local/tmp/qnn/deepseek-7b/deepseek-7b-htp_sharing.json
+/data/local/tmp/qnn/deepseek-qwen-1.5b/htp_backend_ext_config_sharing.json
+/data/local/tmp/qnn/deepseek-qwen-1.5b/tokenizer.json
+/data/local/tmp/qnn/deepseek-qwen-1.5b/htp-model-config-1.5b.json
+/data/local/tmp/qnn/deepseek-qwen-1.5b/deepseek-qwen-1.5b-htp_sharing.json
+/data/local/tmp/qnn/deepseek-qwen-7b/htp_backend_ext_config_sharing.json
+/data/local/tmp/qnn/deepseek-qwen-7b/htp-model-config-7b.json
+=== history ===
+cd qnn/
+cd /data/local/tmp/qnn
+chmod 777 /data/local/tmp/qnn/bin/*
+export PATH=/data/local/tmp/qnn/bin
+export ADSP_LIBRARY_PATH="/data/local/tmp/qnn/dsp/lib"
+export PATH=/data/local/tmp/qnn/bin
+export ADSP_LIBRARY_PATH="/data/local/tmp/qnn/dsp/lib"
+[ssh] channel closed code=0 signal=undefined

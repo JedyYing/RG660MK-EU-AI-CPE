@@ -1,0 +1,62 @@
+=== deepseek-qwen-7b_tokens.log ===
+{
+  "header": {
+    "header_version": {
+      "major": 0,
+      "minor": 1,
+      "patch": 0
+    },
+    "version": {
+      "major": 0,
+      "minor": 1,
+      "patch": 0
+    },
+    "artifact_type": "GENIE_PROFILE"
+  },
+  "metadata": {
+    "timestamp": 52115749492
+  },
+  "components": [
+    {
+      "name": "dialog0",
+=== deepseek-7b_tokens.log ===
+{
+  "header": {
+    "header_version": {
+      "major": 0,
+      "minor": 1,
+      "patch": 0
+    },
+    "version": {
+      "major": 0,
+      "minor": 1,
+      "patch": 0
+    },
+=== any genie logs ===
+-rw-r--r-- 1 root root 1571 Mar 26  2026 /data/local/tmp/qnn/deepseek-7b_tokens.log
+-rw-r--r-- 1 root root 1571 Mar 26  2026 /data/local/tmp/qnn/deepseek-qwen-7b_tokens.log
+=== root history full ===
+cd /data/local/tmp/
+ls
+cd qnn/
+ls
+ls bin/
+ls deepseek-qwen-7b/
+exit
+cd /data/local/tmp/qnn
+chmod 777 /data/local/tmp/qnn/bin/*
+export PATH=/data/local/tmp/qnn/bin
+export ADSP_LIBRARY_PATH="/data/local/tmp/qnn/dsp/lib"
+/data/local/tmp/qnn/bin/genie-t2t-run -c deepseek-qwen-7b/deepseek-qwen-7b-htp_sharing.json -p "<�beginxofxsentence�>Be helpful but try to limit answers to 40 words.<��User��>Tell me a story about a young entrepreneur.<��Assistant��><think>" --profile deepseek-qwen-7b_tokens.log --action ABORT --sleep 10000 
+ls 
+ls
+exit
+ls deepseek-qwen-7b/
+ls deepseek-qwen-7b/deepseek-qwen-7b-htp_sharing.json
+vi deepseek-qwen-7b/deepseek-qwen-7b-htp_sharing.json
+export PATH=/data/local/tmp/qnn/bin
+export ADSP_LIBRARY_PATH="/data/local/tmp/qnn/dsp/lib"
+/data/local/tmp/qnn/bin/genie-t2t-run -c deepseek-qwen-7b/deepseek-qwen-7b-htp_sharing.json -p "<�beginxofxsentence�>Be helpful but try to limit answers to 40 words.<��User��>Tell me a story about a young entrepreneur.<��Assistant��><think>" --profile deepseek-qwen-7b_tokens.log --action ABORT --sleep 10000 
+ls deepseek-qwen-7b/deepseek-qwen-7b-htp_sharing.jsonls
+exit
+[ssh] channel closed code=0 signal=undefined

@@ -1,0 +1,18 @@
+=== LINKS ===
+end0: up speed=1000
+end1: down speed=n/a
+=== ADDR ===
+1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+3: end0    inet 10.42.0.81/24 brd 10.42.0.255 scope global noprefixroute end0\       valid_lft forever preferred_lft forever
+=== TEMP ===
+/sys/class/thermal/thermal_zone0 aoss-2-thermal 37000
+/sys/class/thermal/thermal_zone1 cpu-1-0-0-thermal 37400
+/sys/class/thermal/thermal_zone10 nsp-1-2-0-thermal 36700
+/sys/class/thermal/thermal_zone11 ddrss-0-thermal 37400
+/sys/class/thermal/thermal_zone12 cpuss-1-0-thermal 37800
+/sys/class/thermal/thermal_zone13 aoss-3-thermal 36700
+/sys/class/thermal/thermal_zone14 cpu-1-0-1-thermal 37400
+/sys/class/thermal/thermal_zone15 cpu-1-1-1-thermal 37400
+=== LOAD ===
+ 13:46:05 up  1:28,  2 users,  load average: 0.05, 0.08, 0.09
+[ssh] channel closed code=0 signal=undefined

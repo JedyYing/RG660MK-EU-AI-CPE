@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>MT200 本地 DeepSeek Harness 部署与 200 TOPS 算力利用 · 进展报告</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm 18mm 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    color: #1a1d21; font-size: 10.5pt; line-height: 1.62; margin: 0;
+  }
+  h1 { font-size: 20pt; margin: 0 0 2mm; letter-spacing: .5px; }
+  h2 { font-size: 13pt; margin: 7mm 0 2.5mm; padding-left: 3mm; border-left: 4px solid #2f6feb; }
+  h3 { font-size: 11pt; margin: 5mm 0 1.5mm; color: #23405f; }
+  p { margin: 0 0 2mm; }
+  .sub { color: #5b6673; font-size: 9.5pt; margin-bottom: 5mm; }
+  .meta { border-top: 1px solid #d7dde5; border-bottom: 1px solid #d7dde5; padding: 2.5mm 0; margin-bottom: 5mm; font-size: 9pt; color: #4a5563; }
+  .meta b { color: #1a1d21; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 3mm; font-size: 9.2pt; }
+  th, td { border: 1px solid #d7dde5; padding: 1.6mm 2.2mm; text-align: left; vertical-align: top; }
+  th { background: #f2f5f9; font-weight: 600; color: #23405f; }
+  tr:nth-child(even) td { background: #fbfcfe; }
+  .ok { color: #1a7f37; font-weight: 600; }
+  .warn { color: #b26a00; font-weight: 600; }
+  .bad { color: #b42318; font-weight: 600; }
+  .box { background: #f6f9ff; border: 1px solid #d5e2f8; border-radius: 2mm; padding: 3mm 3.5mm; margin: 3mm 0; }
+  .box.warnbox { background: #fffaf0; border-color: #f2dcb3; }
+  ul, ol { margin: 0 0 2mm; padding-left: 5mm; }
+  li { margin-bottom: 1mm; }
+  code, pre { font-family: Consolas, "Cascadia Mono", monospace; font-size: 8.8pt; }
+  pre { background: #f5f7fa; border: 1px solid #e3e8ef; border-radius: 1.5mm; padding: 2.5mm; white-space: pre-wrap; margin: 2mm 0 3mm; }
+  .kpi { display: flex; gap: 3mm; margin: 3mm 0 4mm; }
+  .kpi div { flex: 1; border: 1px solid #d7dde5; border-radius: 2mm; padding: 2.5mm; text-align: center; background: #fff; }
+  .kpi .n { font-size: 15pt; font-weight: 700; color: #2f6feb; display: block; line-height: 1.2; }
+  .kpi .l { font-size: 8.5pt; color: #5b6673; }
+  .pagebreak { page-break-before: always; }
+  footer { position: fixed; bottom: -12mm; left: 0; right: 0; font-size: 8pt; color: #8a94a3; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>MT200 本地 DeepSeek Harness 部署<br>与 200 TOPS 算力利用 · 进展报告</h1>
+<div class="sub">工程进展小结 · 面向「端侧本地 Agent + NPU 算力压榨」目标</div>
+<div class="meta">
+  报告日期：<b>2026-10-24</b>　·　目标设备：<b>MT200 AI BOX（Qualcomm QCS9075）</b>　·　对照设备：<b>ThinkPad（Core 7 240H / 32 GB / Intel iGPU）</b><br>
+  执行环境：Hermes Agent v0.22.5　·　代码仓库：<b>C:\AI</b>（git 10 次提交）　·　依据：《DeepSeek Harness MT200→Windows ThinkPad 移植设计文档 v1.0》
+</div>
+
+<h2>一、当前进度（一句话）</h2>
+<div class="box">
+  <b>迁移闭环 100% 完成</b>（ThinkPad 20/20 轮通过）；<b>GPU 已用起来</b>（iGPU Vulkan，冷 prefill 2.55×）；<b>35B 以上已跑通</b>（Qwen3.5-35B-A3B，MoE，Agent 3/3）；<b>MT200 的 200 TOPS NPU 已跑通并封装成 OpenAI 接口</b>（7B @ 12.09 tok/s）。<br>
+  唯一未闭环：NPU 模型包上下文仅 1024 token，装不下 dsh 约 2.6K 的 Agent 提示——这一步需要重新导出 QNN bundle，不在本机可解范围。
+</div>
+
+<div class="kpi">
+  <div><span class="n">20/20</span><span class="l">dsh 工具闭环验收（CPU 与 GPU 各 20 轮）</span></div>
+  <div><span class="n">12.09</span><span class="l">NPU 上 7B 模型 decode（tok/s）</span></div>
+  <div><span class="n">608</span><span class="l">NPU prefill 峰值（tok/s）</span></div>
+  <div><span class="n">0.38</span><span class="l">CNN 并发实测算力（TFLOP/s）</span></div>
+</div>
+
+<h2>二、本周完成的四件事</h2>
+
+<h3>1. MT200 → ThinkPad 迁移（设计文档 P0）</h3>
+<ul>
+  <li>用 <b>与 MT200 逐字节相同</b>的模型（sha256 <code>8dc9e01a…</code>，1,229,453,568 B），启动参数与 MT200 完全一致（<code>-c 12288 -t 4 -np 1 --jinja -ngl 0</code>），因此性能可直接对照。</li>
+  <li>dsh 0.2.1-rc.2，独立 <code>DSH_HOME=C:\AI\dsh-home</code>，两个 profile（headless / web），工具集裁到 pwsh / fs / fs-search。</li>
+  <li>修复了三个真实故障：MSYS 路径传给原生 exe 导致模型加载失败；<code>C:\AI\dsh</code> 缺 WRITE_OWNER 导致 dsh 的 Windows ACL 沙箱置备失败（Win32 5）；web profile 默认禁用 shell 工具。</li>
+  <li><b>验收 20/20 PASS</b>：每轮 1 次 tool_call、1 条 completed 结果，答案数字必须能对上 tool_result（接地判定）。单回合 17.2 s，decode 19.4 tok/s。</li>
+</ul>
+
+<h3>2. GPU（Intel iGPU / Vulkan）已用起来</h3>
+<table>
+  <tr><th>场景（1.7B）</th><th>CPU <code>-t 4</code></th><th>iGPU Vulkan</th><th>提升</th></tr>
+  <tr><td>冷 prefill（2630 token）</td><td>19.5 s / 135 tok/s</td><td class="ok">7.7 s / 343 tok/s</td><td>2.55×</td></tr>
+  <tr><td>decode（2630 token 上下文）</td><td>19.96 tok/s</td><td class="ok">27.31 tok/s</td><td>1.37×</td></tr>
+  <tr><td>20 轮端到端回合均值</td><td>17.2 s（昨夜）</td><td>22.4 s（今早）</td><td class="warn">同时段 CPU 对照 22.0 s，二者不可区分</td></tr>
+</table>
+<p><b>结论</b>：GPU 该开（冷启动、长 prompt、35B 都受益，且从不更慢），但 agent 稳态回合几乎全走前缀缓存（每轮只 prefill 146–209 token），GPU 的冷 prefill 优势被缓存吃掉——不要指望它把回合整体提速。</p>
+
+<h3>3. 35B 以上大模型（MoE）已跑通</h3>
+<p>dense 35B 在 DDR5-5600 双通道（≈90 GB/s）上理论极限只有 4–5 tok/s，因此选 <b>Qwen3.5-35B-A3B</b>（35B 总参 / 3B 激活，UD-Q3_K_XL 16.6 GB，sha256 <code>fef37f41…</code>）。</p>
+<table>
+  <tr><th>配置</th><th>prefill tok/s</th><th>decode tok/s</th><th>备注</th></tr>
+  <tr><td>纯 CPU <code>-t 8</code></td><td>32.0</td><td>3.67</td><td>不占 GPU 堆</td></tr>
+  <tr><td>iGPU 30/48 层，16K ctx</td><td>36.0</td><td>4.49</td><td></td></tr>
+  <tr><td class="ok">iGPU 40/48 层，8K ctx（当前默认）</td><td class="ok">50.5</td><td class="ok">5.71</td><td>40 层是硬上限，42 层分配失败</td></tr>
+  <tr><td>IQ3_XXS 全 48 层驻留（13.1 GB）</td><td>25.3</td><td>3.44</td><td class="bad">更慢：IQ 量化在 Vulkan 上反量化开销大</td></tr>
+</table>
+<p>Agent 闭环 <b>3/3 PASS</b>，回合 44–90 s；算术正确（同一道 C 盘题，1.7B 会十进位错，35B 准确）。</p>
+
+<h3>4. MT200 的 NPU：从「不可用」到「已实测 12 tok/s」</h3>
+<div class="box warnbox">
+  <b>更正</b>：我最初的结论是「NPU 不可用」，这是错的。真实原因是只测了 llama.cpp 的 <code>ggml-hexagon</code> 通道（它加载自编译的未签名 HTP skel，被安全启动拒绝，错误 <code>0x80000406</code>）。MT200 上装有完整 <b>Qualcomm QNN/AI-RT 2.39</b> 与签名 skel，走 QNN 这条路 NPU 是活的。
+</div>
+<ul>
+  <li><b>官方校验通过</b>：<code>qnn-platform-validator --backend dsp --testBackend</code> → <code>Unit Test on the backend DSP: Passed</code>（HTP V73）。</li>
+  <li><b>7B 模型在 NPU 上出字</b>：<code>deepseek-7b</code> QNN bundle，Genie 1.13，输出通顺中文。</li>
+  <li><b>QNN profile 实测</b>：初始化 7.11 s（每次进程）、prompt 处理 25.2 tok/s（28 token 短 prompt）、TTFT 1.11 s、<b>生成 188 token @ 12.09 tok/s</b>。</li>
+  <li><b>已封装为 OpenAI 兼容接口</b>：<code>http://10.42.0.81:8090/v1</code>（模型 <code>deepseek-7b-npu</code>），从 ThinkPad 直连调通，一次问答 11.1 s。</li>
+  <li><b>上下文翻倍</b>：模型配置写的是 <code>context_size: 1024</code>，dialog 只给了 512；改为 1024 后 681 token 的 prompt 正常返回，prefill 达 <b>607.9 tok/s</b>。</li>
+</ul>
+
+<div class="pagebreak"></div>
+<h2>三、200 TOPS 压榨实验（本轮重点）</h2>
+
+<h3>3.1 先算清「用掉了多少算力」</h3>
+<p>单序列自回归推理是<b>访存受限</b>，不是算力受限。按每 token ≈ 2×激活参数 FLOP 折算：</p>
+<table>
+  <tr><th>阶段</th><th>实测速率</th><th>折合算力</th><th>占 200 TOPS 峰值</th></tr>
+  <tr><td>LLM decode</td><td>12.24 tok/s</td><td>0.06–0.17 TOPS</td><td class="bad">0.03%–0.09%</td></tr>
+  <tr><td>LLM prefill（681 token）</td><td>607.9 tok/s</td><td>2.9–8.5 TOPS</td><td class="warn">1.5%–4.3%</td></tr>
+</table>
+<p class="sub">区间下限按 2.4B 激活参数（V2-Lite 类）估算，上限按 7B dense 估算；bundle 的 <code>n_vocab 102400 / bos 100000</code> 指向 DeepSeek-V2-Lite 系列。</p>
+
+<h3>3.2 逐项压榨：哪些有效、哪些无效</h3>
+<table>
+  <tr><th style="width:34%">尝试</th><th style="width:22%">结果</th><th>说明</th></tr>
+  <tr><td><code>vtcm_mb: 8</code></td><td class="warn">无变化（184.1/12.32）</td><td>VTCM 由图的编译期决定，运行时改不动</td></tr>
+  <tr><td><code>num_hvx_threads: 4</code></td><td class="warn">无变化（184.1/12.35）</td><td>同上</td></tr>
+  <tr><td><code>sustained_high_performance</code></td><td class="bad">更差 25%（161.4/9.29）</td><td>突发推理用 <code>burst</code> 才对</td></tr>
+  <tr><td>两进程并发（LLM）</td><td class="bad">不提吞吐</td><td>整机 load 冲到 27，sshd 一度失联；DSP 对 LLM 是串行的</td></tr>
+  <tr><td><code>--save</code> / <code>--restore</code></td><td class="bad">restore 失败</td><td>每次请求仍要付 7–8.5 s 初始化</td></tr>
+  <tr><td class="ok"><b>context 512 → 1024</b></td><td class="ok"><b>成功</b></td><td>唯一有效的配置项，可用上下文翻倍；2048 加载失败</td></tr>
+  <tr><td>长 prompt（681 token）</td><td class="ok">prefill 607.9 tok/s</td><td>固定开销被摊薄，是 prefill 的真实峰值</td></tr>
+</table>
+
+<h3>3.3 换 CNN 负载压吞吐：并发能叠加，但很快撞墙</h3>
+<p>用 SDK 自带的 yolov8n W8A8（640×640，约 8.7 GFLOP/次）做吞吐扫描，每档 20 次推理/进程：</p>
+<table>
+  <tr><th>并发进程</th><th>总推理数</th><th>墙钟</th><th>吞吐</th><th>折合算力</th></tr>
+  <tr><td>1</td><td>20</td><td>1.67 s</td><td>11.98 inf/s</td><td>0.10 TFLOP/s</td></tr>
+  <tr><td>2</td><td>40</td><td>1.73 s</td><td>23.12 inf/s</td><td>0.20 TFLOP/s</td></tr>
+  <tr><td class="ok"><b>4</b></td><td>80</td><td>1.85 s</td><td class="ok"><b>43.26 inf/s</b></td><td class="ok"><b>0.38 TFLOP/s</b></td></tr>
+  <tr><td>8</td><td>160</td><td>2.03 s</td><td class="bad">失败</td><td>11 条真实错误</td></tr>
+  <tr><td>16</td><td>320</td><td>2.17 s</td><td class="bad">失败</td><td>88 条真实错误</td></tr>
+  <tr><td>24</td><td>480</td><td>2.28 s</td><td class="bad">失败</td><td>169 条真实错误</td></tr>
+</table>
+<p>8 个并发起报错，根因是 FastRPC 会话数上限，不是算力不足：</p>
+<pre>DspTransport.openSession qnn_open failed, 0xffffffff, prio 100
+IDspTransport: Unknown rpc status 0x000003ff
+Failed to load skel, error: 1002</pre>
+
+<div class="box">
+<b>结论：这台设备上「能榨出的算力」有明确天花板。</b><br>
+· LLM 单序列：decode 0.06–0.17 TOPS、prefill 2.9–8.5 TOPS；<br>
+· CNN 多会话：最多 4 个并发，≈43 inf/s ≈ <b>0.38 TFLOP/s</b>（约峰值的 0.2%）；再多进程被 FastRPC 会话上限拒绝；<br>· 混跑/并发均不叠加：LLM 会话串行，LLM+CNN 互相拖慢（CNN 12→4 inf/s）。<br>
+· 200 TOPS 是<b>稀疏 INT8、大批量、理想数据复用</b>下的峰值指标，单模型小批量永远到不了。要接近它，需要「大 batch + 高复用」的负载形态（如批量 embedding/分类），而不是跑一个 7B 对话。
+</div>
+
+<h3>3.4 并发与混跑：不能叠加</h3>
+<table>
+  <tr><th>场景</th><th>LLM decode</th><th>CNN 吞吐</th><th>整机负载</th><th>结论</th></tr>
+  <tr><td>单独 LLM</td><td>12.43 tok/s</td><td>—</td><td>0.7</td><td>基线</td></tr>
+  <tr><td>两个 LLM 会话并发</td><td>12.42 tok/s（第二个失败）</td><td>—</td><td class="bad">20.0</td><td>不叠加，DSP 串行</td></tr>
+  <tr><td>LLM + CNN 同时</td><td>12.32 tok/s</td><td class="bad">4.02 inf/s（单独 11.98）</td><td class="bad">16.1</td><td>两边都变差</td></tr>
+</table>
+<p>另外两项也试过：<code>spill-fill-bufsize</code> 32/128/256 该图不支持（加载失败）；<code>mmap-budget 256</code> 无变化（183.9/12.22）；关闭权重共享反而掉 30%（149.7/8.57）。SNPE 运行时在本机不可用（只有主机端工具，报 "No network connection detected"）。</p>
+
+<h3>3.5 硬件事实（用于判断上限）</h3>
+<table>
+  <tr><th>项</th><th>值</th></tr>
+  <tr><td>SoC</td><td>Qualcomm <b>QCS9075</b>（soc_id 676，SA8775P 家族；美格 IQ-9075 模组）</td></tr>
+  <tr><td>CPU</td><td>8 × Cortex-A78C（aarch64）</td></tr>
+  <tr><td>NPU</td><td>Hexagon NPU / <b>HTP v73</b>（<code>libQnnHtpV73Skel.so</code> 证实）</td></tr>
+  <tr><td>内存</td><td>11,119 MB LPDDR（可用 ~7.7 GB），CMA 仅 167 MB</td></tr>
+  <tr><td>整机定位</td><td>汽车/工业级 SA8775P 平台，带 fastrpc-cdsp、CAN-FD 等</td></tr>
+</table>
+
+<h2>四、当前卡点与下一步</h2>
+<table>
+  <tr><th style="width:26%">卡点</th><th>影响</th><th style="width:34%">解法</th></tr>
+  <tr><td>NPU bundle context 只有 1024</td><td>dsh 的 Agent 提示约 2.6K，装不下，NPU 目前只能当独立 OpenAI 服务用</td><td>用 QNN SDK（x86 主机）按 ≥4K context 重新导出，或向美格索取长上下文 bundle；桥接层已写好，改一行 <code>CONFIG</code> 即可接入</td></tr>
+  <tr><td>1.5B bundle 加载失败</td><td>少了一个更快的模型选项</td><td>其 KV 融成单个 313 MB dmabuf，超过本机可映射上限（CMA 167 MB）；需重新导出或调大 CMA（需改设备树）</td></tr>
+  <tr><td>FastRPC 会话上限（4）</td><td>CNN 吞吐卡在 43 inf/s</td><td>用 batch 而非多进程（当前 bundle 的 batch 维度固定为 1，需重新导出）</td></tr>
+</table>
+
+<h3>建议的下一步（按收益排序）</h3>
+<ol>
+  <li><b>拿到 ≥4K context 的 QNN bundle</b>：一步同时解决「NPU 托管 Agent」和「更大上下文」两件事，是本项目最有价值的投入。</li>
+  <li><b>把 NPU 用在对的负载上</b>：批量 embedding / 文档分类 / 图像推理（yolov8n 已验证可用），这类 prefill 密集型任务才吃算力。</li>
+  <li><b>ThinkPad 侧维持现有三档</b>：1.7B（17 s/回合，日常）、35B-A3B（60 s/回合，重活）、iGPU 默认开启。</li>
+  <li><b>可选</b>：SYCL 后端（GitHub 带宽不足未测，理论 prefill 可再高）、llama-server 加 <code>--api-key</code>（已完成）。</li>
+</ol>
+
+<h2>五、交付物</h2>
+<table>
+  <tr><th style="width:40%">路径</th><th>说明</th></tr>
+  <tr><td><code>C:\AI\README.md</code></td><td>总览、复现命令、开机自启说明</td></tr>
+  <tr><td><code>C:\AI\migration_report.md</code></td><td>迁移验收报告（20 轮明细、故障处理、GPU 对照）</td></tr>
+  <tr><td><code>C:\AI\gpu-npu-35b_report.md</code></td><td>GPU / NPU / 35B 实测报告（含 200 TOPS 压榨记录）</td></tr>
+  <tr><td><code>C:\AI\scripts\</code></td><td>start-dsh.ps1 / switch-model.ps1 / accept20.py / bench*.py / npu-openai-bridge.py / mt200-*.js</td></tr>
+  <tr><td><code>C:\AI\dsh-home\profiles\</code></td><td>thinkpad-local / thinkpad-web / thinkpad-35b / thinkpad-web-35b 四个 profile 补丁</td></tr>
+  <tr><td><code>C:\AI\logs\rounds\</code></td><td>20 轮验收的事件流与 summary.json（机器可读）</td></tr>
+</table>
+
+<p class="sub">运行态：ThinkPad <code>:8080</code>（1.7B / iGPU / API key）、<code>:3080</code>（dsh Web UI）、<code>:8081</code>（35B，按需切换）；MT200 <code>:8090</code>（NPU OpenAI 桥）、<code>:8080/3080</code>（原服务，未改动）。</p>
+
+</body>
+</html>

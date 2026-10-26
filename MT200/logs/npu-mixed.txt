@@ -1,0 +1,15 @@
+               total        used        free      shared  buff/cache   available
+Mem:           11119         779        9471          47        1111       10339
+solo LLM
+  solo: (185.9, 12.43)  wall=12.7s  load=['0.72', '0.64', '0.37']
+A) two LLM dialogs concurrently
+  a1=(185.1, 12.42) a2=None wall=91.8s load=['19.97', '6.98', '2.63']
+B) LLM + CNN concurrently
+  llm=(183.8, 12.32) cnn_wall=5.0s total=12.5s load=['16.07', '6.75', '2.62']
+  cnn through 20 inf in 4.98s -> 4.02 inf/s
+--- restore ---
+active
+active
+               total        used        free      shared  buff/cache   available
+Mem:           11119         983        6012          45        4396       10135
+[ssh] channel closed code=0 signal=undefined

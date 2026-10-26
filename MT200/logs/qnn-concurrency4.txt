@@ -1,0 +1,9 @@
+procs=1   total=20   wall=  1.67s ->   11.98 inf/s,   0.10 TFLOP/s
+procs=2   total=40   wall=  1.73s ->   23.12 inf/s,   0.20 TFLOP/s
+procs=4   total=80   wall=  1.85s ->   43.26 inf/s,   0.38 TFLOP/s
+procs=8   FAILED  wall=2.03s  real_errors=11
+procs=12  FAILED  wall=2.31s  real_errors=43
+procs=16  FAILED  wall=2.17s  real_errors=88
+procs=20  FAILED  wall=2.29s  real_errors=128
+procs=24  FAILED  wall=2.28s  real_errors=169
+[ssh] channel closed code=0 signal=undefined

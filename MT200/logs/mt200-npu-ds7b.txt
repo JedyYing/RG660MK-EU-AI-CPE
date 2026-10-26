@@ -1,0 +1,32 @@
+=== all opts ===
+  -h, --help                                                                            Show this help message and exit.
+  -c CONFIG_FILE or --config CONFIG_FILE                                                Dialog JSON configuration file.
+  -p PROMPT or --prompt PROMPT                                                          Prompt to query. Mutually exclus
+  --prompt_file PATH                                                                    Prompt to query provided as a fi
+  -l ADAPTER_NAME,ALPHA_NAME_1,ALPHA_VAL_1,ALPHA_NAME_2,ALPHA_VAL_2,...  or --lora ADAPTER_NAME,ALPHA_NAME_1,ALPHA_VAL_1
+  -e PATH or --embedding_file PATH[,TYPE,SCALE,OFFSET]                                  Input embeddings provided as a f
+  -t PATH or --embedding_table PATH[,TYPE,SCALE,OFFSET]                                 Token-to-Embedding lookup table 
+  -tok PATH or --tokens_file PATH                                                       Input tokens provided as a file.
+  --embedding_query_output_type TYPE                                                    Sets the output type for embeddi
+  -s PATH or --save PATH                                                                Saves the dialog state after the
+  -r PATH or --restore PATH                                                             Restores the dialog state before
+  -w query for rewind or --rewind query for rewind                                      Pass the query for prefix Match 
+  --log logLevel                                                                        Enables logging. LogLevel must b
+  --profile FILE_NAME                                                                   Enables profiling. FILE_NAME is 
+  --action NAME                                                                         Pass the name of action that nee
+  --sleep TIME                                                                          Pass the time(in ms) for signal 
+  --priority set the priority for the engine                                            Pass the  Priority to which Mode
+  --key set the Oem key                                                                 Pass the  OEM key to be applied
+prompt: <｜begin▁of▁sentence｜>User: 你好，请用一句话介绍你自己。
+
+Assistant: 
+=== deepseek-7b templated ===
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:38:dummy call to rpcmem_init, rpcmem APIs will be used from libxdsprpc
+[PROMPT]: <｜begin▁of▁sentence｜>User: 你好，请用一句话介绍你自己。
+
+Assistant: 
+
+[BEGIN]: 我是一个智能 AI 机器人，可以回答各种问题和提供帮助。[END]
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:42:dummy call to rpcmem_deinit, rpcmem APIs will be used from libxdsprpc
+WALL 10.18 s
+[ssh] channel closed code=0 signal=undefined

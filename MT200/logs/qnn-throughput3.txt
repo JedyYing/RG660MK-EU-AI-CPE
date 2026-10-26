@@ -1,0 +1,17 @@
+=== validate + warmup ===
+warmup: FAILED rc=17
+qnn-net-run log level is : QNN_LOG_LEVEL_ERROR
+   215.4ms [ ERROR ] Failed to open input file: yolov8n/input_list/000000000321.raw
+=== single process, batch sweep ===
+1proc-b1: FAILED rc=17
+qnn-net-run log level is : QNN_LOG_LEVEL_ERROR
+   167.5ms [ ERROR ] Failed to open input file: yolov8n/input_list/000000000321.raw
+1proc-b2: FAILED rc=17
+qnn-net-run log level is : QNN_LOG_LEVEL_ERROR
+   150.0ms [ ERROR ] Failed to open input file: yolov8n/input_list/000000000321.raw
+1proc-b4: FAILED rc=17
+qnn-net-run log level is : QNN_LOG_LEVEL_ERROR
+   161.7ms [ ERROR ] Failed to open input file: yolov8n/input_list/000000000321.raw
+=== 4 concurrent processes x 25 inferences ===
+4proc        n=100            wall=  0.41s ->   242.43 inf/s,    2.11 TFLOP/s
+[ssh] channel closed code=0 signal=undefined

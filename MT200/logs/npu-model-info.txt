@@ -1,0 +1,19 @@
+=== model config ===
+{
+          "bos_token_id": 100000,
+          "eos_token_id": 100001,
+          "context_size": 1024,
+          "n_vocab": 102400,
+          "spill-fill-bufsize": 0,
+          "use-mmap": true,
+          "kv-dim": 128,
+          "pos-id-dim": 64,
+          "seed": 42,
+          "temp": 0.7,
+          "top_k": 40,
+          "top_p": 0.95
+}
+=== names in bin ===
+=== dialog n-threads ===
+n-threads 3 ctx {'version': 1, 'size': 512, 'n-vocab': 102400, 'bos-token': 100000, 'eos-token': 100001}
+[ssh] channel closed code=0 signal=undefined

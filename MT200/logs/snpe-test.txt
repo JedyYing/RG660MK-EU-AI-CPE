@@ -1,0 +1,5 @@
+=== snpe-net-run help (runtime/iterations) ===
+=== single run (dsp) ===
+rc=1 wall=3.07s
+Error: No network connection detected.
+[ssh] channel closed code=0 signal=undefined

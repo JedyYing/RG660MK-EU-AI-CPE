@@ -1,0 +1,56 @@
+=== current ext config ===
+{
+    "devices": [
+        {
+            "cores": [
+                {
+                    "perf_profile": "burst",
+                    "rpc_control_latency": 100
+                }
+            ]
+        }
+    ],
+    "memory": {
+        "mem_type": "ion"
+    },
+    "context": {
+        "weight_sharing_enabled": true
+    }
+}
+=== .bak (昨天改动前) ===
+{
+    "devices": [
+        {
+            "cores": [
+                {
+                    "perf_profile": "burst",
+                    "rpc_control_latency": 100
+                }
+            ]
+        }
+    ],
+    "memory": {
+        "mem_type": "shared_buffer"
+    },
+    "context": {
+        "weight_sharing_enabled": true
+    }
+}
+=== diff ===
+13c13
+<         "mem_type": "shared_buffer"
+---
+>         "mem_type": "ion"
+=== free mem ===
+               total        used        free      shared  buff/cache   available
+Mem:           11119        3539        4273          77        3606        7579
+=== dmesg after failure ===
+[46790.276056] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@2: failed to map buffer, fd = 33
+[46790.287547] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@2: failed to map buffer, fd = 33
+[46790.299487] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@2: failed to map buffer, fd = 33
+[46790.311303] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@2: failed to map buffer, fd = 33
+[46790.322978] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@2: failed to map buffer, fd = 33
+[46790.334832] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@2: failed to map buffer, fd = 33
+[46790.346236] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@2: failed to map buffer, fd = 33
+[46790.358025] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@2: failed to map buffer, fd = 33
+[ssh] channel closed code=0 signal=undefined

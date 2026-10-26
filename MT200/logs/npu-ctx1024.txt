@@ -1,0 +1,8 @@
+ctx -> 1024
+prompt chars 1158
+Using libGenie.so version 1.13.0
+
+[INFO]  "Using create From Binary"
+0
+prompt_tokens 681 prefill_tps 607.9 ttft_s 1.12 gen 44 decode_tps 12.24
+[ssh] channel closed code=0 signal=undefined

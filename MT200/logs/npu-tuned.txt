@@ -1,0 +1,28 @@
+{
+ "devices": [
+  {
+   "cores": [
+    {
+     "perf_profile": "sustained_high_performance",
+     "rpc_control_latency": 100,
+     "vtcm_mb": 8,
+     "num_hvx_threads": 4
+    }
+   ]
+  }
+ ],
+ "memory": {
+  "mem_type": "shared_buffer"
+ },
+ "context": {
+  "weight_sharing_enabled": true
+ }
+}
+--- result ---
+[BEGIN]: 人工智能在端侧部署可以降低时延并保护隐私。 人工智能在端侧部署
+num-prompt-tokens = 206
+prompt-processing-rate = 160.67
+time-to-first-token = 1282327
+num-generated-tokens = 42
+token-generation-rate = 9.28
+[ssh] channel closed code=0 signal=undefined

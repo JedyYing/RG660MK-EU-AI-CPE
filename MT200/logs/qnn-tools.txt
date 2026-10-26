@@ -1,0 +1,29 @@
+=== QNN SDK bins ===
+qnn-net-run
+qnn-platform-validator
+qnn-profile-viewer
+snpe-diagview
+snpe-net-run
+snpe-platform-validator
+=== throughput/net-run present? ===
+qnn-net-run
+snpe-net-run
+README.md
+genie-t2t-run
+qnn-platform-validator
+snpe-net-run
+snpe-platform-validator
+=== yolov8n assets ===
+total 3712
+drw-r--r-- 3 root root    4096 Jul  1 02:36 .
+drw-r--r-- 3 root root    4096 Jul  1 02:36 ..
+drw-r--r-- 2 root root    4096 Jul  1 02:36 input_list
+-rw-r--r-- 1 root root 3788800 Jul  1 02:36 yolov8n_w8a8_9075.bin
+--- input_list ---
+=== qnn libs for x86 host? ===
+libGenie.so
+libPlatformValidatorShared.so
+libQnnChrometraceProfilingReader.so
+libQnnCpu.so
+libQnnCpuNetRunExtensions.so
+[ssh] channel closed code=0 signal=undefined

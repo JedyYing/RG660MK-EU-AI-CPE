@@ -1,0 +1,29 @@
+=== who am i ===
+uid=0(root) gid=0(root) groups=0(root)
+=== fastrpc group members ===
+fastrpc:x:114:
+=== dmesg after attempt (last fastrpc lines) ===
+[   37.419381] qcom,fastrpc-cb 2a300000.remoteproc:glink-edge:fastrpc:compute-cb@10: Adding to iommu group 35
+[   37.421932] qcom,fastrpc 26300000.remoteproc:glink-edge.fastrpcglink-apps-dsp.-1.-1: no reserved DMA memory for FASTRPC
+[   37.426172] qcom,fastrpc-cb 2a300000.remoteproc:glink-edge:fastrpc:compute-cb@11: Adding to iommu group 36
+[   37.430495] qcom,fastrpc-cb 2a300000.remoteproc:glink-edge:fastrpc:compute-cb@12: Adding to iommu group 37
+[   37.435521] qcom,fastrpc-cb 2a300000.remoteproc:glink-edge:fastrpc:compute-cb@13: Adding to iommu group 38
+[   37.445409] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@1: Adding to iommu group 39
+[   37.446070] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@2: Adding to iommu group 40
+[   37.447537] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@3: Adding to iommu group 41
+[   37.447961] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@4: Adding to iommu group 42
+[   37.449955] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@5: Adding to iommu group 43
+[   37.450683] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@6: Adding to iommu group 44
+[   37.451752] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@7: Adding to iommu group 45
+[   37.452392] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@8: Adding to iommu group 46
+[   37.456293] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@9: Adding to iommu group 47
+[   37.457531] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@11: Adding to iommu group 48
+=== pd files ===
+=== secure boot ===
+=== qnn/snpe installed? ===
+meig-python-venv
+meigine
+node22
+qnn
+/usr/bin/snpe-net-run
+[ssh] channel closed code=1 signal=undefined

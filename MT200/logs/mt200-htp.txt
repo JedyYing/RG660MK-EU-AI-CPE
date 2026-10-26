@@ -1,0 +1,33 @@
+=== qnn-platform-validator ===
+ERROR: Invalid Backend selected: htp
+ERROR: Save context needs a file name.
+Please check help below:
+
+DESCRIPTION:
+QNN-platform-validator is a tool to check the capabilities of a device.
+------------
+ARGUMENTS:
+-------------------
+  --backend <BACKEND>   Specify the backend to validate. <BACKEND> : gpu, dsp, all
+  --coreVersion         Query the backend core descriptor. 
+  --libVersion          Query the backend core library API.
+  --testBackend         Run diagnostic tests on the specified backend.
+  --targetPath <DIR>    The directory to save output to. Defaults to /data/local/tmp/platformValidator/output
+  --debug               Turn on verbose logging.
+  --help                Show this help message.
+
+=== exit=0 ===
+=== models ===
+total 16
+drw-r--r-- 4 root root 4096 Jul  1 02:36 .
+drwxr-xr-x 4 root root 4096 Jul  1 02:36 ..
+drw-r--r-- 3 root root 4096 Jul  1 02:36 qnn
+drw-r--r-- 3 root root 4096 Jul  1 02:36 snpe
+=== genie assets ===
+README.md
+genie-t2t-run
+qnn-platform-validator
+snpe-net-run
+snpe-platform-validator
+bin
+[ssh] channel closed code=0 signal=undefined

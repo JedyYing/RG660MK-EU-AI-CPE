@@ -1,0 +1,1 @@
+[ssh] channel closed code=null signal=SIGTERM

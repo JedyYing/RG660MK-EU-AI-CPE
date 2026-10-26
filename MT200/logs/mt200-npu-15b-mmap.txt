@@ -1,0 +1,18 @@
+=== genie opts (tokens/limits) ===
+  -e PATH or --embedding_file PATH[,TYPE,SCALE,OFFSET]                                  Input embeddings provided as a file. Mutually exclusive with --prompt, --prompt_file and --tokens_file.
+  -t PATH or --embedding_table PATH[,TYPE,SCALE,OFFSET]                                 Token-to-Embedding lookup table provided as a file. Mutually exclusive with --prompt and --prompt_file.
+  -tok PATH or --tokens_file PATH                                                       Input tokens provided as a file. Mutually exclusive with --prompt, --prompt_file and --embedding_file.
+  --embedding_query_output_type TYPE                                                    Sets the output type for embedding query. Must be one of text or token. Defaults to text.
+=== fix 1.5b use-mmap ===
+use-mmap -> True
+[ERROR] "Unable to MemRegister IO Tensors for graph index = 12"
+[ERROR] "Create From Binary FAILED!"
+[ERROR] "Failed to free device: 14003"
+[ERROR] "Device Free failure"
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:38:dummy call to rpcmem_init, rpcmem APIs will be used from libxdsprpc
+Failure to initialize model. 
+Failed to create the dialog.
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:42:dummy call to rpcmem_deinit, rpcmem APIs will be used from libxdsprpc
+Command exited with non-zero status 1
+WALL 3.49 s
+[ssh] channel closed code=0 signal=undefined

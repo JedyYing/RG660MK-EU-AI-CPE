@@ -1,0 +1,7 @@
+ 02:03:27 up 13:46,  4 users,  load average: 12.30, 27.81, 17.23
+               total        used        free      shared  buff/cache   available
+Mem:           11119        3362        6731          48        1265        7756
+82009 bash -c uptime; free -m | head -2; pgrep -af genie-t2t-run; pgrep -af npu_squeeze; echo OK
+82009 bash -c uptime; free -m | head -2; pgrep -af genie-t2t-run; pgrep -af npu_squeeze; echo OK
+OK
+[ssh] channel closed code=0 signal=undefined
