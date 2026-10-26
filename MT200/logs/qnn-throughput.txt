@@ -1,0 +1,18 @@
+=== single inference (load amortised over 1 run) ===
+warmup: n=2 batch=1 wall=0.01s rc=9 -> 214.99 inf/s, 1.87 TFLOP/s
+qnn-net-run log level is : QNN_LOG_LEVEL_ERROR
+     0.3ms [ ERROR ] Unable to load backend. dlerror(): /data/local/tmp/qnn/dsp/lib/libQnnHtp.so: cannot open shared object file: No such file or directory
+=== steady-state, 1 process ===
+1proc: n=50 batch=1 wall=0.01s rc=9 -> 5616.22 inf/s, 48.86 TFLOP/s
+qnn-net-run log level is : QNN_LOG_LEVEL_ERROR
+     0.2ms [ ERROR ] Unable to load backend. dlerror(): /data/local/tmp/qnn/dsp/lib/libQnnHtp.so: cannot open shared object file: No such file or directory
+=== batch_multiplier sweep, 1 process ===
+1proc-b2: n=50 batch=2 wall=0.01s rc=9 -> 6691.19 inf/s, 58.21 TFLOP/s
+qnn-net-run log level is : QNN_LOG_LEVEL_ERROR
+     0.2ms [ ERROR ] Unable to load backend. dlerror(): /data/local/tmp/qnn/dsp/lib/libQnnHtp.so: cannot open shared object file: No such file or directory
+1proc-b4: n=50 batch=4 wall=0.01s rc=9 -> 5611.26 inf/s, 48.82 TFLOP/s
+qnn-net-run log level is : QNN_LOG_LEVEL_ERROR
+     0.2ms [ ERROR ] Unable to load backend. dlerror(): /data/local/tmp/qnn/dsp/lib/libQnnHtp.so: cannot open shared object file: No such file or directory
+=== 4 concurrent processes, 25 inferences each ===
+4proc: 100 inferences in 0.01s -> 9870.58 inf/s, 85.87 TFLOP/s
+[ssh] channel closed code=0 signal=undefined

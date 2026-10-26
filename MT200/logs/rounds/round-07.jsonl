@@ -1,0 +1,11 @@
+{"type":"session","sessionId":"session-bea8de30-27e0-4c11-b9ed-1606c9e0aea8","cwd":"C:\\AI\\dsh"}
+{"type":"status","phase":"turn_start","turn":1}
+{"type":"status","phase":"step_start","turn":1,"step":1}
+{"type":"tool_call","callId":"wbJKCEuo2QjLzwDzWjmihVuvoECyUbxs","tool":"pwsh","input":{"description":"获取当前日期和系统盘空间信息","command":"Get-Date; Get-PSDrive -PSProvider FileSystem | Select-Object Name,Used,Free"}}
+{"type":"tool_result","callId":"wbJKCEuo2QjLzwDzWjmihVuvoECyUbxs","status":"completed","result":"\r\n2026年10月23日 21:53:10\r\n\r\nName : C\r\nUsed : 112704798720\r\nFree : 316794023936\r\n\r\n\r\nName : D\r\nUsed : 205131776\r\nFree : 594054676480\r\n\r\n\r\nName : P\r\nUsed : \r\nFree : \r\n\r\n\r\nName : Temp\r\nUsed : 112704798720\r\nFree : 316794023936\r\n\r\n\r\n"}
+{"type":"status","phase":"step_end","turn":1,"step":1,"usage":{"inputTokens":165,"outputTokens":53,"totalTokens":2679,"cacheReadTokens":2461}}
+{"type":"status","phase":"step_start","turn":1,"step":2}
+{"type":"text","text":"C:盘的已用空间约为1127GB，剩余空间约为3168GB。"}
+{"type":"status","phase":"step_end","turn":1,"step":2,"usage":{"inputTokens":208,"outputTokens":24,"totalTokens":2854,"cacheReadTokens":2622}}
+{"type":"status","phase":"turn_end","turn":1,"reason":{"kind":"completed"}}
+{"type":"final","text":"C:盘的已用空间约为1127GB，剩余空间约为3168GB。"}

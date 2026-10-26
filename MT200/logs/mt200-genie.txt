@@ -1,0 +1,102 @@
+=== bin ===
+total 13964
+drwxrwxr-x 2 root root     4096 Mar 25  2026 .
+drwxrwxr-x 8 root root     4096 Mar 26  2026 ..
+-rwxrwxrwx 1 root root   108728 Oct  1  2025 genie-t2t-run
+-rwxrwxrwx 1 root root   309728 Oct  1  2025 qnn-platform-validator
+-rwxrwxrwx 1 root root 13868712 Oct  1  2025 snpe-platform-validator
+=== dsp lib ===
+libCalculator_skel.so
+libQnnHtpV73.so
+libQnnHtpV73QemuDriver.so
+libQnnHtpV73Skel.so
+libQnnSaver.so
+libQnnSystem.so
+libSnpeHtpV73Skel.so
+libqnnhtpv73.cat
+libsnpehtpv73.cat
+=== 1.5b config ===
+{
+  "dialog" : {
+    "version" : 1,
+    "type" : "basic",
+    "context" : {
+      "version" : 1,
+      "size": 512,
+      "n-vocab": 151936,
+      "bos-token": 151646,
+      "eos-token": 151643
+    },
+    "sampler" : {
+      "version" : 1,
+      "seed" : 42,
+      "temp" : 0.6,
+      "top-k" : 40,
+      "top-p" : 0.95,
+      "greedy" : true
+    },
+    "tokenizer" : {
+      "version" : 1,
+      "path" : "/data/local/tmp/qnn/deepseek-qwen-1.5b/tokenizer.json"
+    },
+    "engine" : {
+      "version" : 1,
+      "n-threads" : 3,
+      "backend" : {
+        "version" : 1,
+        "type" : "QnnHtp",
+        "QnnHtp" : {
+          "version" : 1,
+          "spill-fill-bufsize" : 0,
+          "use-mmap" : false,
+          "mmap-budget" : 0,
+          "poll" : true,
+          "pos-id-dim" : 64,
+          "cpu-mask" : "0xe0",
+          "kv-dim" : 128,
+          "allow-async-init": false,
+          "rope-theta": 10000
+        },
+        "extensions" : "/data/local/tmp/qnn/deepseek-qwen-1.5b/htp_backend_ext_config_sharing.json"
+      },
+      "model" : {
+        "version" : 1,
+        "type" : "binary",
+        "binary" : {
+          "version" : 1,
+          "ctx-bins" : [
+            "/data/local/tmp/qnn/deepseek-qwen-1.5b/bertcache_kvcache_1_of_7.serialized.bin",
+            "/data/local/tmp/qnn/deepseek-qwen-1.5b/bertcache_kvcache_2_of_7.serialized.bin",
+            "/data/local/tmp/qnn/deepseek-qwen-1.5b/bertcache_kvcache_3_of_7.serialized.bin",
+            "/data/local/tmp/qnn/deepseek-qwen-1.5b/bertcache_kvcache_4_of_7.serialized.bin",
+            "/data/local/tmp/qnn/deepseek-qwen-1.5b/bertcache_kvcache_5_of_7.serialized.bin",
+            "/data/local/tmp/qnn/deepseek-qwen-1.5b/bertcache_kvcache_6_of_7.serialized.bin",
+            "/data/local/tmp/qnn/deepseek-qwen-1.5b/bertcache_kvcache_7_of_7.serialized.bin"
+          ]
+        }
+      }
+    }
+  }
+}
+=== genie help ===
+Usage:
+genie-t2t-run [options]
+
+Options:
+  -h, --help                                                                            Show this help message and exit.
+
+  -c CONFIG_FILE or --config CONFIG_FILE                                                Dialog JSON configuration file.
+
+  -p PROMPT or --prompt PROMPT                                                          Prompt to query. Mutually exclusive with --prompt_file.
+
+  --prompt_file PATH                                                                    Prompt to query provided as a file. Mutually exclusive with --prompt.
+
+  -l ADAPTER_NAME,ALPHA_NAME_1,ALPHA_VAL_1,ALPHA_NAME_2,ALPHA_VAL_2,...  or --lora ADAPTER_NAME,ALPHA_NAME_1,ALPHA_VAL_1,ALPHA_NAME_2,ALPHA_VAL_2,...Apply a LoRA adapter to a dialog.
+                                                                                        ALPHA_NAME_n and ALPHA_VALUE_n are optional parameters, only for setting alpha strength.
+
+  -e PATH or --embedding_file PATH[,TYPE,SCALE,OFFSET]                                  Input embeddings provided as a file. Mutually exclusive with --prompt, --prompt_file and --tokens_file.
+                                                                                        TYPE, SCALE, and OFFSET are optional parameters representing the model's input quantization encodings. Required for lookup table requantization.
+                                                                                        Valid values of TYPE are int8, int16, uint8, uint16. The signedness must be consistent with the lookup table encodings.
+
+  -t PATH or --embedding_table PATH[,TYPE,SCALE,OFFSET]                                 Token-to-Embedding lookup table provided as a file. Mutually exclusive with --prompt and --prompt_file.
+[ssh] channel closed code=0 signal=undefined

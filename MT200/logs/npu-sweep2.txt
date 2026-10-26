@@ -1,0 +1,8 @@
+repeats per case: 3
+A burst (orig)           prefill= 183.9 tok/s  decode=12.24 tok/s  n=3 
+B burst + vtcm8          prefill= 184.1 tok/s  decode=12.32 tok/s  n=3 
+C burst + hvx4           prefill= 184.1 tok/s  decode=12.35 tok/s  n=3 
+D sustained_hp           prefill= 161.4 tok/s  decode= 9.29 tok/s  n=3 
+E burst + vtcm8 + hvx4   prefill= 184.3 tok/s  decode=12.25 tok/s  n=3 
+restored original ext config
+[ssh] channel closed code=0 signal=undefined

@@ -1,0 +1,12 @@
+   126.8ms [ ERROR ]  <E> DspTransport.openSession qnn_open failed, 0xffffffff, prio 100
+   126.8ms [ ERROR ]  <E> IDspTransport: Unknown rpc status 0x000003ff
+   126.8ms [ ERROR ]  <E> DspTransport.getHandle failed, error 0xffffffff
+   126.8ms [ ERROR ]  <E> createDspTransportInstance failed to config transport object
+   126.8ms [ ERROR ]  <E> error in creation of transport instance
+--- distinct ---
+      1 [ ERROR ]  <E> DspTransport.getHandle failed, error 0xffffffff
+      1 [ ERROR ]  <E> DspTransport.openSession qnn_open failed, 0xffffffff, prio 100
+      1 [ ERROR ]  <E> Failed to create transport for device, error: 1002
+      1 [ ERROR ]  <E> Failed to load default platform info: 14001
+      1 [ ERROR ]  <E> Failed to load skel, error: 1002
+[ssh] channel closed code=0 signal=undefined

@@ -1,0 +1,28 @@
+        "mem_type": "shared_buffer"
+=== run with shared_buffer ===
+[ERROR] "Failed to register fused tensor buffer for past_value_25_out for fd: 33"
+[ERROR] "past_key_26_out      (ctx=0x7 fd=33 offset=1310720), totalBufSize: 313262080"
+[ERROR] "memRegister ERROR(8003)"
+[ERROR] "Failed to register fused tensor buffer for past_key_26_out for fd: 33"
+[ERROR] "past_value_26_out    (ctx=0x7 fd=33 offset=262144), totalBufSize: 313262080"
+[ERROR] "memRegister ERROR(8003)"
+[ERROR] "Failed to register fused tensor buffer for past_value_26_out for fd: 33"
+[ERROR] "past_key_27_out      (ctx=0x7 fd=33 offset=786432), totalBufSize: 313262080"
+[ERROR] "memRegister ERROR(8003)"
+[ERROR] "Failed to register fused tensor buffer for past_key_27_out for fd: 33"
+[ERROR] "past_value_27_out    (ctx=0x7 fd=33 offset=0), totalBufSize: 313262080"
+[ERROR] "memRegister ERROR(8003)"
+[ERROR] "Failed to register fused tensor buffer for past_value_27_out for fd: 33"
+[ERROR] "logits               (ctx=0x7 fd=33 offset=2097152), totalBufSize: 313262080"
+[ERROR] "memRegister ERROR(8003)"
+[ERROR] "Failed to register fused tensor buffer for logits for fd: 33"
+[ERROR] "Error mapping tensor to allocation buffers"
+[ERROR] "Unable to MemRegister IO Tensors for graph index = 12"
+[ERROR] "Create From Binary FAILED!"
+[ERROR] "Failed to free device: 14003"
+[ERROR] "Device Free failure"
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:38:dummy call to rpcmem_init, rpcmem APIs will be used from libxdsprpc
+Failure to initialize model. 
+Failed to create the dialog.
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:42:dummy call to rpcmem_deinit, rpcmem APIs will be used from libxdsprpc
+[ssh] channel closed code=0 signal=undefined

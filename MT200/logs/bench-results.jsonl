@@ -1,0 +1,7 @@
+{"label": "1.7B CPU (-t 4)", "prefill_tok": 6036, "prefill_ms": 88093.7, "prefill_tps": 68.5, "decode_tok": 148, "decode_ms": 8013.3, "decode_tps": 18.34, "ttft_ms": 505.8}
+{"label": "1.7B Vulkan iGPU (-ngl 99)", "prefill_tok": 6036, "prefill_ms": 39156.0, "prefill_tps": 154.2, "decode_tok": 150, "decode_ms": 5140.9, "decode_tps": 28.98, "ttft_ms": 3212.3}
+{"label": "35B-A3B iGPU(30/48)+CPU", "prefill_tok": 6034, "prefill_ms": 167428.5, "prefill_tps": 36.0, "decode_tok": 158, "decode_ms": 34976.3, "decode_tps": 4.49, "ttft_ms": 8357.8}
+{"label": "35B-A3B CPU only (-t 8, -ngl 0)", "prefill_tok": 1534, "prefill_ms": 48004.4, "prefill_tps": 32.0, "decode_tok": 140, "decode_ms": 37859.7, "decode_tps": 3.67, "ttft_ms": 3714.6}
+{"label": "35B-A3B iGPU(40/48)+CPU @8K", "prefill_tok": 1534, "prefill_ms": 30367.6, "prefill_tps": 50.5, "decode_tok": 156, "decode_ms": 27153.2, "decode_tps": 5.71, "ttft_ms": 4135.5}
+{"label": "35B-A3B IQ3_XXS iGPU all 48 layers @8K", "prefill_tok": 1534, "prefill_ms": 60520.3, "prefill_tps": 25.3, "decode_tok": 160, "decode_ms": 46237.3, "decode_tps": 3.44, "ttft_ms": 9471.8}
+{"label": "35B-A3B IQ3_XXS iGPU 40/48 @8K", "prefill_tok": 1534, "prefill_ms": 46269.1, "prefill_tps": 33.2, "decode_tok": 152, "decode_ms": 54144.6, "decode_tps": 2.79, "ttft_ms": 9380.5}

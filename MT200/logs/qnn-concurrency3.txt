@@ -1,0 +1,12 @@
+procs=20  total=400  wall=  0.02s -> 20578.22 inf/s, 179.03 TFLOP/s
+   warnings: 20 process logs contain ERROR
+    07:56:26 up 2 days, 19:39,  4 users,  load average: 0.22, 0.32, 0.21
+procs=24  total=480  wall=  0.03s -> 18040.99 inf/s, 156.96 TFLOP/s
+   warnings: 24 process logs contain ERROR
+    07:56:26 up 2 days, 19:39,  4 users,  load average: 0.22, 0.32, 0.21
+procs=32  total=640  wall=  0.03s -> 21114.04 inf/s, 183.69 TFLOP/s
+   warnings: 32 process logs contain ERROR
+    07:56:26 up 2 days, 19:39,  4 users,  load average: 0.22, 0.32, 0.21
+=== sample ERROR lines ===
+qnn-net-run log level is : QNN_LOG_LEVEL_ERROR
+[ssh] channel closed code=0 signal=undefined

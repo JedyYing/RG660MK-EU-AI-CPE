@@ -1,0 +1,18 @@
+77647 python3 /data/local/tmp/npu-openai-bridge.py
+77743 bash -c pgrep -af npu-openai-bridge | head; echo "--- log size ---"; ls -l /tmp/npu-bridge.log; echo "--- foreground run (5s) ---"; timeout 5 python3 /data/local/tmp/npu-openai-bridge.py 2>&1 | head -20; echo "exit=$?"
+--- log size ---
+-rw-r--r-- 1 root root 73 Oct 24 01:26 /tmp/npu-bridge.log
+--- foreground run (5s) ---
+Traceback (most recent call last):
+  File "/data/local/tmp/npu-openai-bridge.py", line 137, in <module>
+    srv = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socketserver.py", line 457, in __init__
+    self.server_bind()
+  File "/usr/lib/python3.12/http/server.py", line 136, in server_bind
+    socketserver.TCPServer.server_bind(self)
+  File "/usr/lib/python3.12/socketserver.py", line 473, in server_bind
+    self.socket.bind(self.server_address)
+OSError: [Errno 98] Address already in use
+exit=0
+[ssh] channel closed code=0 signal=undefined

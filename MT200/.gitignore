@@ -1,0 +1,35 @@
+# Large, reproducible artifacts — not source
+/models/
+/bin/
+*.gguf
+*.part
+
+# Harness runtime state: session transcripts and local credentials stay on the machine
+/dsh-home/sessions/
+/dsh-home/storages/
+/dsh-home/.credentials.yaml
+/dsh-home/.anonymous-user-id
+/dsh-home/**/sessions/
+/dsh-home/**/storages/
+/dsh-home/**/.credentials.yaml
+
+# Node dependencies
+/scripts/node_modules/
+
+# Secrets and transient probe output
+/logs/web-token.txt
+/logs/cookies.txt
+/logs/*.log
+/logs/req*.json
+/logs/resp*.json
+/logs/models.json
+/logs/chat1.json
+/logs/web-index.html
+
+# OS noise
+**/Thumbs.db
+**/desktop.ini
+
+# runtime logs (llama.cpp writes to stderr)
+/logs/*.log.err
+/logs/*.err

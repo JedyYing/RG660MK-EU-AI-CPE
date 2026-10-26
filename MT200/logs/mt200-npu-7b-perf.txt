@@ -1,0 +1,15 @@
+=== 7B with profile (timed) ===
+[INFO]  "Using create From Binary"
+[INFO]  "Allocated total size = 387190784 across 14 buffers"
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:38:dummy call to rpcmem_init, rpcmem APIs will be used from libxdsprpc
+[PROMPT]: <｜｜User｜｜>用三句话说明本地大模型的好处。<｜｜Assistant｜｜>
+
+[BEGIN]:  <think>
+嗯，用户问“｜ ｜User｜｜> ｜｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜ ｜[END]
+Context Size was exceeded.
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:42:dummy call to rpcmem_deinit, rpcmem APIs will be used from libxdsprpc
+Failed to query.
+Command exited with non-zero status 1
+WALL 50.70 s
+=== profile metrics ===
+[ssh] channel closed code=0 signal=undefined

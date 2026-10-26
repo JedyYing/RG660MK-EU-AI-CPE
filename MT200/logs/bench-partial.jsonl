@@ -1,0 +1,6 @@
+{"label": "1.7B Vulkan", "call": 1, "prompt_tok": 2625, "prefill_ms": 1967.2, "prefill_tps": 4.6, "decode_tps": 24.77}
+{"label": "1.7B Vulkan", "call": 2, "prompt_tok": 2635, "prefill_ms": 267.9, "prefill_tps": 70.9, "decode_tps": 21.44}
+{"label": "1.7B Vulkan", "call": 3, "prompt_tok": 2635, "prefill_ms": 224.2, "prefill_tps": 71.4, "decode_tps": 12.08}
+{"label": "1.7B CPU", "call": 1, "prompt_tok": 2625, "prefill_ms": 207.1, "prefill_tps": 43.5, "decode_tps": 17.05}
+{"label": "1.7B CPU", "call": 2, "prompt_tok": 2635, "prefill_ms": 547.6, "prefill_tps": 34.7, "decode_tps": 11.79}
+{"label": "1.7B CPU", "call": 3, "prompt_tok": 2635, "prefill_ms": 308.6, "prefill_tps": 51.8, "decode_tps": 11.38}

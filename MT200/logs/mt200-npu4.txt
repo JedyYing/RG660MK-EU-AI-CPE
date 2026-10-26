@@ -1,0 +1,40 @@
+=== big qnn/genie artifacts ===
+/data/local/tmp/qnn/deepseek-7b/bertcache_kvcache_1_of_5.serialized.bin
+/data/local/tmp/qnn/deepseek-7b/bertcache_kvcache_5_of_5.serialized.bin
+/data/local/tmp/qnn/deepseek-7b/bertcache_kvcache_2_of_5.serialized.bin
+/data/local/tmp/qnn/deepseek-7b/bertcache_kvcache_4_of_5.serialized.bin
+/data/local/tmp/qnn/deepseek-7b/bertcache_kvcache_3_of_5.serialized.bin
+/data/local/tmp/qnn/deepseek-qwen-1.5b/bertcache_kvcache_7_of_7.serialized.bin
+/data/local/tmp/qnn/deepseek-qwen-1.5b/bertcache_kvcache_1_of_7.serialized.bin
+/data/local/tmp/qnn/deepseek-qwen-7b/bertcache_kvcache_4_of_7.serialized.bin
+/data/local/tmp/qnn/deepseek-qwen-7b/bertcache_kvcache_2_of_7.serialized.bin
+/data/local/tmp/qnn/deepseek-qwen-7b/bertcache_kvcache_6_of_7.serialized.bin
+/data/local/tmp/qnn/deepseek-qwen-7b/bertcache_kvcache_7_of_7.serialized.bin
+/data/local/tmp/qnn/deepseek-qwen-7b/bertcache_kvcache_5_of_7.serialized.bin
+/data/local/tmp/qnn/deepseek-qwen-7b/bertcache_kvcache_1_of_7.serialized.bin
+/data/local/tmp/qnn/deepseek-qwen-7b/bertcache_kvcache_3_of_7.serialized.bin
+=== sdk dir ===
+total 12
+drwxrwxr-x 3 ubuntu ubuntu 4096 Jun 26 10:27 .
+drwxr-xr-x 5 root   root   4096 Mar 26  2026 ..
+drwxrwxr-x 2 ubuntu ubuntu 4096 Jun 27 03:06 bin
+=== hexagon env knobs ===
+_ZN20ggml_hexagon_session13flush_pendingEb
+_ZN20ggml_hexagon_session11flush_batchEv
+_ZN20ggml_hexagon_session10enqueue_opE11htp_op_codePK11ggml_tensor
+_ZN20ggml_hexagon_session5flushEb
+_ZN20ggml_hexagon_session8allocateEi
+fastrpc_mmap
+fastrpc_munmap
+_ZN20ggml_hexagon_session7releaseEv
+_ZN20ggml_hexagon_sessionC2EiP19ggml_backend_device
+_ZN20ggml_hexagon_sessionD2Ev
+_ZN21ggml_hexagon_registryC2EP16ggml_backend_reg
+_ZN20ggml_hexagon_sessionC1EiP19ggml_backend_device
+_ZN21ggml_hexagon_registryD2Ev
+_ZN20ggml_hexagon_sessionD1Ev
+_ZN21ggml_hexagon_registryC1EP16ggml_backend_reg
+=== htp libs ===
+-rw-r--r-- 1 ubuntu ubuntu 408816 Jun 11 06:59 /opt/meigine/lib/libggml-htp-v73.so
+/opt/meigine/lib/libggml-htp-v73.so: ELF 32-bit LSB shared object, QUALCOMM DSP6, version 1 (SYSV), dynamically linked, not stripped
+[ssh] channel closed code=0 signal=undefined

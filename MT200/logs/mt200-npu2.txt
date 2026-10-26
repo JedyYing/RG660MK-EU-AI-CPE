@@ -1,0 +1,25 @@
+--- groups ---
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),4(adm),20(dialout),27(sudo),29(audio),44(video),46(plugdev),108(netdev),987(nopasswdlogin)
+fastrpc:x:114:
+--- as ubuntu, hexagon enabled ---
+/lib/aarch64-linux-gnu/libc.so.6(+0x87608)[0xffffb8a57608]
+/lib/aarch64-linux-gnu/libc.so.6(gsignal+0x1c)[0xffffb8a0cb3c]
+/lib/aarch64-linux-gnu/libc.so.6(abort+0xf4)[0xffffb89f7e00]
+/opt/meigine/bin/../lib/libggml-base.so.0(ggml_abort+0xe4)[0xffffb8f2ed64]
+/opt/meigine/bin/../lib/libggml-base.so.0(ggml_backend_dev_get_props+0x0)[0xffffb8f4af58]
+/opt/meigine/bin/../lib/libllama-common.so.0(+0xcce8c)[0xffffb97cce8c]
+/opt/meigine/bin/../lib/libllama-common.so.0(+0x100a8c)[0xffffb9800a8c]
+/opt/meigine/bin/../lib/libllama-common.so.0(_Z19common_params_parseiPPcR13common_params13llama_examplePFviS0_E+0x1de8)[0xffffb97fd2d0]
+/opt/meigine/bin/../lib/libllama-cli-impl.so(_Z9llama_cliiPPc+0x68)[0xffffb9adf970]
+/lib/aarch64-linux-gnu/libc.so.6(+0x284c4)[0xffffb89f84c4]
+/lib/aarch64-linux-gnu/libc.so.6(__libc_start_main+0x98)[0xffffb89f8598]
+/opt/meigine/bin/llama-cli(+0x7f0)[0xaaaae27b07f0]
+--- hexagon env default ---
+/opt/meigine/bin/../lib/libllama-common.so.0(+0x100a8c)[0xffff95560a8c]
+/opt/meigine/bin/../lib/libllama-common.so.0(_Z19common_params_parseiPPcR13common_params13llama_examplePFviS0_E+0x1de8)[0xffff9555d2d0]
+/opt/meigine/bin/../lib/libllama-cli-impl.so(_Z9llama_cliiPPc+0x68)[0xffff9583f970]
+/lib/aarch64-linux-gnu/libc.so.6(+0x284c4)[0xffff947584c4]
+/lib/aarch64-linux-gnu/libc.so.6(__libc_start_main+0x98)[0xffff94758598]
+/opt/meigine/bin/llama-cli(+0x7f0)[0xaaaab07a07f0]
+--- cdsp test binary? ---
+[ssh] channel closed code=0 signal=undefined

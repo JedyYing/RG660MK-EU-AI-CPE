@@ -1,0 +1,54 @@
+=== Windows preflight (2026-10-23 20:24:14    ) ===
+
+[OS]
+Microsoft Windows [版本 10.0.26200.9711]
+(c) Microsoft Corporation。保留所有权利。
+
+C:\AI\logs>
+
+Caption        : Microsoft Windows 11 专业版
+Version        : 10.0.26200
+BuildNumber    : 26200
+OSArchitecture : 64 位
+
+
+
+[CPU]
+
+
+Name                      : Intel(R) Core(TM) 7 240H
+NumberOfCores             : 10
+NumberOfLogicalProcessors : 16
+MaxClockSpeed             : 2500
+
+
+
+[RAM]
+31.5
+[GPU]
+
+
+Name          : Intel(R) Graphics
+DriverVersion : 32.0.101.7085
+VRAM_MB       : 2048
+
+
+
+[NVIDIA]
+/usr/bin/bash: line 5: nvidia-smi: command not found
+nvidia-smi not found -> CPU baseline
+[TOOLCHAIN]
+v26.12.1
+12.0.2
+git version 2.53.0.windows.3
+
+OverloadDefinitions                                 
+-------------------                                 
+string ToString()                                   
+string ToString(int fieldCount)                     
+                                                    
+
+
+v1.29.380
+[DISK C:]
+C:              401G  103G  298G  26% /c

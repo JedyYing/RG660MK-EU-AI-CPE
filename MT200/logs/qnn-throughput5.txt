@@ -1,0 +1,9 @@
+=== validate + warmup ===
+warmup       n=4    batch=1 wall=  0.63s ->     6.34 inf/s,    0.06 TFLOP/s
+=== single process, batch sweep ===
+1proc-b1     n=60   batch=1 wall=  4.39s ->    13.68 inf/s,    0.12 TFLOP/s
+1proc-b2     n=60   batch=2 wall=  4.44s ->    13.51 inf/s,    0.12 TFLOP/s
+1proc-b4     n=60   batch=4 wall=  4.61s ->    13.01 inf/s,    0.11 TFLOP/s
+=== 4 concurrent processes x 25 inferences ===
+4proc        n=100            wall=  2.23s ->    44.93 inf/s,    0.39 TFLOP/s
+[ssh] channel closed code=0 signal=undefined

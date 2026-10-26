@@ -1,0 +1,4 @@
+{"label": "1.7B Vulkan iGPU (ngl 99)", "phase": "cold", "prompt_tok": 2630, "prefill_ms": 7653.1, "prefill_tps": 343.5, "decode_tok": 23, "decode_tps": 27.31}
+{"label": "1.7B Vulkan iGPU (ngl 99)", "phase": "warm", "prompt_tok": 2630, "prefill_ms": 38.0, "prefill_tps": 26.3, "decode_tok": 23, "decode_tps": 25.69}
+{"label": "1.7B CPU (t 4, ngl 0)", "phase": "cold", "prompt_tok": 2630, "prefill_ms": 19475.3, "prefill_tps": 135.0, "decode_tok": 23, "decode_tps": 19.96}
+{"label": "1.7B CPU (t 4, ngl 0)", "phase": "warm", "prompt_tok": 2630, "prefill_ms": 52.6, "prefill_tps": 19.0, "decode_tok": 23, "decode_tps": 19.13}

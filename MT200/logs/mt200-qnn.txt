@@ -1,0 +1,23 @@
+=== /opt/qnn ===
+model
+sdk
+=== qnn bins ===
+=== platform validator ===
+/opt/qnn/sdk/bin/snpe-platform-validator
+/opt/qnn/sdk/bin/qnn-platform-validator
+=== meigine ===
+VERSION
+bin
+lib
+test_prompt.txt
+llama-bench
+llama-cli
+llama-gguf-split
+llama-quantize
+llama-server
+=== genie/qairt? ===
+/data/sdk/bin/genie-t2t-run
+=== snpe/qnn libs ===
+/usr/lib/libhta_hexagon_runtime_qnn.so
+/usr/lib/libhta_hexagon_runtime_snpe.so
+[ssh] channel closed code=0 signal=undefined

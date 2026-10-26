@@ -1,0 +1,19 @@
+procs=1   total=20   wall=  0.02s -> 1171.66 inf/s,  10.19 TFLOP/s
+   warnings: 1 process logs contain ERROR
+    07:54:45 up 2 days, 19:37,  4 users,  load average: 0.40, 0.38, 0.21
+procs=2   total=40   wall=  0.01s -> 2982.09 inf/s,  25.94 TFLOP/s
+   warnings: 2 process logs contain ERROR
+    07:54:45 up 2 days, 19:37,  4 users,  load average: 0.40, 0.38, 0.21
+procs=4   total=80   wall=  0.01s -> 5942.52 inf/s,  51.70 TFLOP/s
+   warnings: 4 process logs contain ERROR
+    07:54:45 up 2 days, 19:37,  4 users,  load average: 0.40, 0.38, 0.21
+procs=8   total=160  wall=  0.01s -> 10766.36 inf/s,  93.67 TFLOP/s
+   warnings: 8 process logs contain ERROR
+    07:54:45 up 2 days, 19:37,  4 users,  load average: 0.40, 0.38, 0.21
+procs=12  total=240  wall=  0.02s -> 12564.22 inf/s, 109.31 TFLOP/s
+   warnings: 12 process logs contain ERROR
+    07:54:46 up 2 days, 19:37,  4 users,  load average: 0.40, 0.38, 0.21
+procs=16  total=320  wall=  0.02s -> 15396.53 inf/s, 133.95 TFLOP/s
+   warnings: 16 process logs contain ERROR
+    07:54:46 up 2 days, 19:37,  4 users,  load average: 0.40, 0.38, 0.21
+[ssh] channel closed code=0 signal=undefined

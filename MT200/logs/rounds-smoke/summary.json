@@ -1,0 +1,19 @@
+[
+  {
+    "round": 1,
+    "task": "请调用 PowerShell 工具获取当前日期，",
+    "result": "PASS",
+    "wall_s": 78.2,
+    "first_tool_s": 78.2,
+    "tool_calls": 1,
+    "tool_ok": 1,
+    "prefill_tok": 55,
+    "prefill_ms": 432.4,
+    "decode_tok": 6,
+    "decode_tps": 44.2,
+    "total_tok": 2953,
+    "cache_read": 2614,
+    "final_head": "Get-PSDrive: 找不到驱动器。名为“C:”的驱动器不存在。   这是因为当前工作目录是 \"C:\\\\AI\\\\ds",
+    "events_file": "C:/AI/logs/rounds-smoke\\round-01.jsonl"
+  }
+]

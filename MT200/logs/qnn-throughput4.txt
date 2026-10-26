@@ -1,0 +1,6 @@
+/tmp/thr3.sh: line 4: set: -: invalid option
+set: usage: set [-abefhkmnptuvxBCEHPT] [-o option-name] [--] [-] [arg ...]
+/tmp/thr3.sh: line 13: $'\r': command not found
+/tmp/thr3.sh: line 49: syntax error near unexpected token `$'do\r''
+/tmp/thr3.sh: line 49: `for i in 1 2 3 4; do'
+[ssh] channel closed code=2 signal=undefined

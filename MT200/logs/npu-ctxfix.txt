@@ -1,0 +1,2 @@
+ctx fixed at 1024
+[ssh] channel closed code=0 signal=undefined

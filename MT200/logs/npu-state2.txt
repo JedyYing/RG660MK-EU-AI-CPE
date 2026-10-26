@@ -1,0 +1,5 @@
+--save     wall=13.59s rc=0 {'init_s': 8.53, 'prefill_tps': 183.9, 'decode_tps': 12.36}
+           state=dir 4 entries [INFO]  "Allocated total size = 497291264 across 10 buffers"
+--restore  wall= 8.39s rc=1 None
+           note: Failed to query.
+[ssh] channel closed code=0 signal=undefined

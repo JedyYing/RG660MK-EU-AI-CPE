@@ -1,0 +1,35 @@
+=== 7b ext cfg ===
+{
+    "devices": [
+        {
+            "cores": [
+                {
+                    "perf_profile": "burst",
+                    "rpc_control_latency": 100
+                }
+            ]
+        }
+    ],
+    "memory": {
+        "mem_type": "shared_buffer"
+    },
+    "context": {
+        "weight_sharing_enabled": true
+    }
+}=== 7b ctx ===
+{'version': 1, 'size': 512, 'n-vocab': 152064, 'bos-token': 151646, 'eos-token': 151643} {'version': 1, 'spill-fill-bufsize': 0, 'use-mmap': True, 'mmap-budget': 0, 'poll': True, 'pos-id-dim': 64, 'cpu-mask': '0xe0', 'kv-dim': 128, 'allow-async-init': False, 'rope-theta': 10000}
+=== run 7b ===
+Using libGenie.so version 1.13.0
+
+[INFO]  "Using create From Binary"
+[INFO]  "Allocated total size = 387190784 across 14 buffers"
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:38:dummy call to rpcmem_init, rpcmem APIs will be used from libxdsprpc
+[PROMPT]: <｜｜User｜｜>你好，请用一句话介绍你自己。<｜｜Assistant｜｜>
+
+[BEGIN]: <think>
+Alright, I'm an AI assistant. I'm here to help you with anything you need.
+</think>
+
+I'm an AI assistant. I'm here to help you with anything you need.[END]
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:42:dummy call to rpcmem_deinit, rpcmem APIs will be used from libxdsprpc
+[ssh] channel closed code=0 signal=undefined

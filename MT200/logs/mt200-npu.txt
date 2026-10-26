@@ -1,0 +1,46 @@
+--- libs ---
+libggml-base.so
+libggml-base.so.0
+libggml-cpu.so
+libggml-cpu.so.0
+libggml-hexagon.so
+libggml-hexagon.so.0
+libggml-htp-v68.so
+libggml-htp-v69.so
+libggml-htp-v73.so
+libggml-htp-v75.so
+libggml-htp-v79.so
+libggml-htp-v81.so
+libggml-opencl.so
+libggml-opencl.so.0
+libggml.so
+libggml.so.0
+libllama-bench-impl.so
+libllama-cli-impl.so
+libllama-common.so
+libllama-common.so.0
+--- backends dir ---
+llama-bench
+llama-cli
+llama-gguf-split
+llama-quantize
+llama-server
+--- list-devices ---
+/opt/meigine/bin/llama-server: /lib/aarch64-linux-gnu/libOpenCL.so.1: no version information available (required by /opt/meigine/bin/../lib/libggml-opencl.so.0)
+/opt/meigine/bin/llama-server: /lib/aarch64-linux-gnu/libOpenCL.so.1: no version information available (required by /opt/meigine/bin/../lib/libggml-opencl.so.0)
+/opt/meigine/bin/llama-server: /lib/aarch64-linux-gnu/libOpenCL.so.1: no version information available (required by /opt/meigine/bin/../lib/libggml-opencl.so.0)
+/opt/meigine/bin/llama-server: /lib/aarch64-linux-gnu/libOpenCL.so.1: no version information available (required by /opt/meigine/bin/../lib/libggml-opencl.so.0)
+0.00.044.017 E ggml-hex: failed to open session 0 : error 0x80000406
+0.00.044.173 E ggml-hex: failed to create device/session 0
+/project/MEIG_llama.cpp/ggml/src/ggml-backend.cpp:584: GGML_ASSERT(device) failed
+/opt/meigine/bin/../lib/libggml-base.so.0(+0xfb04)[0xffff9efbfb04]
+/opt/meigine/bin/../lib/libggml-base.so.0(ggml_print_backtrace+0x244)[0xffff9efbfae0]
+/opt/meigine/bin/../lib/libggml-base.so.0(ggml_abort+0xe0)[0xffff9efbed60]
+/opt/meigine/bin/../lib/libggml-base.so.0(ggml_backend_dev_get_props+0x0)[0xffff9efdaf58]
+/opt/meigine/bin/../lib/libllama-common.so.0(+0xcce8c)[0xffff9f76ce8c]
+/opt/meigine/bin/../lib/libllama-common.so.0(+0x100a8c)[0xffff9f7a0a8c]
+/opt/meigine/bin/../lib/libllama-common.so.0(_Z19common_params_parseiPPcR13common_params13llama_examplePFviS0_E+0x1de8)[0xffff9f79d2d0]
+/opt/meigine/bin/../lib/libllama-server-impl.so(_Z12llama_serveriPPc+0x70)[0xffff9fb9c808]
+--- hexagon env in unit ---
+Environment=GGML_HEXAGON_NDEV=0
+[ssh] channel closed code=0 signal=undefined

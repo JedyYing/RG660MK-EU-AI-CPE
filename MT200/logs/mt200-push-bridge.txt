@@ -1,0 +1,3 @@
+compiles ok
+139 /data/local/tmp/npu-openai-bridge.py
+[ssh] channel closed code=0 signal=undefined

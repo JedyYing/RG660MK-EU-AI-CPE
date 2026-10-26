@@ -1,0 +1,97 @@
+# Windows ThinkPad Web UI profile — same local provider/tool budget as thinkpad-local,
+# but booted as the dsh web app on 127.0.0.1:3080.
+- id: llm-pi-ai
+  config:
+    providers:
+      thinkpad-local:
+        displayName: ThinkPad Local (llama.cpp)
+        api: openai-completions
+        baseURL: http://127.0.0.1:8080/v1
+        apiKeyEnv: LOCAL_LLM_KEY
+        timeoutMs: 600000
+        streamIdleTimeoutMs: 120000
+        models:
+          - id: qwen3-1.7b
+            name: Qwen3-1.7B (local, CPU)
+            contextWindow: 12288
+            maxTokens: 1024
+- id: agent-default-model
+  config:
+    provider: thinkpad-local
+    model: qwen3-1.7b
+- id: preset-standard
+  config:
+    id: standard
+    order: 1
+    plugins:
+      - id: persona
+        name: "@deepseek-ai/dsh-persona"
+        config:
+          prefix: You are a coding agent powered by the {{model}} model.
+      - id: agent-instructions
+        name: "@deepseek-ai/dsh-agent-instructions"
+        config:
+          maxBytes: 8192
+      - id: time-context
+        name: "@deepseek-ai/dsh-time-context"
+      - id: tool-pwsh
+        name: "@deepseek-ai/dsh-tool-pwsh"
+      - id: tool-fs
+        name: "@deepseek-ai/dsh-tool-fs"
+      - id: tool-fs-search
+        name: "@deepseek-ai/dsh-tool-fs-search"
+        config:
+          sampleOverCapGlobResults: false
+# The web bundle turns the local tools off; this profile turns the minimal set back on.
+- id: tool-pwsh
+  disabled: false
+- id: tool-fs
+  disabled: false
+- id: tool-fs-search
+  disabled: false
+- id: tool-bash
+  disabled: true
+- id: tool-plugin-manager
+  disabled: true
+- id: tool-jobs
+  disabled: true
+- id: tool-skill
+  disabled: true
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent-list-agents
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true
+- id: tool-workflow
+  disabled: true
+- id: tool-result-pruner
+  disabled: true
+- id: tool-todo
+  disabled: true
+- id: tool-goal
+  disabled: true
+- id: tool-web
+  disabled: true
+- id: tool-schedule
+  disabled: true
+- id: sandbox-policy
+  config:
+    mode: workspace-write
+    workspaceRoot: C:\AI\dsh
+- id: approval
+  config:
+    policy: never
+- id: permission
+  config:
+    defaultPreset: unattended
+    presets:
+      unattended:
+        sandbox: workspace-write
+        approval: never
+- id: ui-settings-general
+  name: "@deepseek-ai/dsh-client-ui-settings-general"
+  config:
+    welcomeNoticeVersion: 2026-09-28.1

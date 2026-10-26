@@ -1,0 +1,14 @@
+=== long answer + profile ===
+* 文本生成：我可以生成各种类型的文本，包括文章、对话、故事等。
+* 对话交流：我可以进行基本的对话和交流，帮助您解决问题和满足需求。
+
+需要注意的是，我只是一个人工智能助手，我的能力和知识有限，无法替代人类的专业知识和决策。如果您需要更深入的信息或帮助，请咨询相关领域的专家。[END]
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:42:dummy call to rpcmem_deinit, rpcmem APIs will be used from libxdsprpc
+WALL 24.15 s
+=== chars ===
+answer_chars 347
+=== profile keys ===
+['header', 'metadata', 'components']
+['"timestamp"', '"init-time"', '"num-prompt-tokens"', '"time-to-first-token"', '"num-generated-tokens"', '"token-generation-rate"', '"token-generation-time"']
+{"header": {"header_version": {"major": 0, "minor": 1, "patch": 0}, "version": {"major": 0, "minor": 1, "patch": 0}, "artifact_type": "GENIE_PROFILE"}, "metadata": {"timestamp": 47224002902}, "components": [{"name": "dialog0", "type": "dialog", "events": [{"type": "GenieDialog_create", "duration": 7113579, "start": 47224003065, "stop": 47231116644, "init-time": {"value": 7111177, "unit": "us"}}, {"type": "GenieDialog_query", "duration": 16662391, "start": 47231118119, "stop": 47247780510, "num-prompt-tokens": {"value": 28, "unit": ""}, "prompt-processing-rate": {"value": 25.228315353393555, "u
+[ssh] channel closed code=0 signal=undefined

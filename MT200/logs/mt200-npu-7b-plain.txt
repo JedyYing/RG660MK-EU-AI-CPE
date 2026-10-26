@@ -1,0 +1,12 @@
+=== plain prompt ===
+“
+<think>
+Okay, the user just sent a message saying "Please use the following to introduce yourself: "" and then they included a message with "“**” ““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““ ““ ““““““““““““““““““““““““““““““““““““““““ “““ “ ““ ““““ “ ““ “ “ “ “ “ “ “ ““ “ “ “ ““ “ “ “ “ ““ “ “ “ “ “ “ ““ “ “ “ “ “ “ “ “ “ “ “ ““ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “ “[END]
+Context Size was exceeded.
+/prj/qct/webtech_scratch20/mlg_user_admin/qaisw_source_repo/rel/qairt-2.39.0/release/snpe_src/avante-tools/prebuilt/dsp/hexagon-sdk-5.5.5/ipc/fastrpc/rpcmem/src/rpcmem_android.c:42:dummy call to rpcmem_deinit, rpcmem APIs will be used from libxdsprpc
+Failed to query.
+Command exited with non-zero status 1
+WALL 53.31 s
+=== chat_template in tokenizer? ===
+False ['version', 'truncation', 'padding', 'added_tokens', 'normalizer', 'pre_tokenizer', 'post_processor', 'decoder']
+[ssh] channel closed code=0 signal=undefined

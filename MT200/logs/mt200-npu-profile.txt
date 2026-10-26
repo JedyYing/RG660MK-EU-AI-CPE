@@ -1,0 +1,10 @@
+--- GenieDialog_create dur_ms= 7113.6
+--- GenieDialog_query dur_ms= 16662.4
+    num-prompt-tokens = 28 
+    prompt-processing-rate = 25.228315353393555 toks/sec
+    time-to-first-token = 1109869 us
+    num-generated-tokens = 188 
+    token-generation-rate = 12.0894136428833 toks/sec
+    token-generation-time = 15550854 us
+--- GenieDialog_free dur_ms= 327.4
+[ssh] channel closed code=0 signal=undefined

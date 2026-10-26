@@ -1,0 +1,39 @@
+--- fastrpc dev nodes ---
+ls: cannot access '/dev/adsprpc*': No such file or directory
+ls: cannot access '/dev/cdsprpc*': No such file or directory
+crw-r----- 1 fastrpc fastrpc 10, 267 Mar 24  2026 /dev/fastrpc-adsp-secure
+crw-rw-r-- 1 fastrpc fastrpc 10, 271 Oct 23 12:17 /dev/fastrpc-cdsp
+crw-r----- 1 fastrpc fastrpc 10, 270 Oct 23 12:17 /dev/fastrpc-cdsp-secure
+crw-rw-r-- 1 fastrpc fastrpc 10, 269 Oct 23 12:17 /dev/fastrpc-cdsp1
+crw-r----- 1 fastrpc fastrpc 10, 268 Oct 23 12:17 /dev/fastrpc-cdsp1-secure
+crw-rw-r-- 1 fastrpc fastrpc 10, 264 Mar 24  2026 /dev/fastrpc-gdsp0
+crw-r----- 1 fastrpc fastrpc 10, 263 Mar 24  2026 /dev/fastrpc-gdsp0-secure
+crw-rw-r-- 1 fastrpc fastrpc 10, 266 Mar 24  2026 /dev/fastrpc-gdsp1
+--- daemons ---
+adsprpcd
+cdsprpcd
+cdsprpcd
+  dev-fastrpc-adsp-secure.device                                                                                                          loaded    inactive   dead         /dev/fastrpc/adsp/secure
+  dev-fastrpc-adsp.device                                                                                                                 loaded    inactive   dead         /dev/fastrpc/adsp
+  dev-fastrpc-cdsp-secure.device                                                                                                          loaded    inactive   dead         /dev/fastrpc/cdsp/secure
+  dev-fastrpc-cdsp.device                                                                                                                 loaded    inactive   dead         /dev/fastrpc/cdsp
+  dev-fastrpc-cdsp1-secure.device                                                                                                         loaded    inactive   dead         /dev/fastrpc/cdsp1/secure
+--- dmesg fastrpc ---
+[   37.447537] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@3: Adding to iommu group 41
+[   37.447961] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@4: Adding to iommu group 42
+[   37.449955] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@5: Adding to iommu group 43
+[   37.450683] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@6: Adding to iommu group 44
+[   37.451752] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@7: Adding to iommu group 45
+[   37.452392] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@8: Adding to iommu group 46
+[   37.456293] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@9: Adding to iommu group 47
+[   37.457531] qcom,fastrpc-cb 26300000.remoteproc:glink-edge:fastrpc:compute-cb@11: Adding to iommu group 48
+--- mem ---
+               total        used        free      shared  buff/cache   available
+Mem:              10           3           5           0           2           7
+--- firmware ---
+a300_pfp.fw.zst
+a300_pm4.fw.zst
+a330_pfp.fw.zst
+a330_pm4.fw.zst
+a420_pfp.fw.zst
+[ssh] channel closed code=0 signal=undefined
