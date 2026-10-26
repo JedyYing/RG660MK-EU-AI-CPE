@@ -1,0 +1,41 @@
+### GIT ###
+50e3c2e chore: 交付版 PDF 入库 + 移除脚本内明文密码
+dirty: 1
+
+### CPU/RAM/OS ###
+Intel(R) Core(TM) 7 240H | 10C/16T | 2500 MHz
+Microsoft Windows 11 רҵ��
+visible 31.5 GB | free 13.5 GB | commit 24.2 GB
+### DIMMs ###
+16 GB 5600 MT/s CXMR4E816S6AS-CN1C  
+16 GB 5600 MT/s CXMR4E816S6AS-CN1C  
+### DISK ###
+C: 261.7 GB free / 400.0 GB total
+D: 552.3 GB free / 553.4 GB total
+### GPU ###
+Intel(R) Graphics | driver 32.0.101.7085 (2026-03-03) | VRAM 2,048 MB
+### VULKAN RUNTIME ###
+1639536 bytes  4月 9 2026
+### LLAMA.CPP BUILDS ###
+-- llama-cpu
+version: 0.7.0-dev (build 11836, commit f5027fb21)
+built with Clang 20.1.8 for Windows x86_64
+-- llama-vulkan
+version: 0.7.0-dev (build 11836, commit f5027fb21)
+built with Clang 20.1.8 for Windows x86_64
+### VULKAN DEVICES ###
+Available devices:
+  Vulkan0: Intel(R) Graphics (16125 MiB, 15357 MiB free)
+### MODELS ON DISK ###
+13G	models/Qwen3.5-35B-A3B-UD-IQ3_XXS.gguf
+16G	models/Qwen3.5-35B-A3B-UD-Q3_K_XL.gguf
+1.2G	models/qwen3-1.7b.gguf
+1.1G	models/Qwen3-1.7B-Q4_K_M.gguf
+### MODEL CACHES ###
+### ANY GGUF ANYWHERE >20GB ###
+(done)
+### SERVICES ###
+  TCP    127.0.0.1:3080         0.0.0.0:0              LISTENING       21700
+  TCP    127.0.0.1:8080         0.0.0.0:0              LISTENING       9472
+### MEM PRESSURE ###
+free 13,869 MB | committed 24,754 MB | commit limit 37,372 MB
