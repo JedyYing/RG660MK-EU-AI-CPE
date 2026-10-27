@@ -9,7 +9,7 @@ import time
 kind = sys.argv[1] if len(sys.argv) > 1 else "ls"
 TASKS = {
     "disk": r"请调用 pwsh 工具执行：Get-Date; Get-PSDrive -PSProvider FileSystem | Select-Object Name,Used,Free。然后用一句中文总结 C: 盘的已用与剩余空间（用 GB 表示）。必须先调用工具再回答。",
-    "ls": r"请调用 pwsh 工具执行：Get-ChildItem C:\AI -Directory | Select-Object -ExpandProperty Name。然后用一句中文说出这些目录名称。必须先调用工具再回答。",
+    "ls": r"请调用 pwsh 工具执行：Get-ChildItem D:\AI -Directory | Select-Object -ExpandProperty Name。然后用一句中文说出这些目录名称。必须先调用工具再回答。",
 }
 task = TASKS[kind]
 out = rf"C:/AI/logs/trace-{kind}.jsonl"

@@ -1,16 +1,16 @@
 # Start the local DeepSeek Harness stack on this ThinkPad:
 #   1) llama-server (OpenAI-compatible, Intel iGPU via Vulkan, 127.0.0.1:8080)
 #   2) dsh web UI (127.0.0.1:3080, profile thinkpad-web)
-# Idempotent: already-running processes are left alone. Logs go to C:\AI\logs.
+# Idempotent: already-running processes are left alone. Logs go to D:\AI\logs.
 # The iGPU build measured 2.25x prefill / 1.58x decode over the CPU build for 1.7B;
-# set $BinDir to C:\AI\bin\llama-cpu and -ngl to 0 to fall back to CPU only.
+# set $BinDir to D:\AI\bin\llama-cpu and -ngl to 0 to fall back to CPU only.
 $ErrorActionPreference = 'Continue'
 
-$LogDir   = 'C:\AI\logs'
-$BinDir   = 'C:\AI\bin\llama-vulkan'
-$Model    = 'C:\AI\models\qwen3-1.7b.gguf'
-$DshHome  = 'C:\AI\dsh-home'
-$WorkDir  = 'C:\AI\dsh'
+$LogDir   = 'D:\AI\logs'
+$BinDir   = 'D:\AI\bin\llama-vulkan'
+$Model    = 'D:\AI\models\qwen3-1.7b.gguf'
+$DshHome  = 'D:\AI\dsh-home'
+$WorkDir  = 'D:\AI\dsh'
 $DshCmd   = 'C:\Users\jedy.ying\dsh-runtime\npm-global\dsh.cmd'
 
 New-Item -ItemType Directory -Force $LogDir | Out-Null
@@ -42,7 +42,7 @@ for ($i = 0; $i -lt 120; $i++) {
     } catch { Start-Sleep -Seconds 1 }
 }
 if (-not $ready) {
-    Write-Host '[2/3] llama-server did NOT come up — see C:\AI\logs\llama.err.log' -ForegroundColor Red
+    Write-Host '[2/3] llama-server did NOT come up — see D:\AI\logs\llama.err.log' -ForegroundColor Red
     exit 1
 }
 Write-Host "[2/3] model ready: $($m.data[0].id) (n_ctx $($m.data[0].meta.n_ctx))"
