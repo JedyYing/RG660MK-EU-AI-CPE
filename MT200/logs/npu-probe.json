@@ -1,0 +1,1 @@
+{"model": "deepseek-7b-npu", "messages": [{"role": "user", "content": "用一句话说明什么是NPU。"}], "max_tokens": 48}
