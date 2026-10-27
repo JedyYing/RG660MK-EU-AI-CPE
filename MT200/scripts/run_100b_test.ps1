@@ -13,12 +13,12 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$log = "C:\AI\logs\100b-$Label.log"
+$log = "D:\AI\logs\100b-$Label.log"
 function Say($m) { $line = "[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $m; $line | Tee-Object -FilePath $log -Append }
 
 Say "=== route A test start ==="
 Say ("model={0} size={1:N0} bytes" -f $Model, (Get-Item $Model).Length)
-Say ("git HEAD=" + (& git -C C:\AI rev-parse --short HEAD))
+Say ("git HEAD=" + (& git -C D:\AI rev-parse --short HEAD))
 
 # 1) stop only the llama-server on 8080 (keep dsh web on 3080)
 $conn = Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue
@@ -30,14 +30,14 @@ if ($conn) {
 } else { Say "no listener on :8080" }
 
 # 2) start the 100B model on a separate port
-$exe = "C:\AI\bin\llama-vulkan\llama-server.exe"
+$exe = "D:\AI\bin\llama-vulkan\llama-server.exe"
 $args = @("-m", $Model, "--alias", $Alias, "--host", "127.0.0.1", "--port", "$Port",
           "-c", "$Ctx", "-t", "$Threads", "-np", "1", "--jinja", "-ngl", "$Ngl",
           "--no-warmup", "--metrics") + $Extra
 Say ("starting: {0} {1}" -f $exe, ($args -join " "))
 $p = Start-Process -FilePath $exe -ArgumentList $args -PassThru `
-     -RedirectStandardOutput "C:\AI\logs\100b-server.out.log" `
-     -RedirectStandardError "C:\AI\logs\100b-server.err.log"
+     -RedirectStandardOutput "D:\AI\logs\100b-server.out.log" `
+     -RedirectStandardError "D:\AI\logs\100b-server.err.log"
 Say ("server pid=" + $p.Id)
 
 # 3) sample memory while it loads
@@ -57,14 +57,14 @@ for ($i = 0; $i -lt 40; $i++) {
 
 # 4) benchmark
 Say "running benchmark"
-& python C:\AI\scripts\bench_100b.py $Port $Label $NPredict 2>&1 | Tee-Object -FilePath $log -Append
+& python D:\AI\scripts\bench_100b.py $Port $Label $NPredict 2>&1 | Tee-Object -FilePath $log -Append
 
 # 5) restore the 1.7B stack and verify
 Say "stopping 100B server"
 Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 5
 Say "restoring 1.7B stack"
-& pwsh -NoProfile -ExecutionPolicy Bypass -File C:\AI\scripts\switch-model.ps1 -Target small 2>&1 |
+& pwsh -NoProfile -ExecutionPolicy Bypass -File D:\AI\scripts\switch-model.ps1 -Target small 2>&1 |
   Tee-Object -FilePath $log -Append
 for ($i = 0; $i -lt 20; $i++) {
   Start-Sleep -Seconds 3

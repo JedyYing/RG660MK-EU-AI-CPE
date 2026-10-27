@@ -11,7 +11,7 @@ TOTAL = int(sys.argv[2])
 OUT = sys.argv[3]
 PARTS = int(sys.argv[4])
 TARGETS = [int(x) for x in sys.argv[5].split(",")]
-LOG = sys.argv[6] if len(sys.argv) > 6 else r"C:\AI\logs\fixparts.log"
+LOG = sys.argv[6] if len(sys.argv) > 6 else r"D:\AI\logs\fixparts.log"
 
 CHUNK = (TOTAL + PARTS - 1) // PARTS
 SUB = 64 * 1024 * 1024

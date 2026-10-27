@@ -73,7 +73,7 @@
 - id: sandbox-policy
   config:
     mode: workspace-write
-    workspaceRoot: C:\AI\dsh
+    workspaceRoot: D:\AI\dsh
 - id: approval
   config:
     policy: never

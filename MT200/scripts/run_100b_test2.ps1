@@ -10,12 +10,12 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
-$log = "C:\AI\logs\100b-$Label.log"
+$log = "D:\AI\logs\100b-$Label.log"
 function Say($m) { $line = "[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $m; $line | Tee-Object -FilePath $log -Append }
 
 Say "=== attempt 2 start ==="
 Say ("model={0}" -f $Model)
-$exe = "C:\AI\bin\llama-vulkan\llama-server.exe"
+$exe = "D:\AI\bin\llama-vulkan\llama-server.exe"
 $args = @("-m", $Model, "--alias", $Alias, "--host", "127.0.0.1", "--port", "$Port",
           "-c", "$Ctx", "-t", "6", "-np", "1", "--jinja",
           "-ngl", "99", "-ncmoe", "46",
@@ -24,8 +24,8 @@ $args = @("-m", $Model, "--alias", $Alias, "--host", "127.0.0.1", "--port", "$Po
           "--no-warmup", "--metrics")
 Say ("cmd: " + $exe + " " + ($args -join " "))
 $p = Start-Process -FilePath $exe -ArgumentList $args -PassThru `
-     -RedirectStandardOutput "C:\AI\logs\100b-server.out.log" `
-     -RedirectStandardError "C:\AI\logs\100b-server.err.log"
+     -RedirectStandardOutput "D:\AI\logs\100b-server.out.log" `
+     -RedirectStandardError "D:\AI\logs\100b-server.err.log"
 Say ("pid=" + $p.Id)
 
 $ready = $false
@@ -47,17 +47,17 @@ for ($i = 0; $i -lt 60; $i++) {
 
 if ($ready) {
   Say "benchmark start"
-  & python C:\AI\scripts\bench_100b.py $Port $Label $NPredict 2>&1 | Tee-Object -FilePath $log -Append
+  & python D:\AI\scripts\bench_100b.py $Port $Label $NPredict 2>&1 | Tee-Object -FilePath $log -Append
 } else {
   Say "not ready - see 100b-server.err.log"
-  Get-Content "C:\AI\logs\100b-server.err.log" -Tail 15 | Tee-Object -FilePath $log -Append
+  Get-Content "D:\AI\logs\100b-server.err.log" -Tail 15 | Tee-Object -FilePath $log -Append
 }
 
 Say "stopping server"
 Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 5
 Say "restoring 1.7B + dsh web"
-& pwsh -NoProfile -ExecutionPolicy Bypass -File C:\AI\scripts\switch-model.ps1 -Target small 2>&1 |
+& pwsh -NoProfile -ExecutionPolicy Bypass -File D:\AI\scripts\switch-model.ps1 -Target small 2>&1 |
   Tee-Object -FilePath $log -Append
 for ($i = 0; $i -lt 20; $i++) {
   Start-Sleep -Seconds 3

@@ -80,7 +80,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-dsh.ps1
 python .\scripts\accept20.py 20 C:/AI/logs/rounds
 
 # 3) 单次 headless 任务
-$env:DSH_HOME='C:\AI\dsh-home'; $env:LOCAL_LLM_KEY='sk-local'
+$env:DSH_HOME='D:\AI\dsh-home'; $env:LOCAL_LLM_KEY='sk-local'
 C:\Users\jedy.ying\dsh-runtime\npm-global\dsh.cmd --profile thinkpad-local --json "调用 pwsh 执行 Get-Date"
 
 # 4) 换模型（两个模型不能同时驻留）
@@ -106,7 +106,7 @@ pwsh -File .\scripts\switch-model.ps1 -Target 35b     # 35B-A3B / :8081 / 60s �
 - `llama-server` 与 dsh 只监听 `127.0.0.1`；dsh 带 token 认证。
 - llama-server 现在强制 `--api-key sk-local`：直接 curl 必须带 `-H "Authorization: Bearer sk-local"`，
   否则 401；dsh 侧靠 provider 的 `apiKeyEnv: LOCAL_LLM_KEY` 自动补上。
-- Agent 写权限限定在 `C:\AI\dsh`（`sandbox-policy.workspaceRoot`）。
+- Agent 写权限限定在 `D:\AI\dsh`（`sandbox-policy.workspaceRoot`）。
 - 模型的 `contextWindow` 必须等于 `llama-server -c`（12288），改了就开新会话。
 - 改配置只动 `cordis.patch.yml`；`cordis.yml` 是 dsh 自己重写的空入口，不要手改。
 

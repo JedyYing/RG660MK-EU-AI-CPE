@@ -1,7 +1,7 @@
 # Link the USB Ethernet port to MT200 (10.42.0.81/24) by adding a static IP on the same subnet.
 # ASCII only. Run elevated.
 $ErrorActionPreference = 'Continue'
-$log = 'C:\AI\logs\mt200-link.log'
+$log = 'D:\AI\logs\mt200-link.log'
 function W($m) { $m | Tee-Object -FilePath $log -Append }
 
 W "=== $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') mt200 link setup ==="

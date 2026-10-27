@@ -10,9 +10,9 @@ param(
 )
 $ErrorActionPreference = 'Continue'
 
-$LogDir = 'C:\AI\logs'
-$BinDir = 'C:\AI\bin\llama-vulkan'
-$Model  = 'C:\AI\models\Qwen3.5-35B-A3B-UD-Q3_K_XL.gguf'
+$LogDir = 'D:\AI\logs'
+$BinDir = 'D:\AI\bin\llama-vulkan'
+$Model  = 'D:\AI\models\Qwen3.5-35B-A3B-UD-Q3_K_XL.gguf'
 
 if (-not (Test-Path $Model)) { Write-Host "model missing: $Model" -ForegroundColor Red; exit 1 }
 
@@ -41,5 +41,5 @@ for ($i = 0; $i -lt 600; $i++) {
         }
     } catch { Start-Sleep -Seconds 2 }
 }
-Write-Host 'model did not come up — see C:\AI\logs\llama-35b.err.log' -ForegroundColor Red
+Write-Host 'model did not come up — see D:\AI\logs\llama-35b.err.log' -ForegroundColor Red
 exit 1

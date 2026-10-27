@@ -16,7 +16,7 @@ URL = sys.argv[1]
 TOTAL = int(sys.argv[2])
 OUT = sys.argv[3]
 PARTS = int(sys.argv[4]) if len(sys.argv) > 4 else 32
-LOG = sys.argv[5] if len(sys.argv) > 5 else r"C:\AI\logs\resume.log"
+LOG = sys.argv[5] if len(sys.argv) > 5 else r"D:\AI\logs\resume.log"
 WORKERS = int(os.environ.get("DL_WORKERS", "12"))
 
 CHUNK = (TOTAL + PARTS - 1) // PARTS

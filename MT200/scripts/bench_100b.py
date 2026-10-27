@@ -93,7 +93,7 @@ summary = {
     "decode_tps_all": dec, "prefill_tps_all": pre,
     "mem_used_mb": round(sys_mem_mb()[0]), "rows": rows,
 }
-out = rf"C:\AI\logs\bench-{LABEL}.json"
+out = rf"D:\AI\logs\bench-{LABEL}.json"
 json.dump(summary, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print(json.dumps({k: v for k, v in summary.items() if k != "rows"}, ensure_ascii=False, indent=1))
 print("saved", out)

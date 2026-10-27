@@ -29,10 +29,10 @@ TASKS = [
      r"请调用 pwsh 工具执行：Get-Date; Get-PSDrive -PSProvider FileSystem | Select-Object Name,Used,Free。"
      r"然后用一句中文总结 C: 盘的已用与剩余空间（用 GB 表示）。必须先调用工具再回答。"),
     ("ls",
-     r"请调用 pwsh 工具执行：Get-ChildItem C:\AI -Directory | Select-Object -ExpandProperty Name。"
+     r"请调用 pwsh 工具执行：Get-ChildItem D:\AI -Directory | Select-Object -ExpandProperty Name。"
      r"然后用一句中文说出这些目录名称。必须先调用工具再回答。"),
     ("cpu",
-     r"请调用 pwsh 工具执行：Select-String -Path C:\AI\logs\preflight.txt -Pattern 'Core\(TM\)'。"
+     r"请调用 pwsh 工具执行：Select-String -Path D:\AI\logs\preflight.txt -Pattern 'Core\(TM\)'。"
      r"然后用一句中文说出该文件里的 CPU 型号。必须先调用工具再回答。"),
 ]
 
