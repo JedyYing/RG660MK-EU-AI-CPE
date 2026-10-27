@@ -33,3 +33,6 @@
 # runtime logs (llama.cpp writes to stderr)
 /logs/*.log.err
 /logs/*.err
+
+# Chrome headless profile used for PDF printing
+.chrome-headless/

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>工作日报 · 2026-10-26</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+         color: #1a1d21; font-size: 10.4pt; line-height: 1.6; margin: 0; }
+  h1 { font-size: 19pt; margin: 0 0 1.5mm; }
+  h2 { font-size: 12.5pt; margin: 6.5mm 0 2.2mm; padding-left: 3mm; border-left: 4px solid #2f6feb; }
+  h3 { font-size: 10.8pt; margin: 4mm 0 1.4mm; color: #23405f; }
+  p { margin: 0 0 1.8mm; }
+  .sub { color: #5b6673; font-size: 9.4pt; }
+  .meta { border-top: 1px solid #d7dde5; border-bottom: 1px solid #d7dde5;
+          padding: 2.2mm 0; margin: 3.5mm 0 4mm; font-size: 8.9pt; color: #4a5563; }
+  .meta b { color: #1a1d21; }
+  table { width: 100%; border-collapse: collapse; margin: 1.8mm 0 3mm; font-size: 9.1pt; }
+  th, td { border: 1px solid #d7dde5; padding: 1.5mm 2.1mm; text-align: left; vertical-align: top; }
+  th { background: #f2f5f9; font-weight: 600; color: #23405f; }
+  tr:nth-child(even) td { background: #fbfcfe; }
+  .ok { color: #1a7f37; font-weight: 600; }
+  .warn { color: #b26a00; font-weight: 600; }
+  .bad { color: #b42318; font-weight: 600; }
+  .box { background: #f6f9ff; border: 1px solid #d5e2f8; border-radius: 2mm; padding: 2.8mm 3.2mm; margin: 2.5mm 0; }
+  .box.warn { background: #fffaf0; border-color: #f2dcb3; }
+  ul, ol { margin: 0 0 2mm; padding-left: 5mm; }
+  li { margin-bottom: .8mm; }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 8.9pt; background: #f2f4f7;
+         padding: 0 1px; border-radius: 1px; }
+  .kpi { display: flex; gap: 2.6mm; margin: 2.5mm 0 3mm; }
+  .kpi div { flex: 1; border: 1px solid #d7dde5; border-radius: 2mm; padding: 2.2mm; text-align: center; }
+  .kpi .n { font-size: 14pt; font-weight: 700; color: #2f6feb; display: block; line-height: 1.15; }
+  .kpi .l { font-size: 8.2pt; color: #5b6673; }
+  .pagebreak { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>工作日报 · 2026-10-26（周一）</h1>
+<div class="sub">100B+ 大模型可行性任务 · NPU 算力压榨收尾 · 交付物同步</div>
+<div class="meta">
+  生成时间：<b>2026-10-27 07:21</b>　·　作者：<b>thinkpad Hermes</b>　·　工作目录：<b>C:\AI</b>　·　当日提交：<b>6 次</b>（50e3c2e → e315623）<br>
+  远端：<b>github.com/JedyYing/RG660MK-EU-AI-CPE</b>　·　涉及设备：ThinkPad（Core 7 240H / 31.5 GB）、MT200（QCS9075）
+</div>
+
+<h2>一、昨日概览</h2>
+<div class="kpi">
+  <div><span class="n">6</span><span class="l">代码提交</span></div>
+  <div><span class="n">3</span><span class="l">新增报告（MD）</span></div>
+  <div><span class="n">2</span><span class="l">GitHub 推送</span></div>
+  <div><span class="n">0.72</span><span class="l">106B decode（tok/s）</span></div>
+</div>
+<p>昨天是这条线的<b>攻坚日</b>：上午结束 NPU 压榨的最后一轮排查，下午接下"100B+ 可运行性"任务书并完成阶段一、二，晚间把一个 <b>106B 参数</b>的模型真正跑起来（0.72 tok/s），并做了一次影响判断的定论——<b>在这台机器上，GPU 卸载对超大模型是有害的</b>。</p>
+
+<h2>二、昨天做了什么</h2>
+
+<h3>1. 交付物收口与同步</h3>
+<ul>
+  <li>生成 A4 状态报告 PDF（5 页），修掉一个真实缺陷：Chrome 对微软雅黑子集的 ToUnicode 映射错位，导致 <code>19.5</code> 抽成 <code>a9.5</code>、<code>C:\AI</code> 抽成 <code>fTdn</code>；改为 <b>Segoe UI 优先</b>后修复，并用 PDFium 逐页渲染验证。</li>
+  <li>发现并移除安全隐患：三个 MT200 脚本里硬编码了设备密码，改为必须通过 <code>MT_PASS</code> 环境变量提供。</li>
+  <li>把全部工程产物推到 GitHub 仓库的 <code>MT200/</code> 目录：先 227 文件 / 5.7 MB，晚间更新为 <b>247 文件 / 5.8 MB</b>；两次都做了远端复克隆校验。</li>
+</ul>
+
+<h3>2. NPU 算力压榨收尾（结论：已触顶）</h3>
+<table>
+  <tr><th style="width:32%">尝试</th><th style="width:34%">结果</th><th>判定</th></tr>
+  <tr><td><code>spill-fill-bufsize</code> 32/128/256</td><td>该图不支持，加载失败</td><td class="bad">无效</td></tr>
+  <tr><td><code>mmap-budget 256</code></td><td>183.9 / 12.22（基线 184.4 / 12.25）</td><td>无变化</td></tr>
+  <tr><td>关闭权重共享</td><td>149.7 / 8.57，掉 30%</td><td class="bad">更差</td></tr>
+  <tr><td>两个 LLM 会话并发</td><td>第二个失败，decode 仍 12.42，负载冲到 20</td><td class="bad">不叠加</td></tr>
+  <tr><td>LLM + CNN 混跑</td><td>LLM 12.32 不变，CNN 从 12 掉到 4.02 inf/s</td><td class="bad">双方变差</td></tr>
+  <tr><td>SNPE 运行时</td><td>仅主机端工具，报 <code>No network connection detected</code></td><td class="bad">不可用</td></tr>
+</table>
+<p>结论：这台设备的实际天花板是 <b>LLM 12.4 tok/s</b>（0.06–0.17 TOPS）与 <b>CNN 43.26 inf/s = 0.38 TFLOP/s</b>（4 路并发，峰值的 0.19%）。200 TOPS 是稀疏 INT8 + 大批量的理论值，单序列小批量永远达不到。</p>
+
+<h3>3. 100B+ 任务：阶段一（硬件摸底）</h3>
+<table>
+  <tr><th>项</th><th>ThinkPad</th><th>MT200</th></tr>
+  <tr><td>内存（实测）</td><td>31.5 GB，空闲 13.5 GB，提交上限 37.4 GB</td><td>11.1 GB，可用 <b>7.6 GB</b>，<b>无 swap</b></td></tr>
+  <tr><td>加速器</td><td>iGPU / Vulkan，15.4 GiB free</td><td>HTP V73，QNN+Genie 可用</td></tr>
+  <tr><td>模型资产</td><td>最大 16.6 GB（35B）</td><td>最大 4.5 GB（8B GGUF）/ 4.2 GB bundle</td></tr>
+  <tr><td>转换工具</td><td>不需要</td><td class="bad">完全没有（只有 runner）</td></tr>
+  <tr><td>磁盘冷读</td><td><b>1.1–1.9 GB/s</b>（绕过缓存实测）</td><td>—</td></tr>
+  <tr><td>CMA</td><td>—</td><td class="bad">167,936 kB 总 / <b>空闲 0</b></td></tr>
+</table>
+
+<h3>4. 100B+ 任务：阶段二（四路线分析）</h3>
+<ul>
+  <li><b>路线 A（ThinkPad 单机）</b>：可执行，但 100B 类模型现实最小 GGUF 是 27.3 GiB（Scout TQ1_0），必需 mmap 流式。</li>
+  <li><b>路线 B（MT200 NPU）</b>：<span class="bad">物理不可能</span>——7.6 GB 可用 vs 27.3 GiB 起步，差 3.6 倍；且无转换工具、ctx 只有 1024。</li>
+  <li><b>路线 C（跨设备同模型分层）</b>：<span class="warn">受阻</span>——MT200 的 vendor llama.cpp <b>不含 RPC 后端</b>（二进制内 rpc 字符串计数为 0），且无 gcc/cmake；即使补齐，NPU 也用不上（HTP 只吃 QNN bundle）。</li>
+  <li><b>路线 D（两台各跑一个模型）</b>：已实现（NPU 7B + iGPU 35B），但不是同一模型，不满足任务定义。</li>
+</ul>
+
+<div class="pagebreak"></div>
+<h2>三、重大进展：106B 模型在 31.5 GB 笔记本上真跑起来了</h2>
+<table>
+  <tr><th style="width:26%">项</th><th>实测值</th></tr>
+  <tr><td>模型</td><td>GLM-4.5-Air-UD-IQ1_S，<b>35.86 GiB</b>，106B 总参 / 12B 激活，MIT 许可</td></tr>
+  <tr><td>完整性</td><td>38,503,140,416 字节；SHA256 <code>4491e442…0412ab</code> 与源站一致</td></tr>
+  <tr><td>运行配置</td><td>llama.cpp b11836 <b>CPU-only</b>，<code>-c 2048 -ctk q8_0 -ctv q8_0 -ngl 0 -nkvo</code></td></tr>
+  <tr><td><b>decode</b></td><td><b>0.72 tok/s</b>（0.54–0.87，5 题中位）</td></tr>
+  <tr><td><b>prefill</b></td><td><b>0.9 tok/s</b>（0.57–1.53）</td></tr>
+  <tr><td>内存占用</td><td>31,625 MB / 31.5 GB（余量约 1 GB）</td></tr>
+</table>
+<p class="sub">换算：生成 200 token ≈ 4.6 分钟；读入 2048 token 上下文 ≈ 38 分钟。同机 35B-A3B 为 5.71 tok/s，快 8 倍。</p>
+
+<div class="box warn">
+<b>最重要的一个反直觉结论</b>：Intel iGPU 的"显存"就是系统内存本身。36 GiB 模型占满 RAM 后，显卡连 400 MB 都申请不到——<b>4 种 GPU 卸载配置全部 OOM，完全关掉 GPU 反而跑通</b>。这说明"有 GPU 就该用"在"模型大于内存"的场景下是错的。
+</div>
+
+<h2>四、遇到的问题与瓶颈</h2>
+<table>
+  <tr><th style="width:28%">问题</th><th style="width:36%">表现</th><th>现状</th></tr>
+  <tr><td>MT200 内存墙</td><td>可用 7.6 GB、无 swap、CMA 空闲 0</td><td class="bad">无法解决（硬件）</td></tr>
+  <tr><td>MT200 无模型转换工具</td><td>只有 <code>qnn-net-run</code> 等 runner，无 converter / context-binary-generator</td><td class="bad">需厂商提供 bundle</td></tr>
+  <tr><td>现有 NPU bundle 上下文</td><td>1024 token，装不下 dsh 的 2.6K Agent 提示</td><td class="warn">等 ≥4K bundle</td></tr>
+  <tr><td>100B 的内存需求</td><td>35.9 GiB 权重 vs 31.5 GB 物理内存</td><td class="warn">靠 mmap 流式，速度受限</td></tr>
+  <tr><td>iGPU 与 RAM 同源</td><td>GPU 卸载后 Vulkan 侧 OOM，反而更慢/失败</td><td class="ok">已定位并绕开</td></tr>
+  <tr><td>下载链路不稳</td><td>Wi-Fi 实测 ~22 Mbps；hf-mirror 429 限速；分片被旧进程并发写坏（长度翻倍）</td><td class="ok">已改用分片字节校验 + 单进程互斥</td></tr>
+  <tr><td>IQ1_S 质量损失</td><td>5 题中 2 题不合格（答非所问 / 不给数字）</td><td class="warn">量化极限，非配置问题</td></tr>
+</table>
+
+<h2>五、今日（10-27）计划与可改进项</h2>
+
+<h3>优先级 P0：把"能用"和"能演示"分开</h3>
+<ul>
+  <li><b>35B-A3B 作为日常主力</b>（5.71 tok/s），106B 定位为"能力上限演示"，不接入 dsh 工作流。理由：0.72 tok/s 连一次 200 token 回答都要 4.6 分钟，prefill 更慢，无法承载 Agent 循环。</li>
+  <li>决定 106B 文件的去留：保留在 <code>D:\models</code>（占 36 GB，D 盘余 517 GB）或删除。建议保留但加一个开关脚本，避免误加载拖垮机器。</li>
+</ul>
+
+<h3>优先级 P1：把 100B 的结论变成可复用资产</h3>
+<ul>
+  <li>把这次的四份文档（摸底 / 路线分析 / 实测 / 日报模板）整理成一份 <b>《端侧大模型可行性判定手册》</b>，包含"内存预算表 + 量化换算公式 + 失败模式清单"，下次换设备直接套用。</li>
+  <li>补一个 <code>mem_budget.py</code>：输入参数量、量化位宽、上下文长度、设备内存，直接输出"能否驻留 / 预期 tok/s / 推荐配置"，把昨天的算术自动化。</li>
+</ul>
+
+<h3>优先级 P2：MT200 侧不再投入算力压榨</h3>
+<ul>
+  <li>NPU 侧已证明触顶（0.38 TFLOP/s），后续只做一件事：<b>向厂商索取 ≥4K 上下文的 QNN bundle</b>，拿到后桥接层改一行配置即可托管 Agent。</li>
+  <li>不再尝试并发/混跑/参数扫描——昨天的数据已经把这些路径全部否掉，重复实验没有信息增益。</li>
+</ul>
+
+<h3>优先级 P3：工程卫生</h3>
+<ul>
+  <li>清理 <code>C:\AI\logs</code> 里 30+ 个早期失败的 QNN 日志（保留结论，丢弃中间产物）。</li>
+  <li>GitHub token 已在对话中暴露，<b>建议尽快吊销重签</b>；之后推送改用 SSH key 或凭据管理器，不再手写 token。</li>
+</ul>
+
+<div class="box">
+<b>一句话总结</b>：昨天把"能不能跑 100B"这个问题从猜测变成了实测——<b>能跑（0.72 tok/s），但不可用</b>；同时确认 MT200 的 NPU 在 100B 场景下没有任何可能。今天开始把这套判定方法固化下来，并把日常栈稳定在 35B。
+</div>
+
+<p class="sub" style="margin-top:6mm">数据来源：<code>C:\AI</code> git 提交 50e3c2e→e315623；<code>logs/bench-glm45air-v5.json</code>；<code>reports/100B_*.md</code>；<code>logs/npu-knobs.txt</code>、<code>logs/npu-mixed.txt</code>。</p>
+
+</body>
+</html>
