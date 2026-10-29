@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>MT200 DeepSeek Harness 7B NPU 部署验收报告 V2</title>
+<style>
+@page{size:A4;margin:13mm 12mm 16mm}*{box-sizing:border-box}html{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:"Noto Sans CJK SC","Alibaba PuHuiTi","Microsoft YaHei",sans-serif;color:#172033;font-size:9.4pt;line-height:1.53;margin:0}h1,h2,h3{page-break-after:avoid}h1{font-size:20pt;line-height:1.25;margin:0 0 2mm}h2{font-size:12.5pt;color:#123f68;border-left:4px solid #1976d2;padding-left:2.5mm;margin:6.5mm 0 2mm}h3{font-size:10.4pt;color:#24527a;margin:4mm 0 1.2mm}p{margin:0 0 2mm;text-align:justify}ul,ol{margin:1mm 0 2.4mm;padding-left:5mm}li{margin:.65mm 0}table{width:100%;border-collapse:collapse;margin:1.7mm 0 2.8mm;font-size:8.35pt;page-break-inside:avoid}th,td{border:.7pt solid #ccd6e2;padding:1.25mm 1.55mm;text-align:left;vertical-align:top}th{background:#eaf2fa;color:#173f63;font-weight:650}tr:nth-child(even) td{background:#f8fafc}code,pre{font-family:"Noto Sans Mono CJK SC","DejaVu Sans Mono",monospace}code{font-size:8pt;background:#eef3f8;padding:0 .7mm;border-radius:.7mm}pre{font-size:7.7pt;line-height:1.42;background:#f5f7fa;border:.7pt solid #d8e0e9;border-radius:1.5mm;padding:2.2mm;margin:1.5mm 0 2.7mm;white-space:pre-wrap;word-break:break-word;page-break-inside:avoid}.hero{background:linear-gradient(135deg,#0d3152,#155f94);color:#fff;border-radius:3mm;padding:7mm;margin-bottom:4mm}.hero .sub{font-size:9.8pt;opacity:.9;margin-top:1.5mm}.meta{font-size:8.4pt;color:#4d5d6e;border-top:.7pt solid #d5dde7;border-bottom:.7pt solid #d5dde7;padding:2mm 0;margin:3mm 0}.kpis{display:flex;gap:2.3mm;margin:3mm 0;page-break-inside:avoid}.kpi{flex:1;border:.7pt solid #cfd9e5;border-top:3px solid #1976d2;border-radius:1.5mm;padding:2.2mm;background:#fff}.kpi b{display:block;font-size:13.5pt;color:#0d4e7c;line-height:1.2}.kpi span{color:#617083;font-size:7.4pt}.callout{background:#eef6ff;border-left:3px solid #1976d2;padding:2.4mm 3mm;margin:2.4mm 0;page-break-inside:avoid}.good{background:#effaf1;border-left-color:#218838}.warn{background:#fff7e6;border-left-color:#d97706}.danger{background:#fff0f0;border-left-color:#c62828}.ok{color:#16723a;font-weight:650}.bad{color:#b42318;font-weight:650}.amber{color:#a45b00;font-weight:650}.muted{color:#667789}.arch{display:flex;align-items:stretch;gap:1.5mm;margin:3mm 0;page-break-inside:avoid}.node{flex:1;border:.7pt solid #bed0e3;background:#f5f9fd;border-radius:1.5mm;padding:1.8mm;text-align:center}.node b{display:block;color:#123f68}.node small{color:#5f6f80;font-size:7.1pt}.arrow{align-self:center;color:#1976d2;font-weight:bold}.page{page-break-before:always}.foot{border-top:.7pt solid #d5dde7;margin-top:5mm;padding-top:2mm;font-size:7.4pt;color:#738193}
+</style>
+</head>
+<body>
+<section class="hero"><h1>MT200 DeepSeek Harness 7B NPU<br>部署验收报告 V2</h1><div class="sub">成功参数 · 双端硬件 · NPU 利用率 · 200 TOPS 解释 · W4A16/INT8 可行性 · 瓶颈与升级路线</div></section>
+<div class="meta">报告日期：<b>2026-10-29</b>（原验收日期：2026-10-28）　·　版本：<b>V2</b>　·　生成者：<b>Kiro</b>　·　目标：<b>本机浏览器访问 + MT200 NPU 推理</b><br>数据口径：原验收与既有V2草稿历史数据、原始日志、2026-10-29独立复核；历史值不冒充本轮测试。敏感 token、密码、密钥和模型文件不入报告。</div>
+
+<h2>1. 结论摘要</h2>
+<div class="callout good"><b>部署成功：</b>本机通过 SSH 隧道访问 <code>127.0.0.1:3080</code>，MT200 上的 DeepSeek Harness 经 OpenAI 兼容桥调用 Qualcomm Genie/QNN，最终由 Hexagon HTP V73 执行 DeepSeek-7B W4A16。短对话和两轮记忆均通过。</div>
+<div class="kpis"><div class="kpi"><b>12.1–12.9</b><span>decode，tok/s</span></div><div class="kpi"><b>607.9</b><span>681-token prefill，tok/s</span></div><div class="kpi"><b>94.59%</b><span>生成窗口 Q6 平均利用率代理</span></div><div class="kpi"><b>1024</b><span>bundle 固定总上下文</span></div></div>
+<ul><li>当前不是全 FP16，而是 <b>W4A16：INT4 权重 + FP16 激活/计算</b>。</li><li>厂商 200 TOPS 是理想稀疏低精度矩阵峰值，不能直接换算成 token/s；decode 受自回归串行和内存带宽限制。</li><li>短提示 prefill 只有 18.62–25.2 tok/s，但 681-token 长提示达到 607.9 tok/s；短样本被固定调度成本主导。</li><li>7B INT8 的权重可放入 9.76 GiB available，但完整 QNN 运行时未必能安全放入；值得做受控 PoC，不应先于 4K/8K W4A16 bundle。</li><li>1024-token 上下文仍是最大功能瓶颈：工具、长历史、文档和完整 Agent 尚不可用。</li></ul>
+
+<h2>2. 架构与运行链路</h2>
+<div class="arch"><div class="node"><b>本机浏览器</b><small>127.0.0.1:3080<br>动态认证 token</small></div><div class="arrow">→</div><div class="node"><b>SSH 隧道</b><small>USB 网口<br>10.42.0.1 ↔ .81</small></div><div class="arrow">→</div><div class="node"><b>dsh Web</b><small>loopback:3080<br>0.2.1-rc.2</small></div><div class="arrow">→</div><div class="node"><b>OpenAI Bridge</b><small>loopback:8090<br>JSON/SSE</small></div><div class="arrow">→</div><div class="node"><b>Genie/QNN</b><small>7B W4A16<br>HTP V73</small></div></div>
+<table><tr><th>层</th><th>组件</th><th>职责</th><th>状态</th></tr><tr><td>访问</td><td>本机 <code>127.0.0.1:3080</code></td><td>Web UI；首次使用带 token URL 建立 Cookie</td><td class="ok">通过</td></tr><tr><td>传输</td><td><code>ssh mt200</code> local forwarding</td><td>只在本机暴露入口</td><td class="ok">通过</td></tr><tr><td>Harness</td><td><code>dsh-web.service</code></td><td>会话、提示组装、模型路由</td><td class="ok">active/enabled</td></tr><tr><td>桥接</td><td><code>npu-openai-bridge.service</code></td><td>OpenAI ↔ DeepSeek prompt/Genie；补 SSE stop/[DONE]</td><td class="ok">active/enabled</td></tr><tr><td>推理</td><td>Genie 1.13 + QNN/AI-RT 2.39</td><td>加载 5 个 context binary，执行 HTP 图</td><td class="ok">中文出词</td></tr><tr><td>CPU 8B</td><td><code>llama-server.service</code></td><td>曾用于回退验证</td><td class="bad">inactive/disabled</td></tr></table>
+
+<h2>3. 成功部署参数</h2>
+<pre>provider: meig-npu
+model: deepseek-7b-npu
+api: openai-completions
+baseURL: http://127.0.0.1:8090/v1
+contextWindow: 1024
+maxTokens: 256
+compat:
+  supportsDeveloperRole: false
+  maxTokensField: max_tokens
+persona:
+  prefix: You are a concise Chinese assistant. Answer directly and briefly.
+  complete: true
+  includeRuntimeContext: false</pre>
+<table><tr><th>QNN/Genie 参数</th><th>值</th><th>说明</th></tr><tr><td>bundle</td><td><code>/data/local/tmp/qnn/deepseek-7b</code></td><td>目录 4,405,880,637 B；5 个 context bins</td></tr><tr><td>模型精度</td><td>W4A16</td><td>权重约 4 bit；激活/主要计算为 FP16</td></tr><tr><td>上下文/词表</td><td>1024 / 102,400</td><td>上下文编译期固定；大词表增加固定开销</td></tr><tr><td>后端</td><td>QnnHtp / burst / weight sharing</td><td><code>kv-dim=128</code>，<code>pos-id-dim=64</code></td></tr><tr><td>并发</td><td>1</td><td>bridge 全局锁，避免 FastRPC/内存竞争</td></tr><tr><td>内存</td><td>bridge cgroup 峰值约 5.52 GB</td><td>不包含所有硬件域口径时需谨慎比较</td></tr></table>
+
+<div class="page"></div>
+<h2>4. 本机与 MT200 参数</h2>
+<h3>4.1 本机电脑</h3>
+<table><tr><th>项目</th><th>实测参数</th><th>作用/限制</th></tr><tr><td>机型/系统</td><td>HUAWEI NDZ-WXX9；Ubuntu 22.04；x86_64</td><td>浏览器、SSH 隧道、运维和报告</td></tr><tr><td>CPU</td><td>Intel i5-1135G7，4 核 8 线程，0.4–4.2 GHz</td><td>本次不承担模型推理</td></tr><tr><td>GPU</td><td>Intel Iris Xe，TigerLake-LP GT2</td><td><b>无独立显存</b>，UMA 动态共享系统内存</td></tr><tr><td>显存口径</td><td>独立 VRAM = 0；PCI BAR 窗口 256 MiB</td><td>256 MiB 是地址映射窗口，不是显存容量</td></tr><tr><td>内存</td><td>7.56 GiB RAM；约 22.9 GiB swap</td><td>GPU 与 CPU 动态共享总计7.56 GiB系统内存，不能视为固定分配7.56 GiB显存</td></tr><tr><td>存储/网络</td><td>512 GB NVMe；USB 网卡 10.42.0.1/24</td><td>直连 MT200 10.42.0.81</td></tr></table>
+<div class="callout warn"><b>Iris Xe 说明：</b>Linux i915 按需从系统内存分配图形缓冲，没有一个固定“4 GB 显存”。本机系统内存本身只有 7.56 GiB，还要供 Ubuntu 和其他进程使用，因此不适合把 7B/8B 模型完整卸载到 iGPU。</div>
+
+<h3>4.2 MT200</h3>
+<table><tr><th>项目</th><th>实测参数</th><th>口径</th></tr><tr><td>设备/SoC</td><td>IQ-9075 EVK，Meig Board V1.00；QCS9075</td><td>device tree/项目资料</td></tr><tr><td>CPU</td><td>8 × Cortex-A78C，1.267–2.362 GHz</td><td><code>lscpu</code></td></tr><tr><td>NPU</td><td>Hexagon HTP V73；厂商标称 200 TOPS 稀疏算力</td><td>200 TOPS 不是本次 token 吞吐</td></tr><tr><td>GPU</td><td>Qualcomm Adreno 663</td><td>共享系统内存</td></tr><tr><td>内存</td><td>10.86 GiB 物理内存，无 swap；轻载 available 曾达约 9.76 GiB</td><td>available 含可回收缓存，不等于 NPU 可映射连续内存</td></tr><tr><td>存储</td><td>120.26 GB；可用约 74.5 GB</td><td><code>/dev/sda3</code></td></tr><tr><td>系统</td><td>Ubuntu 24.04.4，Linux 6.8.0-1077.81，arm64</td><td>终端实测</td></tr></table>
+<div class="callout danger"><b>模型自报信息不可信：</b>模型曾声称“2023-04-14、Ubuntu 20.04.4”。真实 MT200 是 Ubuntu 24.04.4，原验收日期为 2026-10-28，V2修订日期为2026-10-29。为了适配 1024 token，runtime context 和工具已关闭，模型无法读取真实时间/系统，只能猜测。</div>
+
+<h2>5. 性能、NPU 利用率与温度</h2>
+<table><tr><th>场景</th><th>初始化 / prefill</th><th>decode / 墙钟</th><th>结论</th></tr><tr><td>Genie 21-token 短提示</td><td>init 10.50 s；prefill 18.62 tok/s；TTFT 1.13 s</td><td>13 tokens @ 12.89 tok/s；约 13 s</td><td>短提示固定成本显著</td></tr><tr><td>既有 28-token 样本</td><td>init 7.11 s；prefill 25.2 tok/s</td><td>188 tokens @ 12.09 tok/s</td><td>decode 稳定在约 12 tok/s</td></tr><tr><td>681-token 长提示</td><td><b>prefill 607.9 tok/s</b></td><td>decode 约 12 tok/s</td><td>并行 prefill 才能发挥 NPU</td></tr><tr><td>DSH 两轮记忆</td><td>提示约 638/724 字符</td><td>正确记忆“蓝鲸”；两轮 30 s</td><td class="ok">通过</td></tr><tr><td>CPU 8B + DSH 约2.8K提示</td><td>2048 token 已耗 98.18 s；20.86 tok/s</td><td>用户长时间无响应</td><td class="bad">禁用</td></tr></table>
+
+<h3>5.1 NPU 利用率：三个数字、三个口径</h3>
+<table><tr><th>指标</th><th>数值</th><th>它真正表示什么</th></tr><tr><td>厂商性能报告</td><td><b>97.70%</b></td><td>厂商口径；本轮未找到可对应此数字的本机原始 HTP optrace，不能作为本机复现实测</td></tr><tr><td>本机活跃生成窗口</td><td><b>Q6 平均 94.59%，峰值 100%</b></td><td>_sysmon 对 CDSP/Q6 的 4 s 采样代理；HMX Power 全程 ON</td></tr><tr><td>既有V2草稿记录的空闲+初始化+生成5窗口</td><td>等长窗口均值26.85%；不是本轮完整请求积分平均</td><td>0.59/0.55/3.12/41.49/88.49%；固定初始化前段降低全请求平均</td></tr></table>
+<p>利用率补测使用一条 41.2 s、691 字符回答的请求；启动后延迟 12 s，在生成阶段采样。温度从轻载约 53.7°C 上升至 83.8°C。该94.59%为历史补测摘要；本轮未取得对应原始_sysmon文件，不能独立复算。它是 <b>CDSP/Q6 活跃代理</b>，不等价于 HMX/HVX 的精确算术单元占用，也不等价于“实际 TOPS / 200 TOPS”。精确值需要 QNN HTP optrace 的 Active Cycles、HMX/HVX Utilization 和频率原始日志。</p>
+<pre># 活跃窗口代理采样
+/data/local/tmp/_sysmon getLoad --q6 cdsp --time 1000 --iterations 1
+# 观测字段
+Q6 Utilization  %  AVG=94.59  MAX=100.0
+HMX Power: ON</pre>
+
+<h3>5.2 为什么 200 TOPS 只有约 13 token/s</h3>
+<ol><li><b>Decode 串行：</b>第 N+1 个 token 必须等待第 N 个 token，batch=1 无法把 token 并行铺开。</li><li><b>访存墙：</b>4.4 GB 级 bundle 按每token读取一次4.4 GB bundle作极简假设，13 tok/s约对应57 GB/s搬运量级；bundle不等同纯权重，此数不是实测带宽；NPU 经常在等 LPDDR、KV 和同步。</li><li><b>峰值条件不同：</b>200 TOPS 假设低精度、稀疏、大矩阵、大 batch、高复用和峰值频率；单用户 LLM decode 正好是窄矩阵、低复用。</li><li><b>非矩阵开销：</b>解量化、归一化、采样、KV Cache、FastRPC 与 CPU/NPU 同步不贡献标称 TOPS。</li><li><b>忙不等于算满：</b>Q6 可在 94.59% 时间处于工作状态，但其中包含等待和数据搬运，算术阵列未必满吞吐。</li></ol>
+<table><tr><th>阶段</th><th>粗略算法量估算</th><th>占 200 TOPS</th><th>说明</th></tr><tr><td>Decode 13 tok/s</td><td>2 × 7B × 13 ≈ 0.18 TOPS</td><td>约0.09%（口径不可直接对比）</td><td>算法量级推算，不是硬件计数器</td></tr><tr><td>Prefill 608 tok/s</td><td>2 × 7B × 608 ≈ 8.5 TOPS</td><td>约4.3%（口径不可直接对比）</td><td>输入 token 可并行，利用率明显更高</td></tr></table>
+<div class="callout warn"><b>散热：</b>CPU 8B 曾把最高热区推到 114.8°C，并需要强制终止。NPU 长请求补测达到 83.8°C。必须保持风扇，建议 85°C 等待、90°C 拒绝/中止、降至 75°C 后恢复。</div>
+
+<div class="page"></div>
+<h2>6. W4A16 大白话解释</h2>
+<div class="callout"><b>一句话：</b>模型的“长期知识”用 4 bit 压缩存放，回答当前问题时的“临时草稿”用 FP16 计算。</div>
+<table><tr><th>部分</th><th>大白话比喻</th><th>技术含义</th></tr><tr><td>W4</td><td>把几十亿条菜谱压缩编号存放</td><td>权重约4 bit/参数；70亿参数理论约3.5 GB；FP16同规模约14 GB。仅权重约缩至1/4，整体内存不会必然减少75%，还有scale、词表、图、激活和KV</td></tr><tr><td>A16</td><td>做当前这道菜时用较精细的草稿纸</td><td>A16表示FP16激活；主要计算路径通常以FP16处理，但不能由量化名称推出每个算子或累加器都为FP16，需QNN图与算子profile验证</td></tr></table>
+<p>W4A16 不表示整个模型是 FP16，也不表示输出文字只有4bit。它选择了“最大头的静态权重强压缩、变化大的临时结果保精度”的折中。</p>
+
+<h2>7. 9.76 GiB 是否能支持 7B INT8</h2>
+<h3>7.1 单看权重：可以</h3>
+<pre>7B INT8：7,000,000,000 byte ≈ 6.52 GiB
+8B INT8：8,000,000,000 byte ≈ 7.45 GiB</pre>
+<p>所以 9.76 GiB available 能放下“权重文件”。但模型运行还需要 QNN 图、激活、KV Cache、DMA/shared buffer、bridge、dsh、Ubuntu 和安全余量。</p>
+<table><tr><th>内存项</th><th>7B INT8 粗估</th><th>风险</th></tr><tr><td>INT8 权重</td><td>6.5–7.5 GiB</td><td>不同模型参数量、量化元数据会变化</td></tr><tr><td>QNN 图/工作区/激活</td><td>约1.5–3 GiB</td><td>现有W4路径固定开销并不小</td></tr><tr><td>KV Cache</td><td>无通用固定值；FP16 KV约为2×层数×KV头数×头维度×token数×2字节。32层、8 KV头、128维时4K约0.5 GiB，8K约1 GiB；32 KV头则增至4倍</td><td>上下文越长越吃内存</td></tr><tr><td>dsh + bridge + 系统</td><td>需分别测量；available已经扣除当前系统占用，不可把系统占用再从同一available预算重复扣除</td><td>MT200无swap，必须留余量</td></tr><tr><td>DMA/FastRPC 映射</td><td>不能只由free判断</td><td>普通内存可用时仍可能 <code>fastrpc_mmap failed</code></td></tr></table>
+<div class="callout warn"><b>判断：</b>7B W8A8 + 1024 context 经过专门优化后可能勉强运行；7B W8A8 + 4K/8K 风险高。available 包含可回收页缓存，不代表所有内存都能被 DSP/NPU 以所需方式映射。</div>
+
+<h3>7.2 值不值得试</h3>
+<p><b>值得做一次受控 PoC，但不值得替代长上下文 W4A16 成为主线。</b>W8A8 可能略微改善量化质量，却将权重流量接近翻倍；decode 已经受访存限制，因此还可能变慢。如果 W8A8 仍只有1024 context，DSH工具和长对话问题完全没有解决。</p>
+<table><tr><th>测试条件</th><th>通过线</th><th>立即回退条件</th></tr><tr><td>先保留当前 W4A16，停止但不删除</td><td>W8A8 bundle 可独立加载、中文正常</td><td>破坏当前可用路径</td></tr><tr><td>确认真正W8A8 QNN包、量化及上下文→短提示→512→768；1K总上下文必须为输出和系统提示预留空间</td><td>10轮无OOM/无FastRPC映射失败</td><td><code>fastrpc_mmap failed</code> 或 OOM</td></tr><tr><td>记录内存/温度/速度/质量</td><td>建议整机保留至少1 GiB available，按MemTotal与MemAvailable核对；温度&lt;90°C；不把进程RSS当全设备内存</td><td>available&lt;1 GiB时暂停，&lt;500 MiB或温度≥90°C立即中止；冷却到≤75°C后人工确认再恢复</td></tr><tr><td>同题A/B</td><td>质量收益足以抵消速度与上下文损失</td><td>仅精度微升、上下文仍1K</td></tr></table>
+<p>更有价值的厂商 A/B 是：<b>7B W4A16 + 8K context</b> 对比 <b>7B W8A8 + 4K context</b>，而不是只把当前1K包从W4换成W8。</p>
+
+<h2>8. 参数量与量化路线</h2>
+<table><tr><th>方案</th><th>内存判断</th><th>结论</th></tr><tr><td>7B FP16（约14GB）</td><td>权重已超过10.86GiB物理内存</td><td class="bad">不可行</td></tr><tr><td>8B FP16（约16GB）</td><td>缺口更大</td><td class="bad">不可行</td></tr><tr><td>7B W8A8</td><td>1K或可受控试验；4K/8K余量不足</td><td class="amber">PoC</td></tr><tr><td>当前7B W4A16</td><td>已稳定出词；bundle约4.4GB</td><td class="ok">当前可用</td></tr><tr><td>8B W4A16 + GQA</td><td>若固定开销≤1.5GB，4K约6.5GB、8K约7.0GB</td><td class="amber">需厂商新bundle</td></tr><tr><td>3B/4B W4A16 + 8K</td><td>权重约1.7–2.3GB，余量最大</td><td class="ok">长上下文稳妥备选</td></tr><tr><td>W3/W2</td><td>更省内存，但算子支持和质量未知</td><td class="amber">需校准验证</td></tr></table>
+<ol><li>P0：7B/8B W4A16、GQA、8K context、batch1、优先评估现有词表兼容性与embedding共享、固定开销≤1.5 GB工程目标（不能随意修改已训练模型词表）。</li><li>P1：若8B不成立，选3B/4B W4A16 + 8K，优先保住Agent上下文。</li><li>P1：Genie常驻或可靠save/restore，消除每轮7–10.5s初始化。</li><li>P1：token callback真流式、tool_calls映射、温度门禁。</li><li>P2：验证speculative decoding，以小模型草拟、7B验证多个token。</li></ol>
+
+<h2>9. 当前瓶颈与能力边界</h2>
+<table><tr><th>瓶颈</th><th>影响</th><th>解法</th></tr><tr><td>1024 context</td><td>短对话可用，工具/长文/长历史不可用</td><td>重新编译4K/8K bundle</td></tr><tr><td>Genie一次性CLI</td><td>每请求冷初始化；当前SSE是完成后一次发送</td><td>常驻Genie API/token callback</td></tr><tr><td>bridge无tool_calls</td><td>只能chat-only</td><td>函数调用模板与OpenAI tool映射</td></tr><tr><td>模型不接地</td><td>编造时间、OS等实时事实</td><td>长上下文后恢复最小可信工具</td></tr><tr><td>内存/DMA</td><td>无swap，普通available不代表DSP可映射</td><td>单并发、分段buffer、压固定开销</td></tr><tr><td>散热</td><td>CPU路径危险；NPU长请求仍升温</td><td>持续风冷+自动门禁</td></tr></table>
+
+<h2>10. 验收结果与复现</h2>
+<table><tr><th>项目</th><th>结果</th><th>证据</th></tr><tr><td>SSH/本机入口</td><td class="ok">通过</td><td>USB网段；127.0.0.1:3080</td></tr><tr><td>7B NPU中文</td><td class="ok">通过</td><td>Genie与OpenAI chat均正常</td></tr><tr><td>SSE兼容</td><td class="ok">通过</td><td>content → stop → [DONE]</td></tr><tr><td>DSH两轮</td><td class="ok">通过</td><td>记住并复述“蓝鲸”；30s</td></tr><tr><td>NPU代理利用率</td><td class="ok">已补测</td><td>活跃窗口Q6 AVG 94.59%，MAX 100%，HMX ON</td></tr><tr><td>工具Agent</td><td class="bad">未具备</td><td>1K context与bridge能力不足</td></tr><tr><td>热稳定性</td><td class="amber">有条件通过</td><td>必须风冷；自动门禁待部署</td></tr></table>
+<pre>ssh mt200
+systemctl status npu-openai-bridge dsh-web --no-pager
+curl -sS http://127.0.0.1:8090/v1/models
+ssh -N -L 127.0.0.1:3080:127.0.0.1:3080 mt200
+/data/local/tmp/_sysmon getLoad --q6 cdsp --time 1000 --iterations 1</pre>
+<div class="callout warn"><b>会话规则：</b>模型/profile变化后必须新建会话。1024-token版本连续几轮后仍可能溢出，应主动新建会话。能力评测采用“100个A–H能力用例 + 5个I类稳定性专项”，另行出具评分报告；云端对比需要PHICOTEK_API_KEY，缺失时不得伪造分数。</div>
+
+<h2>11. 数据来源与口径</h2>
+<ul><li>本次实测：<code>hostnamectl</code>、<code>lscpu</code>、<code>free</code>、<code>systemctl</code>、Genie profile、bridge journal、<code>_sysmon</code>和dsh两轮验收。</li><li>项目资料：<code>MT200/gpu-npu-35b_report.md</code>、<code>MT200/reports/mt200-status.html</code>、<code>MT200/migration_report.md</code>。</li><li>输入文档：<code>/home/jedyying/Documents/MT200/report</code> 下部署报告、差距报告和8B bundle需求。</li><li>DeepSeek Harness：<a href="https://github.com/deepseek-ai/deepseek-harness">github.com/deepseek-ai/deepseek-harness</a>，Persona minimal与provider配置。</li></ul>
+<h2>12. 本轮复核与证据边界（2026-10-29）</h2>
+<p>SSH设备返回ubuntu、aarch64；/etc/os-release确认Ubuntu 24.04.4。/v1/models声明deepseek-7b-npu、W4A16、QnnHtp、context_window=1024。轻载MemAvailable=10,180,504 KiB，约9.709 GiB；这不是固定保证，原9.76 GiB仅为历史轻载快照。</p>
+<p>首题独立Genie预检成功：全流程12.003 s，初始化7.002 s，query内部TTFT 1.117 s，首文本观测8.169 s，115输入token、43生成token、decode 12.385 tok/s，采样峰温65.7°C。数据来自本轮原始JSONL与Genie profile；仅是预检，不代表105项验收通过。</p>
+<p>现有bridge源码并未将请求temperature、top_p与max_tokens传入Genie。本轮独立测试临时配置固定temp=0、top_p=1、greedy=true、seed=42，不改原服务。现有CLI没有独立最大输出参数，本轮不能声称严格实现原设计1024/2048输出预算；记录max_tokens_enforced=false。1024编译总窗仍为硬上限。</p>
+<p>以1秒周期保存全设备最高温度和MemAvailable；≥85°C启动前暂停，≥90°C、available&lt;500 MiB或120秒超时终止测试所属进程组。该门禁只保护此次独立测试，不等同生产bridge已部署门禁。</p>
+<h3>证据索引</h3><ul><li>原附件部署验收PDF：第1—3页链路/参数，第4页性能与114.8°C历史风险，第5—7页预算、瓶颈与边界。</li><li>既有V2 HTML草稿：97.70%、94.59%、26.85%历史摘要。缺少对应本机原始optrace/_sysmon完整文件，保留口径但不升级成新实测。</li><li>日志MT200/logs/mt200-npu-7b-perf.txt、npu-baseline-long.txt：历史Genie性能，需结合样本长度比较。</li><li>本轮评测原始结果_local.jsonl：A01及后续逐项结果，包含原始stdout、Genie profile、遥测及错误。</li><li>测试设计PDF第6—9页仅提供索引：重建100能力项+5稳定性专项，不冒充原完整题集。未取得云端密钥，不作云端能力结论。</li></ul>
+<div class="foot">生成者：<b>Kiro</b>。本文区分“本机实测、厂商口径、算法推算”：94.59%为CDSP/Q6代理实测；97.70%为厂商值且缺原始optrace；0.18/8.5 TOPS为算法量级推算。模型自报时间和系统不作为事实。报告不含SSH密码、Web token、API key、credentials、模型权重或私有会话内容。</div>
+</body>
+</html>
