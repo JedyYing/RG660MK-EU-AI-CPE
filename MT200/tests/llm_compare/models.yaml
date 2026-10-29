@@ -1,0 +1,12 @@
+models:
+  local-npu:
+    endpoint: http://127.0.0.1:18090/v1
+    model: deepseek-7b-npu
+    contextWindow: 1024
+    maxTokens: 256
+    enabled: true
+  cloud:
+    endpoint: https://ai.phicotek.com/api/llmrouter/v1
+    model: deepseek-v4-flash
+    keyEnv: PHICOTEK_API_KEY
+    enabled: false
