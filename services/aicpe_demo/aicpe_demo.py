@@ -724,13 +724,14 @@ def check_vision(it, no_audio=False, no_upload=False):
     ok = not verdict.startswith("判定异常")
     if ok and verdict.startswith("坐姿异常"):
         detail = "视觉双检已完成：检出异常坐姿（场景状态，功能正常）"
+    elif ok and verdict.startswith("画面内无人"):
+        detail = "视觉双检已完成：画面内无人（链路已执行，场景状态不判失败）"
     else:
         detail = ("视觉双检已完成：" if ok else "") + verdict
-    if not ok or rc != 0:
+    # 2026-11-02 用户明确口径：画面内有人/无人、坐姿正常/异常都属于**场景状态**，
+    # 只要 YOLO 检测/姿态/人脸链路本身执行成功就算通过；不再因"无人"或"未匹配身份"降为 partial。
+    if not ok:
         status = "fail"
-    elif not gallery_ready or not verdict.startswith("坐姿") or not identity_verified:
-        status = "partial"
-        detail += "；检测链路执行，但坐姿或身份未完成验收"
     else:
         status = "pass"
     if no_audio or no_upload:
@@ -1587,9 +1588,10 @@ async function tick(){
       if(c.platform) chips+="<span class='chip'><b>平台</b> "+c.platform+"</span>";
       var npu=s.npu||null;
       if(npu&&npu.model){
-        var _npuTxt="<span class='chip' style='border-color:#3aa0f0'><b>NPU</b> "+esc(npu.model)+" · 算力规格 <b style='color:#7fb7ff'>200 TOPS</b>";
-        if(npu.ok&&npu.elapsed_ms){ _npuTxt+=" · 最近推理 <b style='color:#31d17a'>"+(npu.elapsed_ms/1000).toFixed(1)+" s</b> · 输出 "+npu.chars+" 字符"; }
-        else { _npuTxt+=" · 空闲（暂无推理请求）"; }
+        var _u=(typeof npu.util_60s==="number")?npu.util_60s:0;
+        var _npuTxt="<span class='chip' style='border-color:#3aa0f0'><b>NPU</b> "+esc(npu.model)+" · 算力规格 <b style='color:#7fb7ff'>200 TOPS</b>"+
+          " · 利用率 <b style='color:"+(_u>0?"#31d17a":"#8ea6c8")+"'>"+_u.toFixed(1)+"%</b>（近60s·"+(npu.calls_60s||0)+"次）";
+        if(npu.ok&&npu.elapsed_ms){ _npuTxt+=" · 最近推理 <b style='color:#31d17a'>"+(npu.elapsed_ms/1000).toFixed(1)+" s</b>"; }
         chips+=_npuTxt+"</span>";
       }
       if(c.rsrp!==undefined) chips+="<span class='chip' style='border-color:#31d17a'><b>当前信号（"+(c.rat||"5G")+"）</b> RSRP <b style='color:#31d17a'>"+c.rsrp+" dBm</b></span>";

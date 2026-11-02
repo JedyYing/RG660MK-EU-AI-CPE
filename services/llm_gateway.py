@@ -228,7 +228,11 @@ def _online_chat(messages, max_tokens, timeout):
     return text.strip(), str(data.get('model') or ONLINE_MODEL)
 
 
+import collections
+
 LAST_STATS = {'ts': 0, 'elapsed_ms': None, 'model': None, 'chars': 0, 'ok': False}
+# 近 60s 的推理调用记录（时间戳, 耗时ms）——用于计算 NPU 占空比（实测口径，非硬件计数器）
+CALLS = collections.deque(maxlen=512)
 
 
 def chat_meta(messages, max_tokens=None, timeout=None):
@@ -247,13 +251,21 @@ def chat_meta(messages, max_tokens=None, timeout=None):
     # 只记录可实测的量（端到端耗时 / 输出字符数），不编造 NPU 硬件利用率。
     LAST_STATS.update({'ts': time.time(), 'elapsed_ms': elapsed, 'model': model,
                        'chars': len(text or ''), 'ok': True})
+    CALLS.append((time.time(), elapsed))
     return text, {'backend': mode, 'label': LABELS[mode], 'model': model,
                   'elapsed_ms': elapsed}
 
 
 def stats():
-    """最近一次推理的可实测指标（供看板展示，不含硬件占用率）。"""
+    """最近一次推理 + 近 60s 占空比（可实测口径）。"""
     d = dict(LAST_STATS)
+    now = time.time()
+    recent = [(t, e) for t, e in list(CALLS) if now - t <= 60]
+    busy_ms = sum(e for _, e in recent)
+    d['calls_60s'] = len(recent)
+    d['busy_ms_60s'] = busy_ms
+    # 占空比：近 60s 内 NPU 推理实际占用时长 / 60s。无请求时 0%。
+    d['util_60s'] = round(min(100.0, busy_ms / 600.0), 1)
     d['mode'] = get_mode()
     return d
 
