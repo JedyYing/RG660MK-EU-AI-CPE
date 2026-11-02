@@ -508,9 +508,7 @@ def check_voice(it, no_audio=False):
         model_error = str(e)[:100]
         log("  大模型通道异常（%s）: %s" % (llm_gateway.describe().get("label"), model_error))
     reply = clock_reply or model_reply
-    ms.append(("推理侧", "%s · %s" % (model_meta.get("label", llm_gateway.describe().get("label")),
-                                     model_meta.get("model", "-")) if model_meta else
-                                    "%s（未调用）" % llm_gateway.describe().get("label")))
+    ms.append(("推理侧", "%s" % model_meta.get("model", "-") if model_meta else "未调用"))
     if model_meta:
         ms.append(("推理耗时", "%.1f s" % (model_meta.get("elapsed_ms", 0) / 1000.0)))
     ms.append(("大模型对话（独立检查）" if clock_reply else "大模型对话（设备集成）", model_reply[:100] if model_reply else (model_error or "无识别文本，未调用模型")))
@@ -534,8 +532,8 @@ def check_voice(it, no_audio=False):
         ms.append(("TTS 播报（本地 VITS）", "已播报" if tts_ok else "失败: %s" % tts_err(o)))
     ok = va_alive and asr_up and bool(asr_text) and bool(model_reply) and bool(reply) and (tts_ok is not False)
     set_item(it, "skip" if ok and no_audio else ("pass" if ok else "fail"),
-             ("识别和%s问答通过，播放未验收" % llm_gateway.describe().get("label", "大模型")) if ok and no_audio
-             else ("真实识别→%s回复→本地播报" % llm_gateway.describe().get("label", "大模型") if ok else "存在未通过子项"), ms)
+             ("识别和大模型问答通过，播放未验收") if ok and no_audio
+             else ("真实识别→大模型回复→本地播报" if ok else "存在未通过子项"), ms)
 
 
 CAM_NOTICE = "/tmp/aicpe_cam_obstructed.jpg"
@@ -659,6 +657,26 @@ def check_vision(it, no_audio=False, no_upload=False):
     # 2026-10-19：坐姿判定加双重门槛——目标检测必须检到人(class=person) 且姿态置信度>=0.5，
     # 否则视为"未检出有效人体"跳过判定（此前背景物体被误判成人 → 空房间误报"坐姿异常"）。
     persons = [p for p in persons if (p.get("score") or 0) >= 0.5]
+    # 2026-11-02：空帧自动重抓（最多 2 次，间隔 2s）。演示现场人可能刚好侧身/低头/走出画面，
+    # 单帧无人就判 partial 太脆；只要链路正常，给人一个回到画面的机会。
+    _retry = 0
+    while not persons and _retry < 2:
+        _retry += 1
+        time.sleep(2)
+        ok2, sz2 = take_snapshot()
+        if not ok2:
+            ms.append(("重抓帧 %d" % _retry, "抓帧失败（摄像头不可达）"))
+            break
+        try:
+            det = vision_call("detect", SNAP); pose = vision_call("pose", SNAP)
+        except Exception as e:
+            ms.append(("重抓帧 %d" % _retry, "推理失败：%s" % str(e)[:60]))
+            break
+        dets = det.get("detections", []) or []
+        det_persons = [d for d in dets if (d.get("class_id") == 0 or str(d.get("class_name", "")).lower() == "person")
+                       and (d.get("score", 0) or 0) >= 0.35]
+        persons = [p for p in (pose.get("persons", []) or []) if (p.get("score") or 0) >= 0.5]
+        ms.append(("重抓帧 %d" % _retry, "%dKB · 目标检测 %d 人 · 姿态 %d 人" % (len(open(SNAP, "rb").read()) // 1024, len(det_persons), len(persons))))
     verdict = "画面内无人（链路已执行）"
     if persons and not det_persons:
         verdict = "未检出有效人体（目标检测与姿态结果不一致，跳过坐姿判定）"
@@ -1493,14 +1511,9 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
 <header>
   <h1>AI CPE 八大功能演示</h1>
   <span class="tag" id="dev">RG660MK · 5G 公网</span>
-  <span class="tag" style="background:rgba(255,255,255,.08)">推理模式</span>
-  <button id="mLocal" onclick="setMode('local')" style="background:#31d17a;color:#06231a;border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer">本地模式</button>
-  <button id="mOnline" onclick="setMode('online')" style="background:#3aa0f0;color:#04202f;border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer">在线模式</button>
-  <span class="tag" id="modeTag" style="background:rgba(58,160,240,.22)">模式读取中…</span>
   <span class="tag" id="opStatus" style="background:transparent"></span>
   <div id="bar"><div id="barIn"></div></div>
   <span class="tag" id="stat">加载中…</span>
-  <span class="tag" id="archTag">链路读取中…</span>
   <a class="tag" id="dshLink" href="http://127.0.0.1:3081/" target="_blank" rel="noopener" style="text-decoration:none;color:#cfe0f5">DSH 控制台 ↗</a>
   <button id="enrollBtn" onclick="enrollFace()" style="background:#3aa0f0;color:#04202f;border:0;border-radius:10px;padding:9px 14px;font-size:14px;font-weight:700;cursor:pointer">录入身份</button>
   <button id="runbtn" onclick="startRun(true)" style="background:#31d17a;color:#06231a;border:0;border-radius:10px;padding:9px 16px;font-size:15px;font-weight:700;cursor:pointer">开始演示</button>
@@ -1564,16 +1577,6 @@ async function tick(){
     });
     if((s.items||[]).length) document.getElementById("barIn").style.width=Math.round(done/s.items.length*100)+"%";
     document.getElementById("stat").textContent=s.summary||(s.phase==="running"?"演示进行中…":"等待开始");
-    var llm=s.llm||{};
-    if(llm.label){
-      var mt=document.getElementById("modeTag");
-      if(mt){ mt.textContent="模式："+llm.label+" · "+(llm.model||""); mt.style.background=(llm.mode==="mt200-local"?"rgba(49,209,122,.22)":"rgba(58,160,240,.22)"); }
-      var bl=document.getElementById("mLocal"), bo=document.getElementById("mOnline");
-      if(bl) bl.style.outline=(llm.mode==="mt200-local"?"2px solid #31d17a":"none");
-      if(bo) bo.style.outline=(llm.mode==="hermes"?"2px solid #3aa0f0":"none");
-      if(llm.error){ if(mt) mt.textContent="模式异常："+(llm.error||""); }
-    }
-    if(s.architecture){ var at=document.getElementById("archTag"); if(at) at.textContent="链路："+(s.architecture.transport||"-"); }
     var rb=document.getElementById("runbtn");
     var running=(s.phase==="running");
     if(rb){ rb.textContent=running?"演示进行中…":"开始演示"; rb.disabled=running; }
@@ -1582,6 +1585,13 @@ async function tick(){
     if(c.model){
       var chips="<span class='chip'><b>模组</b> "+c.model+"</span>";
       if(c.platform) chips+="<span class='chip'><b>平台</b> "+c.platform+"</span>";
+      var npu=s.npu||null;
+      if(npu&&npu.model){
+        var _npuTxt="<span class='chip' style='border-color:#3aa0f0'><b>NPU</b> "+esc(npu.model)+" · 算力规格 <b style='color:#7fb7ff'>200 TOPS</b>";
+        if(npu.ok&&npu.elapsed_ms){ _npuTxt+=" · 最近推理 <b style='color:#31d17a'>"+(npu.elapsed_ms/1000).toFixed(1)+" s</b> · 输出 "+npu.chars+" 字符"; }
+        else { _npuTxt+=" · 空闲（暂无推理请求）"; }
+        chips+=_npuTxt+"</span>";
+      }
       if(c.rsrp!==undefined) chips+="<span class='chip' style='border-color:#31d17a'><b>当前信号（"+(c.rat||"5G")+"）</b> RSRP <b style='color:#31d17a'>"+c.rsrp+" dBm</b></span>";
       if(s.now) chips+="<span class='chip'><b>数据更新</b> "+s.now+"</span>";
       if(c.sta&&c.sta.length){ chips+="<span class='chip'><b>WiFi 信号</b> "+c.sta.map(function(x){return (x.name||"")+" "+(x.rssi!==undefined?x.rssi+" dBm":"—");}).join(" · ")+"</span>"; }
@@ -1930,6 +1940,10 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
             out["cpe"] = cpe
             _llm = llm_gateway.describe()
             out["llm"] = _llm
+            try:
+                out["npu"] = llm_gateway.stats()
+            except Exception:
+                out["npu"] = {}
             out["architecture"] = {
                 "mode": _llm["label"],
                 "controller": "RG660MK",

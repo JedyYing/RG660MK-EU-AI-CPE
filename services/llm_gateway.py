@@ -228,16 +228,34 @@ def _online_chat(messages, max_tokens, timeout):
     return text.strip(), str(data.get('model') or ONLINE_MODEL)
 
 
+LAST_STATS = {'ts': 0, 'elapsed_ms': None, 'model': None, 'chars': 0, 'ok': False}
+
+
 def chat_meta(messages, max_tokens=None, timeout=None):
     mode = get_mode()
     t0 = time.monotonic()
-    if mode == 'mt200-local':
-        text = _local_chat(messages, max_tokens, timeout or 180)
-        model = LOCAL_MODEL
-    else:
-        text, model = _online_chat(messages, max_tokens, timeout or 60)
+    try:
+        if mode == 'mt200-local':
+            text = _local_chat(messages, max_tokens, timeout or 180)
+            model = LOCAL_MODEL
+        else:
+            text, model = _online_chat(messages, max_tokens, timeout or 60)
+    except Exception:
+        LAST_STATS.update({'ts': time.time(), 'ok': False})
+        raise
+    elapsed = round((time.monotonic() - t0) * 1000)
+    # 只记录可实测的量（端到端耗时 / 输出字符数），不编造 NPU 硬件利用率。
+    LAST_STATS.update({'ts': time.time(), 'elapsed_ms': elapsed, 'model': model,
+                       'chars': len(text or ''), 'ok': True})
     return text, {'backend': mode, 'label': LABELS[mode], 'model': model,
-                  'elapsed_ms': round((time.monotonic() - t0) * 1000)}
+                  'elapsed_ms': elapsed}
+
+
+def stats():
+    """最近一次推理的可实测指标（供看板展示，不含硬件占用率）。"""
+    d = dict(LAST_STATS)
+    d['mode'] = get_mode()
+    return d
 
 
 def chat(messages, max_tokens=None, timeout=None):
