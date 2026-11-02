@@ -61,6 +61,18 @@ def reload_state_if_newer():
             d = json.load(f)
         if d.get("deployment") != "offline-v1":
             return
+        # 陈旧 running 快照纠偏：进程被杀/服务重启后 state_last.json 会一直停在
+        # phase=running，页面永远显示"演示进行中…"（2026-11-02 实修）。
+        # 判据：文件 180s 没有更新（运行中的进程每完成一项就会刷新），才认定已中断。
+        if d.get("phase") == "running" and (time.time() - m) > 180:
+            d["phase"] = "idle"
+            d["done"] = True
+            d["running"] = False
+            d["summary"] = "上一轮演示被中断（服务重启或进程退出），未完成项已跳过，请重新点击「开始演示」"
+            for _it in d.get("items", []):
+                if _it.get("status") == "running":
+                    _it["status"] = "skip"
+                    _it["detail"] = "中断：未完成（不计入本轮通过）"
         with LOCK:
             STATE.clear()
             STATE.update(d)
@@ -1776,6 +1788,33 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
             except Exception as e:
                 self._send(400, "application/json; charset=utf-8",
                            json.dumps({"switched": False, "error": str(e)[:120]}, ensure_ascii=False))
+            return
+        if self.path == "/reset":
+            try:
+                n = int(self.headers.get("Content-Length", "0") or 0)
+                if 0 < n <= 256:
+                    self.rfile.read(n)
+            except Exception:
+                pass
+            with LOCK:
+                STATE["phase"] = "idle"
+                STATE["done"] = True
+                STATE["running"] = False
+                STATE["summary"] = "已手动复位（上一轮未完成，未计入通过）"
+                for _it in STATE.get("items", []):
+                    if _it.get("status") == "running":
+                        _it["status"] = "skip"
+                        _it["detail"] = "中断：未完成（人工复位）"
+                snap = json.loads(json.dumps(STATE, ensure_ascii=False))
+            tmp = STATE_FILE + ".reset." + str(os.getpid())
+            try:
+                with open(tmp, "w") as out:
+                    json.dump(snap, out, ensure_ascii=False)
+                os.replace(tmp, STATE_FILE)
+            except OSError as e:
+                print("复位持久化失败：" + type(e).__name__, flush=True)
+            self._send(200, "application/json; charset=utf-8",
+                       json.dumps({"reset": True, "phase": "idle"}, ensure_ascii=False))
             return
         if self.path == "/run":
             if not RUN_LOCK.acquire(blocking=False):
