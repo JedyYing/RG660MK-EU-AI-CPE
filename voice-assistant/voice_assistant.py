@@ -26,6 +26,9 @@ try:
 except ImportError:
     vad = None
 
+sys.path.insert(0, "/data/ai_cpe")
+from local_tts import synthesize as local_synthesize  # noqa: E402
+
 # ---- 路径与设备 ----
 WHISPER = "/data/ai_cpe/whisper/whisper-cli"
 WHISPER_LIB = "/data/ai_cpe/whisper/lib"
@@ -40,7 +43,8 @@ REC_DEV = os.environ.get("REC_DEV", "plughw:2,0")
 PLAY_DEV = os.environ.get("PLAY_DEV", "plughw:2,0")
 
 # ---- LLM ----
-LLM_URL = "https://qlitellm.phicotek.com/v1/chat/completions"
+# 2026-10-24：qlitellm.phicotek.com 持续 502（实测），改用可用网关 ai.phicotek.com
+LLM_URL = os.environ.get("VOICE_LLM_URL", "https://ai.phicotek.com/api/llmrouter/v1/chat/completions")
 LLM_MODEL = os.environ.get("VOICE_LLM_MODEL", "deepseek-v4-flash")
 VOICE = "zh-CN-XiaoxiaoNeural"
 
@@ -70,7 +74,7 @@ SHERPA_THREADS = os.environ.get("VOICE_SHERPA_THREADS", "2")
 SHERPA_TIMEOUT = int(os.environ.get("VOICE_SHERPA_TIMEOUT", "30"))
 # 常驻识别服务（sherpa-onnx-offline-websocket-server，由 /etc/init.d/sherpa-asr 管理）
 SHERPA_WS = os.environ.get("VOICE_SHERPA_WS", "ws://127.0.0.1:6006")
-TTS_TIMEOUT = 5
+TTS_TIMEOUT = 60   # 2026-10-24：本地 piper 合成，长句可达 30s+（原 edge-tts 5s）
 TTS_TRIES = int(os.environ.get("VOICE_TTS_TRIES", "3"))   # 2026-10-08: edge-tts 端点偶发连接重置，多试几次再降级
 TTS_CACHE = os.environ.get("VOICE_TTS_CACHE", "/data/ai_cpe/tts_cache")
 FAST_TIMEOUT_TEXT = "这次处理有点慢，请再试一次。"
@@ -222,7 +226,8 @@ _REFUSAL_PATTERN = re.compile(
     r"|只能帮(?:你|您)")
 # 实时数据域：模型给不出实时值，编造一个数字比回绝更糟(§1.2 同一原则)。
 LIVE_DOMAINS = ["股价", "股票", "行情", "收盘", "开盘", "汇率", "油价", "汽油", "柴油",
-                "金价", "比分", "彩票", "快递", "航班", "限行", "新闻", "涨停", "涨跌"]
+                "金价", "比分", "彩票", "快递", "航班", "限行", "新闻", "涨停", "涨跌",
+                "天气", "气温", "温度", "空气质量", "雾霾", "降雨", "下雪"]
 LIVE_MARKERS = ["今天", "现在", "最新", "实时", "当前", "刚刚", "多少", "几"]
 
 SYSTEM_PROMPT = ("你是小皮，智能音箱助手。回答供语音播报，只用两三句中文，不超过100字，不用标题、列表或Markdown。"
@@ -980,38 +985,31 @@ def hermes_ask(text):
 
 
 def prepare_tts(text, timeout=TTS_TIMEOUT):
-    """固定句缓存，动态句临时文件；超时可控，不复用残缺音频。"""
-    import edge_tts
+    """本地 sherpa-onnx 合成（wav），固定句缓存；不再走云端 TTS。"""
     os.makedirs(TTS_CACHE, exist_ok=True)
     key = hashlib.sha256((VOICE + "\n" + text).encode()).hexdigest()
     cached = text in CACHED_SPEECH
-    target = os.path.join(TTS_CACHE, key + ".mp3")
+    target = os.path.join(TTS_CACHE, key + ".wav")
     if cached and os.path.exists(target) and os.path.getsize(target) > 0:
         return target, False
-    fd, temporary = tempfile.mkstemp(suffix=".mp3", dir=TTS_CACHE)
+    fd, temporary = tempfile.mkstemp(suffix=".wav", dir=TTS_CACHE)
     os.close(fd)
-    async def synth():
-        await asyncio.wait_for(edge_tts.Communicate(text, VOICE).save(temporary), timeout)
     last_err = None
     for _try in range(max(1, TTS_TRIES)):
-        try:
-            asyncio.run(synth())
-            if not os.path.getsize(temporary):
-                raise ValueError("empty TTS audio")
+        ok, err = local_synthesize(text, temporary, timeout=timeout)
+        if ok:
             if cached:
                 os.replace(temporary, target)
                 return target, False
             return temporary, True
-        except Exception as e:
-            last_err = e
-            print("[TTS] try %d/%d failed: %s" % (_try + 1, TTS_TRIES, type(e).__name__), flush=True)
-            try:
-                os.truncate(temporary, 0)   # 清掉半截音频再重试，避免复用残缺数据
-            except OSError:
-                pass
-            time.sleep(0.5)
-    os.unlink(temporary)
-    raise last_err
+        last_err = err
+        print("[TTS] try %d/%d failed: %s" % (_try + 1, TTS_TRIES, err), flush=True)
+        time.sleep(0.4)
+    try:
+        os.unlink(temporary)
+    except OSError:
+        pass
+    raise RuntimeError("local tts failed: %s" % last_err)
 
 
 def speak(text):
@@ -1038,22 +1036,32 @@ def speak(text):
             # 已预热的本地提示，无需再等待网络。
             mp3, disposable = prepare_tts(FAST_TIMEOUT_TEXT)
         print("[LATENCY] tts_ready_s=%.3f text=%r" % (time.monotonic() - started, text), flush=True)
-        p1 = subprocess.Popen([MPG123, "-q", "-s", "--rate", "48000", mp3],
-                              stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        try:
-            p2 = subprocess.Popen(["aplay", "-D", PLAY_DEV, "-f", "S16_LE", "-r", "48000",
-                                   "-c", "1", "-q"], stdin=p1.stdout, stderr=subprocess.DEVNULL)
-            p1.stdout.close()
+        if str(mp3).endswith(".wav"):
+            p2 = subprocess.Popen(["aplay", "-D", PLAY_DEV, "-q", mp3],
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             try:
                 p2.wait(timeout=25)
             except subprocess.TimeoutExpired:
                 p2.kill()
                 p2.wait()
                 raise
-        finally:
-            if p1.poll() is None:
-                p1.terminate()
-            p1.wait(timeout=2)
+        else:
+            p1 = subprocess.Popen([MPG123, "-q", "-s", "--rate", "48000", mp3],
+                                  stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            try:
+                p2 = subprocess.Popen(["aplay", "-D", PLAY_DEV, "-f", "S16_LE", "-r", "48000",
+                                       "-c", "1", "-q"], stdin=p1.stdout, stderr=subprocess.DEVNULL)
+                p1.stdout.close()
+                try:
+                    p2.wait(timeout=25)
+                except subprocess.TimeoutExpired:
+                    p2.kill()
+                    p2.wait()
+                    raise
+            finally:
+                if p1.poll() is None:
+                    p1.terminate()
+                p1.wait(timeout=2)
     except Exception as e:
         print("speak error:", e, flush=True)
     finally:
@@ -1063,13 +1071,20 @@ def speak(text):
 
 
 def respond(clean):
+    from model_mode import get_mode, bind_handler, ModeError
+    try:
+        mode = get_mode()
+    except ModeError as exc:
+        speak(str(exc))
+        return None
+    handler = bind_handler(mode, _hermes_turn_handler, _local_turn_handler)
+    if mode == 'mt200-local':
+        return handle_turn(clean, handler, speak, hard_secs=180, wait_secs=30,
+                           giveup_text=GIVEUP_TEXT)
     intent, slots = classify(clean)
-    # 只有"确定不会升级到 Hermes"的意图才享受 7 秒快速失败。LLM_OR_HERMES 现在可能
-    # 因拒绝/实时数据升级到 Hermes(实测约 29 秒),必须走 §4 的 30/60 双超时。
-    # STOCK_QUOTE 也移出快失败：股票名解析失败会升级 Hermes，7 秒必超时（2026-09-21 实测）。
-    simple = intent in ("LOCAL_DATE_TIME", "LOCAL_CALCULATOR", "WEATHER", "EMPTY") or (
-        intent == "DEVICE_CONTROL" and slots.get("tool") == "control_bulb")
-    return handle_turn(clean, _turn_handler, speak,
+    simple = intent in ('LOCAL_DATE_TIME', 'LOCAL_CALCULATOR', 'WEATHER', 'EMPTY') or (
+        intent == 'DEVICE_CONTROL' and slots.get('tool') == 'control_bulb')
+    return handle_turn(clean, handler, speak,
                        hard_secs=7 if simple else HARD_TIMEOUT_SECS,
                        wait_secs=30,
                        giveup_text=FAST_TIMEOUT_TEXT if simple else GIVEUP_TEXT)
@@ -1146,7 +1161,8 @@ def classify(text, _accent_tried=False):
     if "灯" in text:
         action = "on" if "开" in text else ("off" if "关" in text else "status")
         return "DEVICE_CONTROL", {"tool": "control_bulb", "action": action}
-    if any(k in text for k in ["拍照", "照相", "拍一张", "拍个照", "拍个照片"]):
+    if any(k in text for k in ["拍照", "照相", "拍一张", "拍个照", "拍个照片",
+                               "拍张照", "拍张相", "照一张", "照张相", "拍一下"]):
         if any(k in text for k in ["上传", "传到", "服务器", "immich", "相册", "同步", "保存"]):
             return "DEVICE_CONTROL", {"tool": "photo_upload"}
         return "DEVICE_CONTROL", {"tool": "take_photo"}
@@ -1154,6 +1170,10 @@ def classify(text, _accent_tried=False):
     if any(k in text for k in ["上传", "传到", "同步"]) and any(
             k in text for k in ["照片", "相片", "immich", "相册", "拍"]):
         return "DEVICE_CONTROL", {"tool": "photo_upload"}
+    # 场景③ 找照片（2026-10-15）：找/搜/查/看 + 照片类词 → Immich 检索推送
+    if any(k in text for k in ["找", "搜", "查", "看"]) and any(
+            k in text for k in ["照片", "相片", "图片", "相册"]):
+        return "DEVICE_CONTROL", {"tool": "find_photos", "query": text}
     if any(k in text for k in ["坐姿", "姿势", "体态", "座姿", "做姿", "坐子"]):
         return "DEVICE_CONTROL", {"tool": "detect_posture"}
     if any(k in text for k in ["识别", "是谁", "谁在", "脸识别"]):
@@ -1204,6 +1224,13 @@ def dispatch(intent, slots, text):
         tool = slots["tool"]
         if tool == "control_bulb":
             return execute_tool("control_bulb", {"action": slots["action"]}), False
+        if tool == "find_photos":
+            try:
+                import photo_find
+                return photo_find.handle(slots.get("query", text)), False
+            except Exception as e:
+                print("[FINDPHOTOS] error: %s" % str(e)[:120], flush=True)
+                return "照片检索出错，请稍后再试", False
         return execute_tool(tool, {}), False
     if intent == "WEATHER":
         city = slots.get("city")
@@ -1344,13 +1371,44 @@ def handle_turn(text, handler, tts,
     return turn
 
 
-def _turn_handler(clean, turn):
-    """真实业务 handler:本地/天气/计算立即返回;复杂问题走 Hermes。"""
+def _hermes_turn_handler(clean, turn):
+    """真实业务 handler:本地/天气/计算立即返回;复杂问题走在线通道。
+
+    2026-11-02：在线模式优先走 llm_gateway 的在线通道（与 Hermes 同一 provider/key，
+    免去每次起 `hermes chat` 子进程的 10s+ 开销）；网关异常时回退原 CLI 路径。
+    """
     reply, need_hermes = route(clean)
     if need_hermes:
-        # 复杂问题:先不在这里播"请稍等",交给 30 秒超时统一处理
-        reply = hermes_ask(clean)
+        try:
+            from llm_gateway import ask as _gw_ask
+            reply = _gw_ask(clean, timeout=45)
+        except Exception:
+            reply = hermes_ask(clean)
     return reply
+
+def _local_turn_handler(clean, turn):
+    from offline_agent import run
+    if needs_live_data(clean):
+        return "当前为离线模式，不能查询实时天气或行情。"
+    # 普通知识问答无需模型生成工具JSON；设备请求仍严格走受限Agent。
+    intent, _ = classify(clean)
+    tool_words = ('照片', '图片', '相册', '视觉', '人脸', '坐姿', '摄像', '视频',
+                  '网络', '选网', '存储', '文件', 'NAS', 'CasaOS', '灯', '设备')
+    if intent == 'LLM_OR_HERMES' and not any(word.lower() in clean.lower() for word in tool_words):
+        from llm_gateway import ask, ModelError as LocalModelError
+        try:
+            return ask(clean)
+        except LocalModelError:
+            return '本地模型暂不可用，没有调用云端。'
+    if intent == 'LOCAL_DATE_TIME':
+        return get_time_now()
+    result = run(clean)
+    return result.get("reply", "本地任务未完成。")
+
+def _turn_handler(clean, turn):
+    from model_mode import get_mode, bind_handler
+    return bind_handler(get_mode(), _hermes_turn_handler, _local_turn_handler)(clean, turn)
+
 
 
 def main():

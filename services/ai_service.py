@@ -541,7 +541,8 @@ class VisionApplication:
             "status": "ready" if runtime["ready"] else "degraded",
             "runtime": runtime,
             "gallery": {"identities": self.gallery.count(), "raw_images_stored": False},
-            "capabilities": {"object_detection": True, "face_recognition": True, "posture_detection": True},
+            "capabilities": {"object_detection": True, "face_recognition": True,
+                             "face_enrollment": True, "posture_detection": True},
         }
 
     def metric_snapshot(self) -> dict[str, Any]:
@@ -577,6 +578,66 @@ class VisionApplication:
         except ServiceError:
             with self.metrics_lock:
                 self.metrics[f"{operation}_error"] += 1
+            raise
+        finally:
+            if staged_path:
+                try:
+                    os.unlink(staged_path)
+                except OSError:
+                    pass
+            self.semaphore.release()
+
+    def enroll_face(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """录入身份模板（本地 8765，需服务令牌；只接受媒体根目录内的图片）。
+
+        2026-11-02：原服务只做识别不提供录入，导致看板第 2 项"身份识别"永远无法验收。
+        这里补一个最小录入面：用与识别相同的 face 模型取 embedding，写入本地人脸库。
+        """
+        request_id = str(payload.get("request_id") or uuid.uuid4())
+        subject = payload.get("subject_id")
+        if not isinstance(subject, str) or not subject:
+            raise ServiceError("INVALID_ARGUMENT", "subject_id is required")
+        input_value = require_dict(payload.get("input"), "input")
+        path = validate_media_path(input_value.get("path"), self.media_roots, self.max_input_bytes)
+        try:
+            requested_timeout = int(payload.get("timeout_ms", self.request_timeout_ms))
+        except (TypeError, ValueError) as exc:
+            raise ServiceError("INVALID_ARGUMENT", "timeout_ms must be an integer") from exc
+        timeout_ms = min(max(100, requested_timeout), self.request_timeout_ms)
+        if not self.semaphore.acquire(blocking=False):
+            raise ServiceError("RESOURCE_LIMIT", "another inference is already running", 429)
+        started = time.monotonic()
+        staged_path: str | None = None
+        try:
+            staged_path = stage_media_path(path, self.staging_dir, self.max_input_bytes)
+            result = self.runner.infer("face", staged_path, timeout_ms / 1000.0, {})
+            faces = result.get("faces") if isinstance(result, dict) else None
+            if not isinstance(faces, list) or not faces:
+                raise ServiceError("INVALID_ARGUMENT", "no face detected in enrollment image")
+
+            def face_area(face: Any) -> float:
+                box = face.get("box") or face.get("bbox") or face.get("rect") or []
+                if isinstance(box, list) and len(box) >= 4:
+                    try:
+                        return abs(float(box[2]) - float(box[0])) * abs(float(box[3]) - float(box[1])) \
+                            if len(box) == 4 else 0.0
+                    except (TypeError, ValueError):
+                        return 0.0
+                return 0.0
+
+            face = max(faces, key=face_area)
+            count = self.gallery.add(subject, face.get("embedding"))
+            latency_ms = round((time.monotonic() - started) * 1000, 3)
+            with self.metrics_lock:
+                self.metrics["face_enroll_ok"] += 1
+            return {"ok": True, "request_id": request_id,
+                    "result": {"subject_id": subject, "templates": count,
+                               "faces_in_frame": len(faces),
+                               "identities": self.gallery.count()},
+                    "latency_ms": latency_ms}
+        except ServiceError:
+            with self.metrics_lock:
+                self.metrics["face_enroll_error"] += 1
             raise
         finally:
             if staged_path:
@@ -708,6 +769,20 @@ class ApiHandler(BaseHTTPRequestHandler):
         unsupported = {"/audio/asr", "/audio/kws", "/tts"}
         if self.path in unsupported:
             self._send(503, {"ok": False, "error": {"code": "MODEL_UNAVAILABLE", "message": "audio capability is not installed"}})
+            return
+        if self.path == "/vision/enroll":
+            request_id: str | None = None
+            try:
+                payload = self._payload()
+                request_id = str(payload.get("request_id") or uuid.uuid4())
+                payload["request_id"] = request_id
+                self._send(200, self.application.enroll_face(payload))
+            except ServiceError as exc:
+                self._send(exc.status, {"ok": False, "request_id": request_id,
+                                        "error": {"code": exc.code, "message": exc.message}})
+            except Exception:
+                self._send(500, {"ok": False, "request_id": request_id,
+                                 "error": {"code": "INTERNAL_ERROR", "message": "internal service error"}})
             return
         operation = routes.get(self.path)
         if operation is None:
