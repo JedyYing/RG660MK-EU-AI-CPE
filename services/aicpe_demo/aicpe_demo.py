@@ -1021,9 +1021,17 @@ def check_smart_home(it, no_audio=False):
             except Exception as e:
                 seq_ok = False
                 ms.append(("恢复异常", str(e)[:100]))
+            # 恢复不达标则重试一次（Matter 冷会话/排队时首次可能超时）
+            if not (rc_f == 0 and bool(st_f.get("success")) and _field(st_f, "switch_led") is sw0):
+                try:
+                    time.sleep(1)
+                    rc_f, st_f = _smarthome("on" if sw0 else "off", t=90)
+                except Exception as e:
+                    ms.append(("恢复重试异常", str(e)[:100]))
     sw_f = _field(st_f, "switch_led")
-    ms.append(("现场恢复", "控制面恢复回读一致（%s）" % ("开" if sw_f else "关")
-               if rc_f == 0 and st_f.get("success") and sw_f is sw0 else "恢复失败或状态未知，需人工检查"))
+    ms.append(("现场恢复", ("控制面恢复回读一致（%s）" % ("开" if sw_f else "关"))
+               if rc_f == 0 and st_f.get("success") and sw_f is sw0
+               else "恢复未达标 rc=%s success=%s switch_led=%s（初态=%s），需人工检查" % (rc_f, st_f.get("success"), sw_f, sw0)))
     if seq_ok and rc_f == 0 and st_f.get("success") and sw_f is sw0 and (_proxy or physical_final == physical0):
         if _proxy:
             ms.append(("真实灯具", "未控制：Matter 灯未配网；Moes 灯泡需涂鸦云凭据或 Matter 配网窗口"))
