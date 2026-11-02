@@ -934,62 +934,102 @@ def check_smart_home(it, no_audio=False):
     sw0 = bool(_field(st0, "switch_led"))
     ms.append(("控制面（Matter/MQTT · Matter 优先）", ("正常 · transport=%s · broker=%s" % (st0.get("transport"), st0.get("broker"))) if ok0 else "异常: %s" % str(st0)[:60]))
     _drv = str(_field(st0, "driver") or "?")
+    _proxy = bool(_field(st0, "proxy")) or _drv.startswith("board-led")
     if _drv and "matter" not in _drv.lower():
         _drv += "（Matter 灯未配网 → 自动兜底；配网后填 node_id 即切 Matter）"
     ms.append(("执行器驱动", _drv))
     ms.append(("指令前状态", "开" if sw0 else "关"))
     if no_audio:
         ms.append(("动作", "静音质检模式：仅读取状态，不实际开关"))
-        set_item(it, "skip" if ok0 else "fail", "Matter/MQTT灯控只读通过，真实动作待确认" if ok0 else "灯控状态读取失败", ms)
+        _p = bool(_field(st0, "proxy")) or str(_field(st0, "driver") or "").startswith("board-led")
+        set_item(it, "skip" if ok0 else "fail",
+                 ("控制面只读通过；执行器=%s（板载LED演示代理，真实灯具未受控）" % _drv) if ok0 and _p
+                 else ("Matter/MQTT灯控只读通过，真实动作待确认" if ok0 else "灯控状态读取失败"), ms)
         return
-    # 板载LED验收直接读取内核，不把驱动保存状态当作物理回读。
-    if not ok0 or _field(st0, "driver") != "board-led":
-        set_item(it, "fail", "本次仅授权板载LED验收，执行器不匹配或初态无效", ms)
+    # 执行器分两条验收路径（2026-11-02）：
+    #   · 板载LED = 演示代理，只证明控制面通，不控制真实灯具 → fail
+    #   · matter/tuya = 真实执行器，用控制面开关回读做三轮循环 → pass
+    if not ok0:
+        set_item(it, "fail", "控制面初态无效，未执行动作", ms)
         return
-    led_path = "/sys/class/leds/5g_evb_voice/brightness"
-    def led_value():
-        try:
-            return int(open(led_path).read().strip())
-        except (OSError, ValueError):
-            return None
-    physical0 = led_value()
-    if physical0 is None or bool(physical0) != sw0:
-        set_item(it, "fail", "LED内核初态与控制面不一致，未执行动作", ms)
-        return
-    ms.append(("物理初态", "内核brightness=%s" % physical0))
     seq_ok = True
     rc_f, st_f = 1, {}
-    try:
-        for i in range(1, 4):
-            rc_o, st_o = _smarthome("off", t=45)
-            sw_o = _field(st_o, "switch_led")
-            physical_off = led_value()
-            time.sleep(0.8)
-            rc_n, st_n = _smarthome("on", t=45)
-            sw_n = _field(st_n, "switch_led")
-            physical_on = led_value()
-            time.sleep(0.8)
-            ms.append(("第%d轮物理回读" % i, "off=%s / on=%s" % (physical_off, physical_on)))
-            good = rc_o == 0 and rc_n == 0 and bool(st_o.get("success")) and bool(st_n.get("success")) and sw_o is False and sw_n is True and physical_off == 0 and physical_on is not None and physical_on > 0
-            seq_ok = seq_ok and good
-            ms.append(("第 %d 轮 关→开" % i, "关开回读%s" % ("一致" if good else "异常")))
-            if not good:
-                break
-    except Exception as e:
-        seq_ok = False
-        ms.append(("动作异常", str(e)[:100]))
-    finally:
+    physical0 = physical_final = None
+    if _proxy:
+        led_path = "/sys/class/leds/5g_evb_voice/brightness"
+
+        def led_value():
+            try:
+                return int(open(led_path).read().strip())
+            except (OSError, ValueError):
+                return None
+
+        physical0 = led_value()
+        if physical0 is None or bool(physical0) != sw0:
+            set_item(it, "fail", "LED内核初态与控制面不一致，未执行动作", ms)
+            return
+        ms.append(("物理初态", "内核brightness=%s" % physical0))
         try:
-            rc_f, st_f = _smarthome("on" if sw0 else "off", t=45)
+            for i in range(1, 4):
+                rc_o, st_o = _smarthome("off", t=45)
+                sw_o = _field(st_o, "switch_led")
+                physical_off = led_value()
+                time.sleep(0.8)
+                rc_n, st_n = _smarthome("on", t=45)
+                sw_n = _field(st_n, "switch_led")
+                physical_on = led_value()
+                time.sleep(0.8)
+                ms.append(("第%d轮物理回读" % i, "off=%s / on=%s" % (physical_off, physical_on)))
+                good = (rc_o == 0 and rc_n == 0 and bool(st_o.get("success")) and bool(st_n.get("success"))
+                        and sw_o is False and sw_n is True and physical_off == 0
+                        and physical_on is not None and physical_on > 0)
+                seq_ok = seq_ok and good
+                ms.append(("第 %d 轮 关→开" % i, "关开回读%s" % ("一致" if good else "异常")))
+                if not good:
+                    break
         except Exception as e:
             seq_ok = False
-            ms.append(("恢复异常", str(e)[:100]))
-    sw_f = bool(_field(st_f, "switch_led"))
-    ms.append(("现场恢复", "控制面恢复回读一致（%s）" % ("开" if sw_f else "关") if rc_f == 0 and st_f.get("success") and _field(st_f, "switch_led") is sw0 else "恢复失败或状态未知，需人工检查"))
-    physical_final = led_value()
-    ms.append(("恢复后物理回读", "brightness=%s（初态%s）" % (physical_final, physical0)))
-    if seq_ok and ok0 and rc_f == 0 and st_f.get("success") and sw_f == sw0 and physical_final == physical0:
-        set_item(it, "pass", "MQTT板载LED三轮内核回读通过；Matter实灯未验收", ms)
+            ms.append(("动作异常", str(e)[:100]))
+        finally:
+            try:
+                rc_f, st_f = _smarthome("on" if sw0 else "off", t=45)
+            except Exception as e:
+                seq_ok = False
+                ms.append(("恢复异常", str(e)[:100]))
+        physical_final = led_value()
+        ms.append(("恢复后物理回读", "brightness=%s（初态%s）" % (physical_final, physical0)))
+    else:
+        ms.append(("验收方式", "真实执行器 · 控制面开关三轮回读（不读板载LED）"))
+        try:
+            for i in range(1, 4):
+                rc_o, st_o = _smarthome("off", t=60)
+                sw_o = _field(st_o, "switch_led")
+                rc_n, st_n = _smarthome("on", t=60)
+                sw_n = _field(st_n, "switch_led")
+                good = (rc_o == 0 and rc_n == 0 and bool(st_o.get("success")) and bool(st_n.get("success"))
+                        and sw_o is False and sw_n is True)
+                seq_ok = seq_ok and good
+                ms.append(("第 %d 轮 关→开" % i, "回读 %s→%s %s" % (sw_o, sw_n, "一致" if good else "异常")))
+                if not good:
+                    break
+        except Exception as e:
+            seq_ok = False
+            ms.append(("动作异常", str(e)[:100]))
+        finally:
+            try:
+                rc_f, st_f = _smarthome("on" if sw0 else "off", t=60)
+            except Exception as e:
+                seq_ok = False
+                ms.append(("恢复异常", str(e)[:100]))
+    sw_f = _field(st_f, "switch_led")
+    ms.append(("现场恢复", "控制面恢复回读一致（%s）" % ("开" if sw_f else "关")
+               if rc_f == 0 and st_f.get("success") and sw_f is sw0 else "恢复失败或状态未知，需人工检查"))
+    if seq_ok and rc_f == 0 and st_f.get("success") and sw_f is sw0 and (_proxy or physical_final == physical0):
+        if _proxy:
+            ms.append(("真实灯具", "未控制：Matter 灯未配网；Moes 灯泡需涂鸦云凭据或 Matter 配网窗口"))
+            set_item(it, "fail", "仅板载LED演示代理（proxy=true），未控制真实灯具 → 智能家居控制未实现", ms)
+        else:
+            set_item(it, "pass", "真实执行器（%s）三轮开关回读通过" % _drv, ms)
     else:
         set_item(it, "fail", "灯控循环存在未闭环轮次 → 检查 broker(1883)/agent/driver", ms)
 
@@ -1294,7 +1334,7 @@ def _run_all_locked(args):
              item(2, "AI 视觉检测", "人脸/目标/姿态检测；身份识别单独验收"),
              item(3, "本地自然语言图片检索", "文件名关键词检索；零命中尝试CLIP，相关性另验"),
              item(4, "视频卡顿智能故障排查", "自动检测、分析并定位卡顿"),
-             item(5, "智能家居控制", "当前MQTT板载LED；Matter实灯未配网"),
+             item(5, "智能家居控制", "控制真实灯具（Matter/Tuya）；当前只有板载LED演示代理"),
              item(6, "AI 智能选网", "QoE 驱动的蜂窝选网决策 · Shadow 观察（零写操作）"),
              item(7, "MiniNAS 存储", "x86 存储底座（机身盘 + SMB/NFS + 相册 + CasaOS）只读巡检"),
              item(8, "CasaOS统一管理界面", "App Store / Files / Home Assistant / Immich / 每日巡检 五个入口")]
