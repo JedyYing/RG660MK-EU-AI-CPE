@@ -1,13 +1,17 @@
 {
- "driver": "matter",
+ "driver": "auto",
  "matter": {
   "node_id": null,
   "endpoint": 1,
   "chip_tool": "/data/ai_cpe/matter/bin/chip-tool",
   "kvs": "/data/ai_cpe/matter/kvs/chip_kvs"
  },
+ "tuya": {
+  "device_id": "6cef15216413d61f09c6u3",
+  "timeout": 15
+ },
  "local": {
   "led": "5g_evb_voice"
  },
- "_note": "node_id 填上（配网成功后）即自动切到 Matter 真灯；清空则回退板载 LED/虚拟执行器。旧配网记录：node 2（2026-09-28）。"
+ "_note": "auto 优先级：Matter(node_id) → 涂鸦云(TUYA_ACCESS_ID/SECRET 存在) → 板载LED 演示代理。填 node_id 或写入涂鸦凭据并重启 smarthome 即切换真灯；清空则回退板载LED。"
 }
