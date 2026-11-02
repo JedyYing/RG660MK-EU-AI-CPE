@@ -43,6 +43,8 @@ SNAP = "/tmp/aicpe_demo_snap.jpg"
 STATE_FILE = "/data/ai_cpe/hermes/home/aicpe_demo/state_last.json"
 
 _STATE_MTIME = {"t": 0.0}
+_TOKEN_CACHE = {"mt": 0.0, "d": {}}
+TOKEN_STATS_FILE = "/data/ai_cpe/token_stats.json"
 
 
 def reload_state_if_newer():
@@ -1512,6 +1514,10 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
 <header>
   <h1>AI CPE 八大功能演示</h1>
   <span class="tag" id="dev">RG660MK · 5G 公网</span>
+  <span class="tag" style="background:rgba(255,255,255,.08)">推理模式</span>
+  <button id="mLocal" onclick="setMode('local')" style="background:#31d17a;color:#06231a;border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer">本地模式</button>
+  <button id="mOnline" onclick="setMode('online')" style="background:#3aa0f0;color:#04202f;border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer">在线模式</button>
+  <span class="tag" id="modeTag" style="background:rgba(58,160,240,.22)">模式读取中…</span>
   <span class="tag" id="opStatus" style="background:transparent"></span>
   <div id="bar"><div id="barIn"></div></div>
   <span class="tag" id="stat">加载中…</span>
@@ -1520,6 +1526,9 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
   <button id="runbtn" onclick="startRun(true)" style="background:#31d17a;color:#06231a;border:0;border-radius:10px;padding:9px 16px;font-size:15px;font-weight:700;cursor:pointer">开始演示</button>
 </header>
 <div id="cpewrap"></div>
+<div id="usagewrap" style="display:none;margin:0 16px 8px;padding:9px 12px;background:#0f1a2c;border:1px solid #1f3350;border-radius:12px;font-size:12.5px;color:#cfe0f5">
+  <b style="color:#7fb7ff">Token 用量与费用</b> <span id="usageText">读取中…</span>
+</div>
 <main>
   <div id="cards"><div class="card"><h3>正在读取状态…</h3><div class="d">若长时间无变化，请刷新页面</div></div></div>
   <div id="right">
@@ -1578,18 +1587,40 @@ async function tick(){
     });
     if((s.items||[]).length) document.getElementById("barIn").style.width=Math.round(done/s.items.length*100)+"%";
     document.getElementById("stat").textContent=s.summary||(s.phase==="running"?"演示进行中…":"等待开始");
+    var llm=s.llm||{};
+    if(llm.label){
+      var mt=document.getElementById("modeTag");
+      if(mt){ mt.textContent="模式："+llm.label+" · "+(llm.model||""); mt.style.background=(llm.mode==="mt200-local"?"rgba(49,209,122,.22)":"rgba(58,160,240,.22)"); }
+      var bl=document.getElementById("mLocal"), bo=document.getElementById("mOnline");
+      if(bl) bl.style.outline=(llm.mode==="mt200-local"?"2px solid #31d17a":"none");
+      if(bo) bo.style.outline=(llm.mode==="hermes"?"2px solid #3aa0f0":"none");
+      if(llm.error){ if(mt) mt.textContent="模式异常："+(llm.error||""); }
+    }
+    if(s.architecture){ var at=document.getElementById("archTag"); if(at) at.textContent="链路："+(s.architecture.transport||"-"); }
     var rb=document.getElementById("runbtn");
     var running=(s.phase==="running");
     if(rb){ rb.textContent=running?"演示进行中…":"开始演示"; rb.disabled=running; }
+    (function(){
+      var u=s.usage||null, el=document.getElementById("usagewrap"), tx=document.getElementById("usageText");
+      function fmtTok(n){ n=Number(n)||0; if(n>=1e8) return (n/1e8).toFixed(2)+" 亿"; if(n>=1e4) return (n/1e4).toFixed(1)+" 万"; return String(Math.round(n)); }
+      if(u&&u.today&&tx){
+        el.style.display="block";
+        var extra=(u.errors&&u.errors.length)?(" ｜ 部分源失败 "+u.errors.length):"";
+        tx.innerHTML="今日 <b style='color:#e8f1ff'>"+fmtTok(u.today.tokens)+"</b> tokens ≈ <b style='color:#31d17a'>¥"+Number(u.today.cny||0).toFixed(2)+"</b>"+
+          " ｜ 近 30 天 <b style='color:#e8f1ff'>"+fmtTok((u.m30||{}).tokens)+"</b> tokens ≈ <b style='color:#31d17a'>¥"+Number((u.m30||{}).cny||0).toFixed(2)+"</b>"+
+          " ｜ 更新 "+(u.updated||"-")+extra;
+      }
+    })();
     var c=JSON.parse(JSON.stringify(s.cpe||{}));
     function escapeStrings(x){Object.keys(x).forEach(function(k){if(typeof x[k]==="string")x[k]=esc(x[k]);else if(x[k]&&typeof x[k]==="object")escapeStrings(x[k]);});} escapeStrings(c);
     if(c.model){
       var chips="<span class='chip'><b>模组</b> "+c.model+"</span>";
       if(c.platform) chips+="<span class='chip'><b>平台</b> "+c.platform+"</span>";
       var npu=s.npu||null;
-      if(npu&&npu.model){
-        var _u=(typeof npu.util_60s==="number")?npu.util_60s:0;
-        var _npuTxt="<span class='chip' style='border-color:#3aa0f0'><b>NPU</b> "+esc(npu.model)+" · 算力规格 <b style='color:#7fb7ff'>200 TOPS</b>"+
+      var _npuModel=(npu&&npu.model)?npu.model:((s.llm&&s.llm.mode==="mt200-local")?s.llm.model:"");
+      if(_npuModel){
+        var _u=(npu&&typeof npu.util_60s==="number")?npu.util_60s:0;
+        var _npuTxt="<span class='chip' style='border-color:#3aa0f0'><b>NPU</b> "+esc(_npuModel)+" · 算力规格 <b style='color:#7fb7ff'>200 TOPS</b>"+
           " · 利用率 <b style='color:"+(_u>0?"#31d17a":"#8ea6c8")+"'>"+_u.toFixed(1)+"%</b>（近60s·"+(npu.calls_60s||0)+"次）";
         if(npu.ok&&npu.elapsed_ms){ _npuTxt+=" · 最近推理 <b style='color:#31d17a'>"+(npu.elapsed_ms/1000).toFixed(1)+" s</b>"; }
         chips+=_npuTxt+"</span>";
@@ -1946,6 +1977,15 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
                 out["npu"] = llm_gateway.stats()
             except Exception:
                 out["npu"] = {}
+            try:
+                _m = os.path.getmtime(TOKEN_STATS_FILE)
+                if _m != _TOKEN_CACHE["mt"]:
+                    with open(TOKEN_STATS_FILE, encoding="utf-8") as _f:
+                        _TOKEN_CACHE["d"] = json.load(_f)
+                    _TOKEN_CACHE["mt"] = _m
+                out["usage"] = _TOKEN_CACHE["d"]
+            except Exception:
+                out["usage"] = {}
             out["architecture"] = {
                 "mode": _llm["label"],
                 "controller": "RG660MK",
