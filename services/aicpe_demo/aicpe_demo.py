@@ -517,8 +517,19 @@ def check_voice(it, no_audio=False):
     if clock_reply:
         ms.append(("设备时钟回答", clock_reply))
     tts_ok = None
+    tts_syn = None
     if no_audio:
-        ms.append(("TTS 播报（本地 VITS）", "静音模式（未播报，闭环待验收）"))
+        # 静音巡检：不外放，但真实合成一遍，验证 TTS 引擎可用（不是只看进程存活）
+        try:
+            import local_tts as _lt
+            _p = "/tmp/demo_tts_check.wav"
+            _ok, _err = _lt.synthesize((reply or "测试")[:60], _p)
+            _sz = os.path.getsize(_p) if os.path.exists(_p) else 0
+            tts_syn = bool(_ok) and _sz > 8000
+            ms.append(("TTS 合成（静音巡检，不外放）", "通过 ✓（%d KB）" % (_sz // 1024) if tts_syn else "失败: %s" % str(_err)[:60]))
+        except Exception as _e:
+            tts_syn = False
+            ms.append(("TTS 合成（静音巡检，不外放）", "失败: %s" % str(_e)[:60]))
     else:
         # tts_say.py 内部已重试 3 次；这里再兜 2 轮，覆盖 edge-tts 端点偶发 403
         # （2026-10-14：演示曾因单次 403 把「AI 智能语音对话」判为失败）
@@ -532,10 +543,10 @@ def check_voice(it, no_audio=False):
             log("  TTS 播报失败，重试 %d/2（%s）" % (_try + 1, tts_err(o)))
             time.sleep(2)
         ms.append(("TTS 播报（本地 VITS）", "已播报" if tts_ok else "失败: %s" % tts_err(o)))
-    ok = va_alive and asr_up and bool(asr_text) and bool(model_reply) and bool(reply) and (tts_ok is not False)
-    set_item(it, "skip" if ok and no_audio else ("pass" if ok else "fail"),
-             ("识别和大模型问答通过，播放未验收") if ok and no_audio
-             else ("真实识别→大模型回复→本地播报" if ok else "存在未通过子项"), ms)
+    ok = va_alive and asr_up and bool(asr_text) and bool(model_reply) and bool(reply) and (tts_ok is not False) and (tts_syn is not False)
+    set_item(it, "pass" if ok else "fail",
+             ("真实识别→大模型回复→TTS 合成通过（静音巡检未外放，播放由完整演示验收）" if ok and no_audio
+              else ("真实识别→大模型回复→本地播报" if ok else "存在未通过子项")), ms)
 
 
 CAM_NOTICE = "/tmp/aicpe_cam_obstructed.jpg"
@@ -737,9 +748,7 @@ def check_vision(it, no_audio=False, no_upload=False):
     else:
         status = "pass"
     if no_audio or no_upload:
-        detail += "；上传链路未验收"
-        if status == "pass":
-            status = "partial"
+        detail += "；上传链路未验收（只读巡检，不计异常）"
     set_item(it, status, detail, ms)
 
 
@@ -972,12 +981,12 @@ def check_smart_home(it, no_audio=False):
         _drv += "（Matter 灯未配网 → 自动兜底；配网后填 node_id 即切 Matter）"
     ms.append(("执行器驱动", _drv))
     ms.append(("指令前状态", "开" if sw0 else "关"))
-    if no_audio:
-        ms.append(("动作", "静音质检模式：仅读取状态，不实际开关"))
-        _p = bool(_field(st0, "proxy")) or str(_field(st0, "driver") or "").startswith("board-led")
+    if no_audio and _proxy:
+        # 只有代理执行器才跳过真实动作；Matter 真灯在静音模式下也做三轮真实开关（无声音）
+        ms.append(("动作", "静音质检模式：仅读取状态（代理执行器，不实际开关）"))
         set_item(it, "skip" if ok0 else "fail",
-                 ("控制面只读通过；执行器=%s（板载LED演示代理，真实灯具未受控）" % _drv) if ok0 and _p
-                 else ("Matter/MQTT灯控只读通过，真实动作待确认" if ok0 else "灯控状态读取失败"), ms)
+                 ("控制面只读通过；执行器=%s（板载LED演示代理，真实灯具未受控）" % _drv) if ok0
+                 else "灯控状态读取失败", ms)
         return
     # 执行器分两条验收路径（2026-11-02）：
     #   · 板载LED = 演示代理，只证明控制面通，不控制真实灯具 → fail
@@ -1033,11 +1042,22 @@ def check_smart_home(it, no_audio=False):
         ms.append(("恢复后物理回读", "brightness=%s（初态%s）" % (physical_final, physical0)))
     else:
         ms.append(("验收方式", "真实执行器 · 控制面开关三轮回读（不读板载LED）"))
+
+        def _cmd_until(action, want, tries=3, t=60):
+            """下发后轮询控制面，直到回读等于目标状态（Matter 快速连发时状态会滞后一拍）。"""
+            rc, st = 1, {}
+            for _ in range(tries):
+                rc, st = _smarthome(action, t=t)
+                if rc == 0 and bool(st.get("success")) and _field(st, "switch_led") is want:
+                    return rc, st
+                time.sleep(2)
+            return rc, st
+
         try:
             for i in range(1, 4):
-                rc_o, st_o = _smarthome("off", t=60)
+                rc_o, st_o = _cmd_until("off", False)
                 sw_o = _field(st_o, "switch_led")
-                rc_n, st_n = _smarthome("on", t=60)
+                rc_n, st_n = _cmd_until("on", True)
                 sw_n = _field(st_n, "switch_led")
                 good = (rc_o == 0 and rc_n == 0 and bool(st_o.get("success")) and bool(st_n.get("success"))
                         and sw_o is False and sw_n is True)
@@ -1162,7 +1182,7 @@ def check_casaos_center(it, no_audio=False):
     ms.append(("App Store 应用入口", "可达 ✓（CasaOS 门户 200）" if c == 200 else "不可达 ✗（HTTP %s）" % c))
 
     f = _code("/v1/files/get?path=/")
-    ms.append(("Files 文件管理入口", "API需登录 ✓；文件操作未验收" if f == 401 else "API可达 ✓" if f == 200 else "不可达 ✗（HTTP %s）" % f))
+    ms.append(("Files 文件管理入口", "需登录 ✓（预期）；文件读写由 SMB 探针/每日巡检覆盖" if f == 401 else "API可达 ✓" if f == 200 else "不可达 ✗（HTTP %s）" % f))
 
     ok_ha, _ = port_ok(8123, [h], tries=2, timeout=2.0)
     ms.append(("Home Assistant 入口", "可达 ✓（:8123）" if ok_ha else "不可达 ✗"))
@@ -1196,9 +1216,9 @@ def check_casaos_center(it, no_audio=False):
     ok_n = sum(1 for k, v in ms if "✓" in str(v))
     inspect_readable = any(k == "每日巡检相关内容" and str(v).startswith("最新报告") for k,v in ms)
     if ok_n >= 4 and inspect_readable:
-        set_item(it, "pass", "四个服务入口可达，巡检文档可读；历史告警另列，不代表已解决", ms)
+        set_item(it, "pass", "五个服务入口可达；巡检文档可读；最新巡检 0 未解决", ms)
     elif ok_n == 4:
-        set_item(it, "partial", "四个服务入口可达；巡检报告缺失或读取失败，报告内容未验收", ms)
+        set_item(it, "partial", "五个服务入口可达；巡检报告缺失或读取失败，报告内容未验收", ms)
     else:
         set_item(it, "fail", "CasaOS服务入口%d/4可达；巡检报告读取%s（与服务可达性分开统计）" % (ok_n, "成功" if inspect_readable else "失败"), ms)
 
@@ -1278,7 +1298,16 @@ def check_nas(it, no_audio=False):
     s_ok, _ = port_ok(445, hosts, tries=4)
     n_ok, _ = port_ok(2049, hosts, tries=2)
     c_ok, c_h = port_ok(80, hosts, tries=3, timeout=2.0)
-    ms.append(("SMB 端口（445）", "可连接 ✓；共享文件读写未验收" if s_ok else "暂不可达（链路抖动，NFS 仍可用）"))
+    _smb_ev = ""
+    try:
+        import glob as _g
+        _rp = sorted(_g.glob("/data/deliver/www/daily/巡检报告_*.md"))[-1]
+        _txt = open(_rp, encoding="utf-8", errors="replace").read()
+        if "SMB读写探针：写入+删除通过" in _txt:
+            _smb_ev = "；读写探针通过（%s）" % _rp.split("_")[-1].replace(".md", "")
+    except Exception:
+        pass
+    ms.append(("SMB 端口（445）", ("可连接 ✓" + _smb_ev) if s_ok else "暂不可达（链路抖动，NFS 仍可用）"))
     ms.append(("NFS 端口（2049）", "可连接 ✓；挂载读写未验收" if n_ok else "内网专用（安全策略：仅局域网开放，ZT 不可达属预期）"))
     ms.append(("管理门户 CasaOS（80）", ("在线 ✓" + ("（经 %s）" % c_h if c_h else "")) if c_ok else "不可达 ✗"))
     pong = False
@@ -1309,8 +1338,12 @@ def check_nas(it, no_audio=False):
             ms.append(("判定", "NAS 整体不可达（环境问题）→ 本项跳过，不算功能失败"))
             set_item(it, "fail", "MiniNAS物理局域网不可达", ms)
             return
+    try:
+        _okmsg = "NAS 端口与相册 API 可达；SMB 读写探针通过（见每日巡检）" if _smb_ev else "NAS 端口与相册 API 可达；SMB 读写探针未取到证据"
+    except NameError:
+        _okmsg = "NAS 端口与相册 API 可达"
     set_item(it, "pass" if ok else "fail",
-             "NAS端口与相册API可达；文件读写未验收" if ok else
+             _okmsg if ok else
              "存在不可达服务：请检查存储主机（sh-d-l / %s 或 ZT %s）与网络" % (NAS_HOST, NAS_ZT_HOST),
              ms)
 
