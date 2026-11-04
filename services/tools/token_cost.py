@@ -8,6 +8,7 @@
 - 输出 /data/ai_cpe/token_stats.json
 """
 import json
+import os
 import subprocess
 import sys
 import time
@@ -18,12 +19,31 @@ PY = "/data/hermes/venv/bin/python"
 LOCAL_DB = "/data/hermes/.hermes/state.db"
 OUT = "/data/ai_cpe/token_stats.json"
 
-SSH = ["ssh", "-y", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
-       "-i", "/root/.ssh/id_ed25519_hermes", "root@192.168.1.244"]
+# 设备端 ssh 是 dropbear 客户端：不支持 -o 选项（-o BatchMode=yes 会直接报错），
+# 用 -y（自动接受 host key）+ -T（不分配 tty），公钥在 /root/.ssh/id_ed25519_hermes。
+KEY = "/root/.ssh/id_ed25519_hermes"
+REMOTE_USER = "jedyying"
+# 笔记本 LAN IP 由 DHCP 下发会变（曾 .244 → .212），优先从本机 DHCP 租约里按 MAC 取。
+LAPTOP_MAC = "00:e0:4c:55:75:98"
+LAPTOP_FALLBACK = "192.168.1.212"
+
 REMOTE_PY = "/usr/bin/python3"
 REMOTE_SCRIPT = "/home/jedyying/work_cpe_board/tools/usage_stats.py"
 REMOTE_DBS = ["/home/jedyying/.hermes/state.db",
               "/home/jedyying/.hermes/profiles/phicoteklegacy/state.db"]
+
+
+def laptop_ip():
+    """从本机 dnsmasq 租约里按 MAC 找笔记本当前 IP。"""
+    try:
+        with open("/tmp/dhcp.leases", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                p = line.split()
+                if len(p) >= 4 and p[1].lower() == LAPTOP_MAC:
+                    return p[2]
+    except OSError:
+        pass
+    return LAPTOP_FALLBACK
 
 
 def run_local(db, start):
@@ -35,7 +55,9 @@ def run_local(db, start):
 
 def run_remote(db, start):
     cmd = "%s %s %s %s" % (REMOTE_PY, REMOTE_SCRIPT, db, start)
-    r = subprocess.run(SSH + [cmd], capture_output=True, text=True, timeout=180)
+    ssh = ["ssh", "-y", "-T", "-i", KEY, "%s@%s" % (REMOTE_USER, laptop_ip())]
+    r = subprocess.run(ssh + [cmd], capture_output=True, text=True, timeout=180,
+                       stdin=subprocess.DEVNULL)
     if r.returncode != 0:
         raise RuntimeError((r.stderr or r.stdout)[-200:])
     return json.loads(r.stdout.strip().splitlines()[-1])
@@ -61,7 +83,9 @@ def merge(items):
 def main():
     today = datetime.now().strftime("%Y-%m-%d")
     start30 = (datetime.now() - timedelta(days=29)).strftime("%Y-%m-%d")
+    ip = laptop_ip()
     res = {"updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+           "laptop_ip": ip,
            "today": None, "m30": None, "errors": []}
 
     for label, start in (("today", today), ("m30", start30)):
@@ -82,7 +106,6 @@ def main():
     tmp = OUT + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(res, f, ensure_ascii=False, indent=1)
-    import os
     os.replace(tmp, OUT)
     print(json.dumps(res, ensure_ascii=False))
 
