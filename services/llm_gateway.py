@@ -33,6 +33,8 @@ ENV_FILE = '/data/hermes/.hermes/.env'
 LOCAL_ENDPOINT = 'http://192.168.1.244:18091/v1/chat/completions'
 LOCAL_MODEL = 'deepseek-7b-npu'
 LOCAL_HOST = '192.168.1.244'
+LOCAL_HOSTS = ['192.168.1.244', '172.25.25.240']
+_LOCAL_PICK = {'url': None, 't': 0.0}
 
 ONLINE_ENDPOINT = 'https://ai.phicotek.com/api/llmrouter/v1/chat/completions'
 ONLINE_MODEL = 'deepseek-v4-flash'
@@ -154,6 +156,43 @@ def _post_json(url, body, headers, timeout):
     return json.loads(raw)
 
 
+
+def local_endpoint():
+    """按可达性选本地模型入口：优先局域网 192.168.1.244，回退 ZeroTier 172.25.25.240。"""
+    import socket
+    now = time.time()
+    pick = _LOCAL_PICK
+    if pick['url'] and now - pick['t'] < 30:
+        return pick['url']
+    for h in LOCAL_HOSTS:
+        try:
+            sk = socket.create_connection((h, 18091), timeout=1.0)
+            sk.close()
+            url = 'http://%s:18091/v1/chat/completions' % h
+            pick.update(url=url, t=now)
+            return url
+        except Exception:
+            continue
+    pick.update(url=None, t=now)
+    return 'http://%s:18091/v1/chat/completions' % LOCAL_HOSTS[0]
+
+
+def _post_local(body, timeout):
+    errs = []
+    seen = set()
+    for url in [local_endpoint()] + ['http://%s:18091/v1/chat/completions' % h for h in LOCAL_HOSTS]:
+        if url in seen:
+            continue
+        seen.add(url)
+        try:
+            return _post_json(url, body, {'Content-Type': 'application/json'}, timeout)
+        except urllib.error.URLError as exc:
+            errs.append(exc)
+            _LOCAL_PICK['url'] = None
+    if errs:
+        raise errs[-1]
+    raise ModelError('本地模型入口不可用')
+
 def _local_chat(messages, max_tokens, timeout):
     _check_messages(messages, LOCAL_CHAR_LIMIT)
     body = {'model': LOCAL_MODEL, 'messages': messages, 'stream': False,
@@ -165,8 +204,7 @@ def _local_chat(messages, max_tokens, timeout):
             if remaining <= 0:
                 raise ModelError('本地模型等待超时')
             try:
-                data = _post_json(LOCAL_ENDPOINT, body, {'Content-Type': 'application/json'},
-                                  remaining)
+                data = _post_local(body, remaining)
                 break
             except urllib.error.HTTPError as exc:
                 if exc.code != 429 or attempt == 15 or deadline - time.monotonic() < 2:
@@ -204,6 +242,8 @@ def _local_chat(messages, max_tokens, timeout):
 
 
 def _online_chat(messages, max_tokens, timeout):
+    """在线模型对话。空文本 / 瞬时错误重试一次（2026-11-05：100 轮复测出现 1 次
+    「在线模型没有返回文本」，网关偶发空响应；单次失败会把看板第 1 项打成 fail）。"""
     _check_messages(messages, ONLINE_CHAR_LIMIT)
     key = _env_key()
     if not key:
@@ -211,21 +251,39 @@ def _online_chat(messages, max_tokens, timeout):
     body = {'model': ONLINE_MODEL, 'messages': messages, 'stream': False,
             'max_tokens': min(int(max_tokens or 400), ONLINE_MAX_TOKENS)}
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key}
-    try:
-        data = _post_json(ONLINE_ENDPOINT, body, headers, timeout)
-    except urllib.error.HTTPError as exc:
-        raise ModelError('在线模型HTTP错误：%s' % exc.code) from exc
-    except urllib.error.URLError as exc:
-        raise ModelError('在线模型不可用：%s' % type(getattr(exc, 'reason', exc)).__name__) from exc
-    except ValueError as exc:
-        raise ModelError('在线模型返回非 JSON') from exc
-    try:
-        text = data['choices'][0]['message'].get('content') or ''
-    except (KeyError, IndexError, TypeError) as exc:
-        raise ModelError('在线模型响应结构异常') from exc
-    if not text.strip():
-        raise ModelError('在线模型没有返回文本')
-    return text.strip(), str(data.get('model') or ONLINE_MODEL)
+    last = ModelError('在线模型没有返回文本')
+    for attempt in range(2):
+        retryable = False
+        try:
+            data = _post_json(ONLINE_ENDPOINT, body, headers, timeout)
+        except urllib.error.HTTPError as exc:
+            last = ModelError('在线模型HTTP错误：%s' % exc.code)
+            retryable = exc.code in (429, 500, 502, 503, 504)
+            data = None
+        except urllib.error.URLError as exc:
+            last = ModelError('在线模型不可用：%s' % type(getattr(exc, 'reason', exc)).__name__)
+            retryable = True
+            data = None
+        except ValueError as exc:
+            last = ModelError('在线模型返回非 JSON')
+            retryable = True
+            data = None
+        if data is not None:
+            try:
+                text = data['choices'][0]['message'].get('content') or ''
+            except (KeyError, IndexError, TypeError):
+                last = ModelError('在线模型响应结构异常')
+                retryable = True
+                text = ''
+            if text.strip():
+                return text.strip(), str(data.get('model') or ONLINE_MODEL)
+            else:
+                last = ModelError('在线模型没有返回文本')
+        if attempt == 0:
+            time.sleep(1.2)
+            continue
+        raise last
+    raise last
 
 
 import collections
@@ -233,6 +291,7 @@ import collections
 LAST_STATS = {'ts': 0, 'elapsed_ms': None, 'model': None, 'chars': 0, 'ok': False}
 # 近 60s 的推理调用记录（时间戳, 耗时ms）——用于计算 NPU 占空比（实测口径，非硬件计数器）
 CALLS = collections.deque(maxlen=512)
+CALL_LOG = os.environ.get("LLM_CALL_LOG", "/data/ai_cpe/logs/llm_calls.jsonl")
 
 
 def chat_meta(messages, max_tokens=None, timeout=None):
@@ -252,6 +311,14 @@ def chat_meta(messages, max_tokens=None, timeout=None):
     LAST_STATS.update({'ts': time.time(), 'elapsed_ms': elapsed, 'model': model,
                        'chars': len(text or ''), 'ok': True})
     CALLS.append((time.time(), elapsed))
+    try:
+        os.makedirs(os.path.dirname(CALL_LOG), exist_ok=True)
+        with open(CALL_LOG, "a", encoding="utf-8") as _f:
+            _f.write(json.dumps({"t": time.time(), "ms": elapsed, "model": model}) + "\n")
+        if os.path.getsize(CALL_LOG) > 2 * 1024 * 1024:
+            os.replace(CALL_LOG, CALL_LOG + ".1")
+    except Exception:
+        pass
     return text, {'backend': mode, 'label': LABELS[mode], 'model': model,
                   'elapsed_ms': elapsed}
 
@@ -260,12 +327,28 @@ def stats():
     """最近一次推理 + 近 60s 占空比（可实测口径）。"""
     d = dict(LAST_STATS)
     now = time.time()
-    recent = [(t, e) for t, e in list(CALLS) if now - t <= 60]
+    recent = []
+    # 跨进程汇总：语音助手与看板各自调用 LLM，占空比必须合并统计
+    try:
+        with open(CALL_LOG, encoding="utf-8") as f:
+            for ln in f.readlines()[-300:]:
+                try:
+                    o = json.loads(ln)
+                except Exception:
+                    continue
+                if now - float(o.get("t", 0)) <= 60:
+                    recent.append((float(o["t"]), float(o.get("ms", 0))))
+    except Exception:
+        recent = []
+    if not recent:
+        recent = [(t, e) for t, e in list(CALLS) if now - t <= 60]
     busy_ms = sum(e for _, e in recent)
     d['calls_60s'] = len(recent)
     d['busy_ms_60s'] = busy_ms
-    # 占空比：近 60s 内 NPU 推理实际占用时长 / 60s。无请求时 0%。
+    # 占空比：近 60s 内推理实际占用时长 / 60s（估算口径，不是硬件计数器）
     d['util_60s'] = round(min(100.0, busy_ms / 600.0), 1)
+    d['idle'] = not recent
+    d['last_ts'] = max((t for t, _ in recent), default=0)
     d['mode'] = get_mode()
     return d
 
@@ -300,7 +383,7 @@ def describe():
         'label': LABELS.get(mode, mode),
         'backend': 'MT200 本地推理' if mode == 'mt200-local' else '在线 DeepSeek',
         'model': LOCAL_MODEL if mode == 'mt200-local' else ONLINE_MODEL,
-        'endpoint': LOCAL_ENDPOINT if mode == 'mt200-local' else ONLINE_ENDPOINT,
+        'endpoint': local_endpoint() if mode == 'mt200-local' else ONLINE_ENDPOINT,
         'dsh_console': 'http://127.0.0.1:3081/',
         'error': err,
     }
