@@ -700,6 +700,29 @@ def ensure_ai_service():
         pass
 
 
+def shrink_jpeg(data, max_w=400, quality=70):
+    """缩小 /snap 输出（公网 quick tunnel 下 45KB→约 15KB，传输延迟减半）。
+
+    原始帧仍完整写入 /tmp/aicpe_board_last.jpg 供人脸检测，所以检测精度不受影响；
+    前端按 /faces 返回的 w/h 百分比定位框，等比缩放后依然对齐。
+    PIL 不可用（缺 libtiff）时原样返回，不影响功能。
+    """
+    try:
+        import io
+        from PIL import Image
+        im = Image.open(io.BytesIO(data))
+        if im.width <= max_w:
+            return data
+        h = int(im.height * max_w / float(im.width))
+        im = im.convert("RGB").resize((max_w, h), Image.BILINEAR)
+        out = io.BytesIO()
+        im.save(out, "JPEG", quality=quality, optimize=True)
+        small = out.getvalue()
+        return small if len(small) < len(data) else data
+    except Exception:
+        return data
+
+
 def jpeg_size(path):
     """只读 JPEG SOF 段取宽高（venv 的 Pillow 在本进程因 libtiff 缺库不可用）。"""
     try:
@@ -736,6 +759,10 @@ def face_boxes():
         with _FACE_LOCK:
             if _FACE_CACHE["key"] == key and _FACE_CACHE["d"] is not None:
                 return _FACE_CACHE["d"]
+            _prev = _FACE_CACHE["d"]
+        # 画面 1.5s 一帧，但检测不必每帧跑满（单帧 0.7s）：1.6s 内复用上次结果，框最多滞后一帧
+        if _prev and _prev.get("ok") and time.time() - _prev.get("ts", 0) < 1.6:
+            return _prev
         try:
             import shutil
             shutil.copyfile(FACE_LAST, FACE_MEDIA)
@@ -1959,9 +1986,9 @@ async function enrollFace(){
 }
 function boot(){
   if(!jsMode){ fallbackMode("no-fetch"); return; }
-  setInterval(tick,1500); tick();
-  // 摄像头画面 3s 刷新一帧（人脸检测单帧 ~0.7s，按帧缓存只在新帧上推理）
-  setInterval(function(){ if(!jsMode) return; var c=document.getElementById("cam"); if(c) c.src="/snap?ts="+Date.now(); },3000);
+  setInterval(tick,2000); tick();
+  // 摄像头画面 1.5s 刷新一帧（人脸检测单帧 ~0.7s，按帧缓存只在新帧上推理）
+  setInterval(function(){ if(!jsMode) return; var c=document.getElementById("cam"); if(c) c.src="/snap?ts="+Date.now(); },1500);
 }
 boot();
 </script></body></html>"""
@@ -2304,7 +2331,7 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
                             data = open(_np, "rb").read()
                         except Exception:
                             pass
-                self._send(200, "image/jpeg", data)
+                self._send(200, "image/jpeg", shrink_jpeg(data))
             else:
                 self._send(503, "text/plain", "camera warming up")
         elif p == "/report":
