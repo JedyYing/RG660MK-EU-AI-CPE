@@ -2331,7 +2331,11 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
                             data = open(_np, "rb").read()
                         except Exception:
                             pass
-                self._send(200, "image/jpeg", shrink_jpeg(data))
+                # 内网直连（笔记本/手机连板子 LAN/WiFi）返回原图，清晰且只要 ~50ms；
+                # 经 cloudflared 的外网请求返回缩图（45KB→13.7KB），省隧道带宽。
+                # cloudflared 回源到 127.0.0.1，所以按它注入的头判断来源。
+                _wan = bool(self.headers.get("CF-Connecting-IP") or self.headers.get("X-Forwarded-For"))
+                self._send(200, "image/jpeg", shrink_jpeg(data) if _wan else data)
             else:
                 self._send(503, "text/plain", "camera warming up")
         elif p == "/report":
