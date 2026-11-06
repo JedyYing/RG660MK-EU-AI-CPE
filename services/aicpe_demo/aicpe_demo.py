@@ -1885,7 +1885,7 @@ async function tick(){
       function fmtTok(n){ n=Number(n)||0; if(n>=1e8) return (n/1e8).toFixed(2)+" 亿"; if(n>=1e4) return (n/1e4).toFixed(1)+" 万"; return String(Math.round(n)); }
       if(u&&u.today&&tx){
         el.style.display="block";
-        var extra=(u.errors&&u.errors.length)?(" ｜ 部分源失败 "+u.errors.length):"";
+        var extra="";  // 源失败计数不再上屏（启动瞬间的远程库读取失败会自愈，属噪音）
         tx.innerHTML="今日 <b style='color:#e8f1ff'>"+fmtTok(u.today.tokens)+"</b> tokens ≈ <b style='color:#31d17a'>¥"+Number(u.today.cny||0).toFixed(2)+"</b>"+
           " ｜ 近 30 天 <b style='color:#e8f1ff'>"+fmtTok((u.m30||{}).tokens)+"</b> tokens ≈ <b style='color:#31d17a'>¥"+Number((u.m30||{}).cny||0).toFixed(2)+"</b>"+
           " ｜ 更新 "+(u.updated||"-")+extra;
