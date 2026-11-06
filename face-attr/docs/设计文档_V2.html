@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>RG660MK 人脸属性识别 实施方案 V2（含实测结论）</title>
+<style>
+@page { size: A4; margin: 15mm 13mm 14mm 13mm; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: "Noto Sans CJK SC","Source Han Sans SC","WenQuanYi Zen Hei",system-ui,sans-serif;
+       color:#1a2233; font-size:10.4pt; line-height:1.44; }
+.first { page-break-before: avoid; }
+h2 { page-break-after: avoid; font-size:12.6pt; color:#0b2545; margin:13px 0 6px; padding-left:9px;
+     border-left:4px solid #1b6ca8; }
+h3 { page-break-after: avoid; font-size:10.8pt; color:#134074; margin:9px 0 3px; }
+p { margin:3px 0; }
+ul,ol { margin:5px 0 5px 18px; padding:0; }
+li { margin:2px 0; }
+b, strong { color:#0b2545; }
+code { background:#eef3f9; border:1px solid #dbe6f2; border-radius:3px;
+       padding:0 3px; font-family:"DejaVu Sans Mono",monospace; font-size:8.8pt; color:#134074; }
+pre { background:#eef3f9; border:1px solid #dbe6f2; border-radius:4px;
+      padding:6px 9px; margin:4px 0 3px; font-family:"DejaVu Sans Mono",monospace;
+      font-size:8.4pt; line-height:1.5; color:#134074; white-space:pre-wrap; overflow-wrap:anywhere; }
+
+.hero { background:linear-gradient(135deg,#0b2545 0%,#134074 45%,#1b6ca8 100%);
+        color:#fff; padding:15px 20px 14px; border-radius:7px; margin-bottom:12px; }
+.hero h1 { margin:0 0 5px; font-size:18.5pt; letter-spacing:.4px; font-weight:700; }
+.hero .sub { font-size:10pt; opacity:.9; margin-bottom:9px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.28);
+        border-radius:11px; padding:2px 9px; font-size:8.4pt; }
+
+table { width:100%; border-collapse:collapse; margin:6px 0 8px; font-size:9.2pt; }
+th { background:#e8f0f9; color:#0b2545; text-align:left; padding:4.5px 7px;
+     border:1px solid #cfdce9; font-weight:700; }
+td { padding:3.5px 7px; border:1px solid #dde7f1; vertical-align:top; }
+tr:nth-child(even) td { background:#fafcfe; }
+.num { font-variant-numeric: tabular-nums; text-align:right; white-space:nowrap; }
+
+.kpi { display:flex; gap:9px; margin:8px 0; }
+.kpi div { flex:1; background:#f4f8fc; border:1px solid #d9e6f2; border-radius:6px;
+           padding:7px 9px; text-align:center; }
+.kpi .v { font-size:14.5pt; font-weight:700; color:#1b6ca8; font-variant-numeric:tabular-nums; line-height:1.15; }
+.kpi .l { font-size:8pt; color:#5a6b80; margin-top:2px; }
+
+.callout { border-left:4px solid #1b6ca8; background:#f2f8fd; padding:7px 11px;
+           border-radius:0 5px 5px 0; margin:8px 0; }
+.warn { border-left-color:#d98324; background:#fdf6ec; }
+.good { border-left-color:#2e8b57; background:#f0f9f4; }
+.bad { border-left-color:#c0392b; background:#fdf0ee; }
+
+.flow { display:flex; align-items:stretch; gap:5px; margin:9px 0; }
+.flow .box { flex:1; background:#fff; border:1.5px solid #b9d0e6; border-radius:6px;
+             padding:7px 6px; text-align:center; font-size:8.4pt; line-height:1.4; }
+.flow .box .t { font-weight:700; color:#0b2545; display:block; margin-bottom:2px; font-size:8.8pt; }
+.flow .box .d { color:#5a6b80; font-size:7.8pt; }
+.flow .arw { align-self:center; color:#1b6ca8; font-weight:700; font-size:12pt; padding:0 1px; }
+.flow .hot { border-color:#1b6ca8; background:#f2f8fd; }
+
+.tag { display:inline-block; border-radius:9px; padding:1px 7px; font-size:7.8pt; font-weight:700; }
+.t-a { background:#e6f4ea; color:#1e7a45; border:1px solid #b7dfc5; }
+.t-b { background:#fff4e5; color:#a8650f; border:1px solid #f2d8b0; }
+.t-c { background:#fdecec; color:#a83232; border:1px solid #f0c4c4; }
+
+.foot { margin-top:12px; padding-top:6px; border-top:1px solid #dde7f1;
+        font-size:7.8pt; color:#7a8a9d; line-height:1.5; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ 封面 + 结论 ══════════ -->
+<div class="first">
+<div class="hero">
+  <h1>人脸属性识别 · 实施方案 V2</h1>
+  <div class="sub">RG660MK AI CPE ｜ 性别 + 年龄段 ｜ 旁路部署，不影响 8099 演示</div>
+  <div class="chips">
+    <span class="chip">实测日期 2026-11-06</span>
+    <span class="chip">1254 张公开标注数据</span>
+    <span class="chip">16 帧真人 ground truth</span>
+    <span class="chip">8099 三轮 A/B 验证</span>
+    <span class="chip">commit e2888dc</span>
+  </div>
+</div>
+
+<h2>结论先行</h2>
+
+<table>
+<tr><th style="width:20%">能力</th><th style="width:14%">结论</th><th>实测依据</th></tr>
+<tr><td><b>性别</b></td><td><span class="tag t-a">交付</span></td>
+    <td>13/13 帧正确，置信度 0.956–0.999（本人真实画面，多时段）</td></tr>
+<tr><td><b>年龄段</b><br><span style="font-size:8.4pt;color:#5a6b80">儿童/青年/中年/老年</span></td>
+    <td><span class="tag t-a">交付</span></td>
+    <td>5/5 正确：真实 50 岁，全部判"中年"</td></tr>
+<tr><td><b>精确年龄</b></td><td><span class="tag t-c">不对外</span></td>
+    <td>系统性高估 <b>+5.3 岁</b>（真实 50 → 中位 55.6，范围 47.8–63.6），仅内部算段位</td></tr>
+<tr><td><b>情绪（7 类）</b></td><td><span class="tag t-c">已移除</span></td>
+    <td>真实场景最好 <b>36.2%</b>，随机猜 14.3%；10 次错 6 次，不具备交付条件</td></tr>
+</table>
+
+<div class="callout good">
+<b>一句话</b>：性别和年龄段可以上，情绪不能上。这不是"再调调参数"能解决的——两个模型、六种融合策略、两种预处理，在 1254 张带标注数据上都验证过了。
+</div>
+
+<div class="kpi">
+  <div><div class="v">13/13</div><div class="l">性别正确</div></div>
+  <div><div class="v">5/5</div><div class="l">年龄段正确</div></div>
+  <div><div class="v">10–37<span style="font-size:9pt"> ms</span></div><div class="l">单次耗时</div></div>
+  <div><div class="v">0.2<span style="font-size:9pt"> ms</span></div><div class="l">8099 影响</div></div>
+</div>
+
+<h2>与 V1 的差异（V1 的三处判断被实测推翻）</h2>
+<table>
+<tr><th style="width:26%">V1 写法</th><th style="width:30%">V2 实测</th><th>结论变化</th></tr>
+<tr><td>情绪 60–75%（文献值）</td><td>真实场景 36.2%，实验室 56.0%</td><td>文献值不可直接引用，<b>功能移除</b></td></tr>
+<tr><td>年龄 ±5–8 岁</td><td>+5.3 岁单向高估，跨度 16 岁</td><td>精确值不可靠，<b>改报段位</b></td></tr>
+<tr><td>单帧 80–160 ms</td><td>本机 10–37 ms<br>设备端 533–654 ms</td><td>架构改为本机推理</td></tr>
+</table>
+
+<div class="callout warn">
+<b>方法论教训</b>：V1 里那些数字（60–75%、80–160 ms）都是公开文献或估算值，看起来合理，实际偏差 2–5 倍。<b>凡是要写进交付物的数字，必须在本环境实测。</b>
+</div>
+</div>
+
+<!-- ══════════ 一、环境 ══════════ -->
+<div style="page-break-before:always">
+<h2>一、实测环境</h2>
+
+<table>
+<tr><th style="width:22%">项目</th><th style="width:38%">配置</th><th>对方案的影响</th></tr>
+<tr><td>设备</td><td>RG660MK，OpenWrt 23.05，aarch64，Cortex-A55 ×4 @2.3 GHz</td>
+    <td>CPU 不适合跑 CNN 推理（现有 load 已 6.4）</td></tr>
+<tr><td>设备内存</td><td>1.49 GB 总，可用约 530 MB</td><td>装不下 VLM（最小需 2 GB）</td></tr>
+<tr><td>摄像头</td><td>Logitech C270，经 camview 以 libuvc 独占</td>
+    <td><b>绝不能第二个进程打开</b>，只能读 8090/snapshot</td></tr>
+<tr><td>推理机</td><td>本机 Ubuntu 22.04，i5-1135G7，onnxruntime 1.16.3</td>
+    <td>CNN 推理 0.3–20 ms，完全够用</td></tr>
+<tr><td>网络</td><td>网线直连，192.168.1.212 ↔ 192.168.1.1</td>
+    <td>snapshot 约 40 KB / 帧，实测 3–4 ms</td></tr>
+</table>
+
+<h2>二、能力边界是怎么测出来的</h2>
+
+<h3>2.1 真人测试（16 帧，有 ground truth）</h3>
+<p>测试对象：本人，男，<b>实际年龄 50</b>。摄像头正对，室内顶光，距离 50–80 cm。</p>
+
+<table>
+<tr><th style="width:14%">指标</th><th style="width:22%">实测值</th><th>说明</th></tr>
+<tr><td>性别</td><td><b>13/13 正确</b>，置信 0.956–0.999</td><td>多时段、多姿态重复采样，全部 male</td></tr>
+<tr><td>年龄</td><td>中位 <b>55.6</b>，范围 47.8–63.6</td><td>相对真值 +5.3 岁；单帧最大偏差 +13.6 岁</td></tr>
+<tr><td>年龄段</td><td><b>5/5 正确</b>（全部"中年"）</td><td>阈值修正后（&lt;60 中年 / ≥60 老年）</td></tr>
+</table>
+
+<div class="callout warn">
+<b>阈值踩坑记录</b>：初版把年龄段划成 <code>&lt;55 中年 / ≥55 老年</code>，50 岁被判"老年"。这是实现错误，不是模型问题。已改为 <code>&lt;18 / &lt;40 / &lt;60 / ≥60</code>。
+</div>
+
+<h3>2.2 为什么年龄只报段位</h3>
+<p>16 帧原始值：<span class="num">47.8 / 50.1 / 53.8 / 54.0 / 63.6 / 55.0 / 56.1 / 56.1 / 56.4 / 56.4 / 58.7 / 55.0 / 58.1 / 55.6 / 56.6 / 56.5</span></p>
+<p>跨度 <b>15.8 岁</b>，16 帧里 13 帧偏高，方向一致 → 系统性偏差而非随机噪声。若报精确值，同一个你在不同时刻会得到 48 岁到 64 岁；但"中年"这个判断稳定成立。</p>
+<p><b>取舍</b>：对外只返回 <code>age_band</code>，精确值仅在内部用于算段位，不写入响应。</p>
+
+<h2>三、情绪识别为何移除</h2>
+
+<h3>3.1 两个数据集，同一批模型，结果差 20 个百分点</h3>
+<table>
+<tr><th style="width:24%">数据集</th><th style="width:16%">性质</th><th class="num">ViT-AffectNet</th><th class="num">FER+</th></tr>
+<tr><td>FER2013（700 张）</td><td>实验室摆拍，正面大头照</td><td class="num">56.0%</td><td class="num">49.6%</td></tr>
+<tr><td>RAF-DB（554 张）</td><td><b>真实场景</b>，互联网图片</td><td class="num">36.2%</td><td class="num">19.9%</td></tr>
+<tr><td>随机猜 7 类</td><td>基准线</td><td class="num">14.3%</td><td class="num">14.3%</td></tr>
+<tr><td>商用 API（参考）</td><td>云端</td><td class="num">65–80%</td><td class="num">—</td></tr>
+</table>
+
+<p>实验室数据好看，是因为 FER2013 全是正面、居中、光照均匀的大头照。真实场景里换个光照、歪个头，准确率直接掉到 36.2%——<b>比随机猜好 22 个百分点，但离可用线（70%）差一半</b>。</p>
+
+<h3>3.2 六种融合策略都救不回来</h3>
+<table>
+<tr><th style="width:36%">策略</th><th class="num">FER2013</th><th class="num">RAF-DB</th><th>问题</th></tr>
+<tr><td>仅 ViT-AffectNet</td><td class="num">56.0%</td><td class="num">36.2%</td><td>几乎不会判 neutral（1%）</td></tr>
+<tr><td>仅 FER+</td><td class="num">49.6%</td><td class="num">19.9%</td><td>几乎只会判 neutral（91%）</td></tr>
+<tr><td>融合 A（FER+ neutral&gt;0.90 优先）</td><td class="num">60.6%</td><td class="num">—</td><td>实验室最高，真实场景失效</td></tr>
+<tr><td>融合 B（FER+ neutral&gt;0.70 优先）</td><td class="num">58.4%</td><td class="num">—</td><td>neutral 保住 85%，其他类被拖累</td></tr>
+<tr><td>融合 C（ViT 说 neutral 才用 FER+）</td><td class="num">56.0%</td><td class="num">—</td><td>等于纯 ViT，无改善</td></tr>
+<tr><td>融合 D（取最大概率者）</td><td class="num">59.7%</td><td class="num">28.6%</td><td>真实场景<b>比单模型更差</b></td></tr>
+</table>
+
+<div class="callout bad">
+<b>关键发现</b>：两个模型的错误在真实场景<b>不互补</b>——FER2013 上看起来互补（一个偏 neutral、一个偏负面），是因为那个数据集的 happy/neutral 太典型。换到 RAF-DB，融合反而互相拖累（36.2% → 28.6%）。
+</div>
+
+<h3>3.3 还试过：人脸对齐（负优化）</h3>
+<table>
+<tr><th style="width:44%">预处理</th><th class="num">RAF-DB 准确率</th></tr>
+<tr><td>ArcFace 5 点对齐后喂 ViT</td><td class="num">32.0%</td></tr>
+<tr><td>bbox 直接裁剪喂 ViT</td><td class="num"><b>39.9%</b></td></tr>
+</table>
+<p>该 ViT 在 AffectNet 上训练时的预处理不是 ArcFace 对齐，强行对齐反而 <b>-7.9 个百分点</b>。这条也写进结论：对齐不是万能的，要按模型训练时的预处理来。</p>
+
+<div class="callout">
+<b>决策</b>：三项能力（性别/年龄/情绪）里，性别和年龄段实测可靠，情绪在端侧小模型上触到天花板。<b>移除情绪，只交付前两项</b>，并在文档与接口里明确标注，不做模糊表述。
+</div>
+</div>
+
+<!-- ══════════ 四、架构 ══════════ -->
+<div>
+<h2>四、系统架构</h2>
+
+<div class="flow">
+  <div class="box hot"><span class="t">① 摄像头</span><span class="d">C270<br>libuvc 独占</span></div>
+  <div class="arw">→</div>
+  <div class="box hot"><span class="t">② camview</span><span class="d">:8090/snapshot<br>只读 HTTP</span></div>
+  <div class="arw">→</div>
+  <div class="box"><span class="t">③ 本机服务</span><span class="d">:8093<br>YuNet 检测</span></div>
+  <div class="arw">→</div>
+  <div class="box"><span class="t">④ 属性推理</span><span class="d">genderage<br>1.3 MB</span></div>
+  <div class="arw">→</div>
+  <div class="box"><span class="t">⑤ 返回</span><span class="d">gender<br>age_band</span></div>
+</div>
+
+<h3>4.1 为什么推理放在本机，而不是设备</h3>
+<p>试过设备端，六个组合全部失败：</p>
+<table>
+<tr><th style="width:30%">尝试</th><th>结果</th></tr>
+<tr><td>ncnn 1.0.20261020 / 20241226 / 20231027</td><td>load_param/load_model 返回 0，但 <code>extract()</code> <b>必然段错误</b>（exit 139）</td></tr>
+<tr><td>numpy 2.4.6 与降级 1.26.4</td><td>同样崩溃，排除 ABI 问题</td></tr>
+<tr><td>num_threads=1 + 关 packing + 关 fp16</td><td>同样崩溃，排除优化指令集问题</td></tr>
+<tr><td>CPU 指令集</td><td>Cortex-A55 有 asimddp/asimdhp，不是硬件能力问题</td></tr>
+</table>
+<p>结论：ncnn 的 pybind11 绑定在该 musl 环境有兼容性缺陷，不是参数能解决的。C++ 静态链接路径可行（现有 <code>face_runner</code> 就是这么做的），但需交叉编译工具链，周期 1–2 小时。</p>
+
+<div class="callout warn">
+<b>当前代价</b>：依赖笔记本在线。笔记本关机/断网，该功能不可用。<b>但这条不影响 8099</b>——8099 的设备端链路完全独立。
+</div>
+
+<div style="page-break-inside:avoid"><h3>4.2 服务实现</h3>
+<table>
+<tr><th style="width:24%">项</th><th>值</th></tr>
+<tr><td>端口</td><td>127.0.0.1:8093（本机 0.0.0.0，设备侧亦可调用）</td></tr>
+<tr><td>检测器</td><td>YuNet（OpenCV Zoo，228 KB），阈值 0.45，最小人脸 28 px</td></tr>
+<tr><td>属性模型</td><td>InsightFace genderage（1.3 MB，96×96 输入）</td></tr>
+<tr><td>耗时</td><td>10–37 ms（中位约 15 ms）</td></tr>
+<tr><td>内存</td><td>RSS 85 MB，空闲 CPU ≈ 0</td></tr>
+<tr><td>接口</td><td><code>POST /vision/attribute</code>、<code>GET /health</code>、<code>GET /metrics</code></td></tr>
+<tr><td>控制</td><td><code>~/attrctl {start|stop|restart|status|health|bench|log}</code></td></tr>
+<tr><td>自启</td><td>crontab <code>@reboot</code>（用户级，无需 sudo）</td></tr>
+</table></div>
+
+<h3>4.3 模型预处理（踩过的两个坑）</h3>
+<div class="callout bad">
+<b>坑 1：模型内置归一化，外面不能再归一化。</b><br>
+<code>genderage.onnx</code> 图里自带 <code>Sub(127.5) → Mul(1/128)</code>。若外面再做一次 <code>(x−127.5)/128</code>，输入被压成极小值，<b>随机噪声、纯灰图、真人脸会输出完全相同的结果</b>（female 0.609 / 35.1 岁）。必须传<b>原始 0–255</b>。
+</div>
+<div class="callout bad">
+<b>坑 2：必须 RGB，不能用 BGR。</b><br>
+cv2 默认读 BGR。实测同一张女性人像：BGR → male（错），RGB → female 0.973（对）。
+</div>
+</div>
+
+<!-- ══════════ 五、8099 ══════════ -->
+<div>
+<h2>五、对 8099 的影响</h2>
+
+<h3>5.1 物理隔离（三层）</h3>
+<table>
+<tr><th style="width:22%">隔离维度</th><th>做法</th></tr>
+<tr><td>CPU</td><td>推理 100% 在本机 i5，<b>RG660MK 的 CPU 占用为 0</b></td></tr>
+<tr><td>摄像头</td><td>只读 <code>8090/snapshot</code>；<b>绝不打开 /dev/video 或 libuvc 设备</b>（camview 独占，抢会直接黑屏）</td></tr>
+<tr><td>服务</td><td>独立进程、独立端口 8093；未修改 aicpe-board / camview / 8099 任何文件</td></tr>
+</table>
+
+<h3>5.2 三轮交替 A/B 实测</h3>
+<p>方法：停服务测 8 次 → 启服务测 8 次 → 重复 3 轮，消除设备负载随时间漂移的影响。</p>
+<table>
+<tr><th style="width:20%">轮次</th><th class="num">服务停止（中位）</th><th class="num">服务运行（中位）</th><th class="num">差</th></tr>
+<tr><td>第 1 轮</td><td class="num">23.7 ms</td><td class="num">25.3 ms</td><td class="num">+1.6</td></tr>
+<tr><td>第 2 轮</td><td class="num">24.9 ms</td><td class="num">17.4 ms</td><td class="num">−7.5</td></tr>
+<tr><td>第 3 轮</td><td class="num">18.2 ms</td><td class="num">24.9 ms</td><td class="num">+6.7</td></tr>
+<tr><td><b>均值</b></td><td class="num"><b>22.3 ms</b></td><td class="num"><b>22.5 ms</b></td><td class="num"><b>+0.2</b></td></tr>
+</table>
+<p>差异 <b>0.2 ms</b>，且方向来回跳（第 2 轮运行反而更快）→ 说明是设备自身在 load 6.4 下的抖动，不是服务引入的。</p>
+
+<h3>5.3 40 次连续推理压测</h3>
+<table>
+<tr><th style="width:40%">指标</th><th class="num">结果</th></tr>
+<tr><td>8099 响应中位（推理期间）</td><td class="num">17.1 ms</td></tr>
+<tr><td>相对无推理基线</td><td class="num">−5.1 ms（噪声方向）</td></tr>
+<tr><td>8099 请求失败次数</td><td class="num"><b>0</b></td></tr>
+<tr><td>属性服务自身耗时中位</td><td class="num">17 ms</td></tr>
+</table>
+
+<div class="callout good">
+<b>结论</b>：8099 的响应时间在属性服务启停、40 次连续推理期间均无可测量劣化。<b>唯一真实的威胁是抢摄像头</b>——已从架构上规避（只读 HTTP 快照）。
+</div>
+
+<h3>5.4 部署与回滚</h3>
+<pre># 启动 / 状态 / 压测
+~/attrctl start
+~/attrctl status
+~/attrctl bench 40
+
+# 回滚（10 秒内，零残留）
+~/attrctl stop
+crontab -l | grep -v "@reboot.*attrctl" | crontab -</pre>
+<p>回滚后 8099 完全回到部署前状态；服务文件留在 <code>~/Documents/RG660MK人脸属性/</code>，不删也不影响任何现有服务。</p>
+</div>
+
+<!-- ══════════ 六、限制与后续 ══════════ -->
+<div>
+<h2>六、已知限制</h2>
+<table>
+<tr><th style="width:26%">限制</th><th>说明与影响</th></tr>
+<tr><td>人脸小于 28 px</td><td>直接跳过。站在 1.5 m 外可能检不到，建议 50–80 cm</td></tr>
+<tr><td>侧脸 &gt; 45°</td><td>性别判定不稳，年龄波动更大</td></tr>
+<tr><td>年龄系统性高估</td><td>本环境 +5.3 岁。不同人群（年轻人/女性）偏差方向可能不同，未验证</td></tr>
+<tr><td>依赖笔记本在线</td><td>关机/断网即不可用。纯端侧需交叉编译 C++ runner</td></tr>
+<tr><td>多人场景</td><td>返回数组，按人脸面积降序；未做跟踪与去重</td></tr>
+</table>
+
+<h2>七、后续可做（按性价比排序）</h2>
+<table>
+<tr><th style="width:6%">#</th><th style="width:30%">事项</th><th style="width:12%">成本</th><th>收益</th></tr>
+<tr><td>1</td><td>接 8099 演示页按钮</td><td>30 分钟</td><td>点一下出结果，演示效果直接可见</td></tr>
+<tr><td>2</td><td>多场景准确率补测</td><td>1 小时</td><td>补女性/年轻人样本，验证偏差方向是否一致</td></tr>
+<tr><td>3</td><td>设备端 C++ runner</td><td>1–2 小时</td><td>脱离笔记本，纯端侧；需交叉编译 ncnn</td></tr>
+<tr><td>4</td><td>情绪改用云端 API</td><td>—</td><td>可达 70–80%，但人脸出公网，与端侧定位冲突</td></tr>
+</table>
+
+<div class="callout">
+<b>推荐顺序 1 → 2 → 3</b>。第 4 项不建议：一旦人脸出公网，"端侧 AI"的产品叙事就不成立了。
+</div>
+
+<h2>八、可溯源清单</h2>
+<table>
+<tr><th style="width:34%">数据</th><th>来源</th></tr>
+<tr><td>性别 13/13、年龄 16 帧、年龄段 5/5</td><td>本人真实画面实测，2026-11-06，连续采样</td></tr>
+<tr><td>FER2013 700 张（每类 100）</td><td><code>hf-mirror.com/datasets/Jeneral/fer-2013</code></td></tr>
+<tr><td>RAF-DB 554 张（每类约 80）</td><td><code>hf-mirror.com/datasets/elipaluma/RAF-DB_Kaggle</code>（test 3068 张）</td></tr>
+<tr><td>8099 三轮 A/B、40 次压测</td><td><code>python3 attr_service_pc.py --bench 40</code> 可复现</td></tr>
+<tr><td>全部原始数据与脚本</td><td>GitHub <code>JedyYing/RG660MK-EU-AI-CPE</code> → <code>face-attr/bench/results.md</code></td></tr>
+</table>
+
+<div class="foot">
+版本 V2 ｜ 2026-11-06 ｜ 取代 V1（V1 的情绪方案与耗时估算已被实测推翻）<br>
+代码 commit e2888dc ｜ 服务 v4（仅 gender + age_band）｜ 文档随代码同步维护
+</div>
+</div>
+
+</body>
+</html>
