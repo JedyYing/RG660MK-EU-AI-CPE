@@ -25,6 +25,19 @@ LEXICON = os.path.join(MODEL_DIR, "lexicon.txt")
 DICT = os.path.join(MODEL_DIR, "dict")
 
 
+# ---- 百度 TTS（在线，标准中文女声；网络失败自动回落 piper）----
+BAIDU_URL = "https://fanyi.baidu.com/gettts"
+MPG123_BIN = os.environ.get("MPG123_BIN", "/data/ai_cpe/mpg123/usr/bin/mpg123")
+MPG123_LIB = os.environ.get("MPG123_LIB", "/data/ai_cpe/mpg123/usr/lib")
+BAIDU_SPD = os.environ.get("VOICE_BAIDU_SPD", "7")
+TTS_ENGINE = os.environ.get("VOICE_TTS_ENGINE", "baidu")
+BAIDU_CHUNK = 60
+
+
+def _baidu_ready():
+    return os.path.exists(MPG123_BIN)
+
+
 def _piper_ready():
     return os.path.exists(PIPER_BIN) and os.path.exists(PIPER_MODEL)
 
@@ -136,8 +149,58 @@ def _synth_piper_long(text, out_path, timeout):
                 pass
 
 
+def _synth_baidu_one(text, out_path, timeout):
+    """百度 TTS：GET 拿 MP3，mpg123 转 WAV。返回 (ok, err)。"""
+    import urllib.parse
+    import urllib.request
+    import tempfile
+    qs = urllib.parse.urlencode({"lan": "zh", "text": text, "spd": BAIDU_SPD, "source": "web"})
+    with urllib.request.urlopen(BAIDU_URL + "?" + qs, timeout=min(6, timeout)) as r:
+        data = r.read()
+    if len(data) < 1500 or data[:1] == b"{":
+        return False, "bad response %d bytes" % len(data)
+    fd, tmp_mp3 = tempfile.mkstemp(suffix=".mp3", dir="/tmp")
+    try:
+        os.write(fd, data)
+    finally:
+        os.close(fd)
+    env = dict(os.environ)
+    env["LD_LIBRARY_PATH"] = MPG123_LIB + ":" + env.get("LD_LIBRARY_PATH", "")
+    try:
+        r2 = subprocess.run([MPG123_BIN, "-q", "-w", out_path, tmp_mp3],
+                            capture_output=True, timeout=10, env=env)
+    finally:
+        try:
+            os.unlink(tmp_mp3)
+        except OSError:
+            pass
+    if r2.returncode != 0 or not os.path.exists(out_path) or os.path.getsize(out_path) < 2000:
+        return False, "mpg123 rc=%d %s" % (r2.returncode, (r2.stderr or b"")[-120:])
+    return True, ""
+
+
+def _synth_baidu_long(text, out_path, timeout):
+    chunks = _chunk_text(text, BAIDU_CHUNK)
+    tmp = []
+    try:
+        for i, c in enumerate(chunks):
+            part = "%s.bt%d.wav" % (out_path, i)
+            ok, err = _synth_baidu_one(c, part, timeout)
+            if not ok:
+                return False, "chunk%d %s" % (i, err)
+            tmp.append(part)
+        _concat_wavs(tmp, out_path)
+        return True, ""
+    finally:
+        for t in tmp:
+            try:
+                os.unlink(t)
+            except OSError:
+                pass
+
+
 def synthesize(text, out_path, timeout=90, num_threads=4):
-    """本地合成中文语音到 wav。返回 (ok, err)。piper 优先，sherpa 兜底。"""
+    """合成中文语音到 wav。返回 (ok, err)。百度优先（音色自然），失败回落 piper/sherpa。"""
     text = (text or "").strip()
     if not text:
         return False, "empty text"
@@ -146,6 +209,17 @@ def synthesize(text, out_path, timeout=90, num_threads=4):
     except OSError:
         pass
     last = "no engine"
+    if TTS_ENGINE == "baidu" and _baidu_ready():
+        try:
+            if len(text) > BAIDU_CHUNK:
+                ok, last = _synth_baidu_long(text, out_path, timeout)
+            else:
+                ok, last = _synth_baidu_one(text, out_path, timeout)
+            if ok:
+                return True, ""
+            last = "baidu " + str(last)
+        except Exception as e:
+            last = "baidu %s: %s" % (type(e).__name__, str(e)[:100])
     if _piper_ready():
         try:
             if len(text) > MAX_CHUNK:
