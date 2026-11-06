@@ -53,6 +53,9 @@ RATE = 48000
 LISTEN_SECS = 5
 RMS_THRESHOLD = 200
 ACTIVE_TIMEOUT = int(os.environ.get("VOICE_ACTIVE_TIMEOUT", "8"))
+# 2026-11-06：默认关闭“答完继续听”的追问窗口。场馆嘈杂时它会捡旁人聊天并回“我没听清…”，
+# 用户明确说“没人说话它自己说话”。改为每句话都要先喊“小皮”（VOICE_FOLLOWUP_TURNS=1 可恢复）。
+FOLLOWUP_TURNS = int(os.environ.get("VOICE_FOLLOWUP_TURNS", "0"))
 
 # ---- 结构化语音日志（2026-11-02）：排查不再依赖 logread 的几分钟缓冲 ----
 VOICE_LOG = os.environ.get("VOICE_LOG", "/data/ai_cpe/logs/voice.jsonl")
@@ -100,7 +103,9 @@ TTS_TRIES = int(os.environ.get("VOICE_TTS_TRIES", "3"))   # 2026-10-08: edge-tts
 TTS_CACHE = os.environ.get("VOICE_TTS_CACHE", "/data/ai_cpe/tts_cache")
 FAST_TIMEOUT_TEXT = "这次处理有点慢，请再试一次。"
 CACHED_SPEECH = {"在呢，请说", "我在听，请说", "请再说一下，我没听清",
-                 "好的，再见", "好的，先不打扰你了", "2",
+                 # 2026-11-06：唤醒应答/常用短句必须命中缓存，否则每次现合成 3s+
+                 "在呢", "我在听", "好的", "好的，开始工作", "好的，我休息了",
+                 "好的，再见", "好的，先不打扰你了", "我走神了，再说一次", "2",
                  "已发送开灯指令。", "已发送关灯指令。",
                  "灯泡离线了，请检查灯泡电源和网络连接。", FAST_TIMEOUT_TEXT,
                  "天气服务暂时连接失败，请稍后再试。",
@@ -1578,7 +1583,7 @@ def main():
         if wait_muted():
             continue
         # 尾部静音放宽到 1400ms：容忍“你好…小皮”中间的停顿（用户反馈第一遍常被切掉）
-        if not vad_record("/tmp/voice_rec.wav", max_s=8, start_wait_s=86400, end_sil_ms=1400):
+        if not vad_record("/tmp/voice_rec.wav", max_s=8, start_wait_s=86400, end_sil_ms=700):
             continue
         if wait_muted():
             continue
@@ -1643,6 +1648,8 @@ def main():
         else:
             respond(clean)
         _drop = [0]
+        if FOLLOWUP_TURNS <= 0:
+            continue          # 不进入追问监听，直接回到只认唤醒词的待机
         while True:
             # VAD 录一句；ACTIVE_TIMEOUT 内无人说话则自动退出对话
             if wait_muted():
@@ -1681,16 +1688,18 @@ def main():
             clean = strip_wake(t)
             if not clean:
                 break          # 静默退场
-            # 2026-11-06：场馆里常收到旁人半句话，短且无明确意图的不再送 LLM（避免“我没听清…”长回复）
-            if len(re.findall(r"[\u4e00-\u9fff]", clean)) < 4:
-                try:
-                    _intent = classify(clean)[0]
-                except Exception:
-                    _intent = "LLM_OR_HERMES"
-                if _intent == "LLM_OR_HERMES":
-                    vlog("drop_short", asr=clean)
-                    print("[drop] 短片段/无意图 %r" % clean[:24], flush=True)
-                    continue
+            # 2026-11-06：场馆嘈杂，追问阶段只接受“本地可判定意图”或再次带唤醒词的请求。
+            # 旁人闲聊（转写很长但无本地意图）一律静默——大模型回一句“我没听清…”还要再合成 8s，
+            # 这正是“没人说话它自己说话”的根源。
+            try:
+                _intent = classify(clean)[0]
+            except Exception:
+                _intent = "LLM_OR_HERMES"
+            _has_wake = any(w in t for w in WAKE_WORDS)
+            if _intent == "LLM_OR_HERMES" and not _has_wake:
+                vlog("drop_followup", asr=clean)
+                print("[drop] 追问非本地意图 %r" % clean[:24], flush=True)
+                continue
             try:
                 # 每轮独立: turn_id 隔离 + 30/60 秒双超时统一在 handle_turn 内管理
                 respond(clean)
