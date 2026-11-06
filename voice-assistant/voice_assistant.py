@@ -52,7 +52,28 @@ VOICE = "zh-CN-XiaoxiaoNeural"
 RATE = 48000
 LISTEN_SECS = 5
 RMS_THRESHOLD = 200
-ACTIVE_TIMEOUT = 8
+ACTIVE_TIMEOUT = int(os.environ.get("VOICE_ACTIVE_TIMEOUT", "8"))
+
+# ---- 结构化语音日志（2026-11-02）：排查不再依赖 logread 的几分钟缓冲 ----
+VOICE_LOG = os.environ.get("VOICE_LOG", "/data/ai_cpe/logs/voice.jsonl")
+
+
+def vlog(kind, **kw):
+    try:
+        rec = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "kind": kind}
+        rec.update(kw)
+        line = json.dumps(rec, ensure_ascii=False)
+        os.makedirs(os.path.dirname(VOICE_LOG), exist_ok=True)
+        try:
+            if os.path.getsize(VOICE_LOG) > 5 * 1024 * 1024:
+                os.replace(VOICE_LOG, VOICE_LOG + ".1")
+        except OSError:
+            pass
+        with open(VOICE_LOG, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
+
 ASR_TIMEOUT = 8
 # 热词 prompt 开关（whisper --prompt）：默认关。2026-09-20 晚真机 A/B 证据：
 # 全量热词 prompt 会把含混的真实语音解码成热词碎片（"你好小皮"→"阿梅，鲁，河田"），
@@ -62,7 +83,7 @@ ASR_HOTWORD_PROMPT = os.environ.get("VOICE_ASR_PROMPT", "0") == "1"
 # ---- ASR 引擎（whisper | paraformer）----
 # 2026-09-21 新增：Paraformer（sherpa-onnx-offline + glibc 陪跑）作为可切换引擎。
 # 默认 whisper 不变；切换：VOICE_ASR_ENGINE=paraformer（详见 麦克风切换与唤醒验证记录_20260921.md）。
-ASR_ENGINE = os.environ.get("VOICE_ASR_ENGINE", "whisper")
+ASR_ENGINE = os.environ.get("VOICE_ASR_ENGINE", "paraformer")  # 2026-11-05: whisper-cli/模型丢失，切常驻 paraformer(:6006)
 SHERPA_GLIBC = "/data/ai_cpe/glibc/ld-linux-aarch64.so.1"
 SHERPA_LIB = "/data/ai_cpe/glibc"
 SHERPA_BIN = "/data/ai_cpe/sherpa-onnx/bin/sherpa-onnx-offline"
@@ -86,7 +107,7 @@ CACHED_SPEECH = {"在呢，请说", "我在听，请说", "请再说一下，我
                  "行情服务暂时连接失败，请稍后再试。",
                  "没有找到这只股票，请换一个名称或代码。"}
 WAKE_WORDS = ["小皮", "下皮", "小屁", "下屁", "小批", "小披", "小pipi", "你好小皮", "小皮皮", "下题",
-              "小提", "下提"]
+              "小提", "下提", "小陈", "小晨", "小成", "小城"]
 EXIT_WORDS = ["休息", "睡觉", "退下", "再见", "拜拜", "晚安"]
 # ---- 休眠/启动流程（用户 2026-09-21 要求）----
 # "小皮，休息" -> 休眠；休眠后不轻易启动，直到听到"你好小皮"（完整称呼）。
@@ -122,7 +143,7 @@ def _to16k(src, dst="/tmp/kws16.wav"):
 # ---- 回声自激抑制（2026-10-06）：播放与录音同用 CM564，
 # 音箱输出会被自己的麦克风收回，导致 ①永远等不到静音（录满 12s）②听见自己 ⇒ 自说自话。
 MUTE_UNTIL = [0.0]
-MUTE_TAIL_S = 2.5          # 播报结束后再静默多久才重新"开耳"
+MUTE_TAIL_S = 0.8          # 播报结束后再静默多久才重新"开耳"（原 2.5s 太长，用户问句常被吞）
 
 
 def mute_for(secs):
@@ -521,13 +542,18 @@ def transcribe(path, use_prompt=None):
         print("[LATENCY] asr_s=%.3f" % (time.monotonic() - started), flush=True)
 
 
-def get_time_now():
+TIME_HEAD = re.compile(r"^(?:请问|告诉我|帮我查一下)?(?:今天|现在|都|那|在)?(?:是)?(?:几点|几月几[日号]|几号|星期几|周几|什么时间|什么日期)")
+
+
+def get_time_now(query=""):
+    """问“几点”只回时间（走预合成片段，毫秒级）；问日期/星期才带日期。"""
     now = datetime.datetime.now()
-    return "现在是 %d月%d日 %s%d点%d分，星期%s" % (
-        now.month, now.day,
-        "下午" if now.hour >= 12 else "上午",
-        now.hour % 12 or 12, now.minute,
-        ["一", "二", "三", "四", "五", "六", "日"][now.weekday()])
+    if any(k in (query or "") for k in ("几号", "几日", "日期", "星期", "周几")):
+        return "现在是%d月%d日，星期%s" % (
+            now.month, now.day, ["一", "二", "三", "四", "五", "六", "日"][now.weekday()])
+    # 2026-11-06：piper/espeak 把孤立的“上午”读成“中午/商务”，换成“早上”（实测读音正确）
+    period = "早上" if now.hour < 12 else "下午"
+    return "现在是%s%d点%d分" % (period, now.hour % 12 or 12, now.minute)
 
 
 # ---- 本地计算器(设计文档 §3.1: 安全表达式解析,禁止 eval)----
@@ -1012,6 +1038,81 @@ def prepare_tts(text, timeout=TTS_TIMEOUT):
     raise RuntimeError("local tts failed: %s" % last_err)
 
 
+TIME_CLIP_DIR = os.environ.get("VOICE_TIME_CLIPS", "/data/ai_cpe/tts_time")
+
+
+DATE_CLIP_DIR = os.environ.get("VOICE_DATE_CLIPS", "/data/ai_cpe/tts_date")
+
+
+def _trim_frames(raw):
+    """去掉片段首尾静音（piper 每段前后各带 ~0.3s），留 20ms 余量。"""
+    import array
+    a = array.array("h")
+    a.frombytes(raw)
+    step = 441          # 20ms @22050
+    idx = [i for i in range(0, len(a) - step, step)
+           if max(abs(x) for x in a[i:i + step]) > 300]
+    if not idx:
+        return raw
+    st = max(0, idx[0] - 441)
+    en = min(len(a), idx[-1] + step + 441)
+    if en <= st:
+        return raw
+    return a[st:en].tobytes()
+
+
+def _play_clips(clip_dir, ids):
+    """把若干片段拼成一句播放；缺文件返回 False（调用方回落正常 TTS）。"""
+    if not os.path.isdir(clip_dir):
+        return False
+    try:
+        gap = b"\x00\x00" * 1102   # 50ms 静音
+        frames = []
+        for i in ids:
+            fp = os.path.join(clip_dir, "%03d.wav" % i)
+            if not os.path.exists(fp):
+                return False
+            with wave.open(fp, "rb") as w:
+                frames.append(_trim_frames(w.readframes(w.getnframes())))
+        body = gap.join(frames)
+        out = "/tmp/voice_fast.wav"
+        with wave.open(out, "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(22050)
+            w.writeframes(body)
+        dur = len(body) / 2.0 / 22050.0
+        mute_for(dur + 0.8)
+        subprocess.run(["aplay", "-D", PLAY_DEV, "-q", out],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+        return True
+    except Exception as e:
+        print("[TTS] fast_clip failed: %s" % e, flush=True)
+        return False
+
+
+def play_time_fast(period, hour12, minute):
+    """“上午10点24分” —— 不念“现在是”，少一段更快。"""
+    pi = {"早上": 1, "上午": 1, "下午": 2, "晚上": 3, "凌晨": 4}.get(period)
+    if pi is None:
+        return False
+    if minute == 0:
+        mi = 17
+    elif minute < 10:
+        mi = 18 + minute - 1
+    else:
+        mi = 27 + (minute - 10)
+    return _play_clips(TIME_CLIP_DIR, (pi, 5 + (hour12 - 1), mi))
+
+
+def play_date_fast(month, day, weekday_cn):
+    """“11月6日，星期五” 片段拼接。"""
+    wi = "一二三四五六日".find(weekday_cn)
+    if wi < 0:
+        return False
+    return _play_clips(DATE_CLIP_DIR, (0, month, 13 + day - 1, 44 + wi))
+
+
 def speak(text):
     if not text:
         return
@@ -1024,6 +1125,14 @@ def speak(text):
     cn = len(re.findall(r'[\u4e00-\u9fff]', text))
     if len(text) > 10 and cn / len(text) < 0.3:
         text = "回复内容暂时无法播报，请稍后再试。"
+    _m = re.match(r"^现在是(早上|上午|下午|晚上|凌晨)(\d{1,2})点(\d{1,2})分$", text)
+    if _m and play_time_fast(_m.group(1), int(_m.group(2)), int(_m.group(3))):
+        print("[LATENCY] time_fast_ok text=%r" % text, flush=True)
+        return
+    _d = re.match(r"^现在是(\d{1,2})月(\d{1,2})日，星期([一二三四五六日])$", text)
+    if _d and play_date_fast(int(_d.group(1)), int(_d.group(2)), _d.group(3)):
+        print("[LATENCY] date_fast_ok text=%r" % text, flush=True)
+        return
     started = time.monotonic()
     disposable = False
     mp3 = None
@@ -1071,29 +1180,58 @@ def speak(text):
 
 
 def respond(clean):
+    """一轮回答：本地意图(时间/计算/天气/灯控)优先本地直答，其余按模式走模型通道。
+
+    2026-11-02 根因修复：旧版在 mode=='mt200-local' 时无条件 return，导致
+    下面的 classify/本地快路径全部变成死代码，且 hard_secs=180，简单问题也会等 3 分钟。
+    """
     from model_mode import get_mode, bind_handler, ModeError
     try:
         mode = get_mode()
     except ModeError as exc:
         speak(str(exc))
         return None
-    handler = bind_handler(mode, _hermes_turn_handler, _local_turn_handler)
-    if mode == 'mt200-local':
-        return handle_turn(clean, handler, speak, hard_secs=180, wait_secs=30,
-                           giveup_text=GIVEUP_TEXT)
+
     intent, slots = classify(clean)
+    vlog("route", text=clean, intent=intent, mode=mode)
+
     simple = intent in ('LOCAL_DATE_TIME', 'LOCAL_CALCULATOR', 'WEATHER', 'EMPTY') or (
         intent == 'DEVICE_CONTROL' and slots.get('tool') == 'control_bulb')
-    return handle_turn(clean, handler, speak,
-                       hard_secs=7 if simple else HARD_TIMEOUT_SECS,
-                       wait_secs=30,
-                       giveup_text=FAST_TIMEOUT_TEXT if simple else GIVEUP_TEXT)
+    if simple:
+        # 本地意图不经过模型，直接本地 handler（毫秒级返回）
+        handler = _hermes_turn_handler
+        hard, giveup = 7, FAST_TIMEOUT_TEXT
+    else:
+        handler = bind_handler(mode, _hermes_turn_handler, _local_turn_handler)
+        hard = 45 if mode == 'mt200-local' else HARD_TIMEOUT_SECS
+        giveup = GIVEUP_TEXT
+    return handle_turn(clean, handler, speak, hard_secs=hard, wait_secs=30, giveup_text=giveup)
 
 
 # 仅识别句首完整称呼；保留“你好”的兼容入口，去掉单字误触发。
 # 2026-09-21：用户口音下 paraformer 稳定把“小皮”听成“小提”（设备实测 2 次），
 # 必须把小提/下提/小蹄纳入变体，否则“你好小提”会被剥成残句“小提”当命令送问答。
-_WAKE_PREFIX = re.compile(r"^(?:你好[，,、\s]*(?:(?:小皮皮|小pipi|小皮|小提|下提|小蹄|下皮|下题|小屁|下屁|小批|小披|夏丁|下爹|夏皮))?|小皮皮|小pipi|小皮|小提|下提|小蹄|下皮|下题|小屁|下屁|小批|小披)[，,。.!！?？\s]*", re.I)
+_WAKE_PREFIX = re.compile(r"^(?:你好[，,、\s]*(?:(?:小吉他|小吉它|小皮皮|小pipi|小皮|小提|下提|小蹄|下皮|下题|小屁|下屁|小批|小披|夏丁|下爹|夏皮|小陈|小晨|小成|小城))?|小吉他|小吉它|小皮皮|小pipi|小皮|小提|下提|小蹄|下皮|下题|小屁|下屁|小批|小披|小陈|小晨|小成|小城)[，,。.!！?？\s]*", re.I)
+
+
+def is_idle_command(text):
+    """待机态允许直接说的高置信短命令（避免必须每次喊唤醒词）。
+
+    2026-11-02：用户反馈“连续说开灯没反应”——对话窗口 12s 过后回到只认唤醒词，
+    裸命令被丢弃。这里只放行长度 <=12 且模式明确的灯控/时间/天气，降低误触发。
+    """
+    s = (text or "").strip()
+    if not s or len(s) > 12:
+        return False
+    if re.search(r"(打开|关闭|开|关).{0,2}灯|灯.{0,2}(打开|关闭|开|关)", s):
+        return True
+    if re.search(r"^(现在)?几点(了|钟)?$|^(现在)?(什么)?时间$", s):
+        return True
+    if re.search(r"^今天.{0,6}天气|^天气(怎么样|如何)", s):
+        return True
+    if re.search(r"^(看看|看一眼|有人吗|画面|摄像头)", s) or "画面里" in s or "在干什么" in s:
+        return True
+    return False
 
 
 def is_wake(text):
@@ -1113,7 +1251,7 @@ def strip_wake(text):
 
 
 # 休眠态唤醒：必须带"你好"+小皮族称呼（不接受裸"你好"/裸"小皮"，避免轻易启动）。
-_SLEEP_WAKE = re.compile(r"^(?:你好[，,、\s]*(?:小皮皮|小pipi|小皮|小提|下提|小蹄|下皮|下题|小屁|下屁|小批|小披|夏丁|下爹|夏皮))", re.I)
+_SLEEP_WAKE = re.compile(r"^(?:你好[，,、\s]*(?:小皮皮|小pipi|小皮|小提|下提|小蹄|下皮|下题|小屁|下屁|小批|小披|夏丁|下爹|夏皮|小陈|小晨|小成|小城))", re.I)
 
 
 def is_sleep_wake(text):
@@ -1174,6 +1312,10 @@ def classify(text, _accent_tried=False):
     if any(k in text for k in ["找", "搜", "查", "看"]) and any(
             k in text for k in ["照片", "相片", "图片", "相册"]):
         return "DEVICE_CONTROL", {"tool": "find_photos", "query": text}
+    # 本地 VLM 看图（MT200 边缘推理，不上云）
+    if any(k in text for k in ["画面", "摄像头", "有人吗", "看看", "看一眼", "看见什么",
+                               "描述一下", "在干什么", "在做什么", "拍到什么", "看看家"]):
+        return "VLM_VIEW", {}
     if any(k in text for k in ["坐姿", "姿势", "体态", "座姿", "做姿", "坐子"]):
         return "DEVICE_CONTROL", {"tool": "detect_posture"}
     if any(k in text for k in ["识别", "是谁", "谁在", "脸识别"]):
@@ -1190,7 +1332,9 @@ def classify(text, _accent_tried=False):
     if is_stock_query(text):
         return "STOCK_QUOTE", {"query": text}
     # 3. 时间/日期
-    if TIME_PATTERN.fullmatch(text):
+    # 2026-11-05：paraformer 常把环境音拼在问句后面（实测“现在几点朋友后面上次很多人…”），
+    # 原来 fullmatch 直接漏掉，落到大模型后回答“没有查时间的工具”。句首命中且总长≤30 即按时间处理。
+    if TIME_PATTERN.fullmatch(text) or (len(text) <= 30 and TIME_HEAD.match(text)):
         return "LOCAL_DATE_TIME", {}
     # 4. 本地计算器
     expr = is_calc(text)
@@ -1232,6 +1376,16 @@ def dispatch(intent, slots, text):
                 print("[FINDPHOTOS] error: %s" % str(e)[:120], flush=True)
                 return "照片检索出错，请稍后再试", False
         return execute_tool(tool, {}), False
+    if intent == "VLM_VIEW":
+        try:
+            import vlm_client
+            r = vlm_client.describe(None, timeout=90)
+            if r:
+                return r, False
+            return "本地视觉模型暂时不可用（MT200 推理服务未就绪），画面本身是正常的。", False
+        except Exception as e:
+            print("[VLM] error: %s" % str(e)[:120], flush=True)
+            return "本地视觉模型暂时不可用。", False
     if intent == "WEATHER":
         city = slots.get("city")
         if not city:
@@ -1244,7 +1398,7 @@ def dispatch(intent, slots, text):
             return None, True
         return get_stock_quote(found[0]), False
     if intent == "LOCAL_DATE_TIME":
-        return get_time_now(), False
+        return get_time_now(text), False
     if intent == "LOCAL_CALCULATOR":
         val = safe_calc(slots["expr"])
         if val is not None:
@@ -1367,6 +1521,7 @@ def handle_turn(text, handler, tts,
         print("[TURN=%d] TTS_START" % turn.id, flush=True)
         tts(reply)
         print("[TURN=%d] TTS_DONE" % turn.id, flush=True)
+        vlog("tts", text=str(text)[:80], ok=True)
     turn.result = reply
     return turn
 
@@ -1384,6 +1539,8 @@ def _hermes_turn_handler(clean, turn):
             reply = _gw_ask(clean, timeout=45)
         except Exception:
             reply = hermes_ask(clean)
+    if not (reply or "").strip():
+        reply = "我在，请说。"
     return reply
 
 def _local_turn_handler(clean, turn):
@@ -1397,13 +1554,14 @@ def _local_turn_handler(clean, turn):
     if intent == 'LLM_OR_HERMES' and not any(word.lower() in clean.lower() for word in tool_words):
         from llm_gateway import ask, ModelError as LocalModelError
         try:
-            return ask(clean)
+            return ask(clean, timeout=120)
         except LocalModelError:
             return '本地模型暂不可用，没有调用云端。'
     if intent == 'LOCAL_DATE_TIME':
         return get_time_now()
     result = run(clean)
-    return result.get("reply", "本地任务未完成。")
+    reply = (result or {}).get("reply") or "本地任务未完成。"
+    return reply
 
 def _turn_handler(clean, turn):
     from model_mode import get_mode, bind_handler
@@ -1452,14 +1610,24 @@ def main():
                     pass
                 _t = transcribe("/tmp/voice_rec.wav", use_prompt=False)
                 print("[miss] asr=%r" % _t, flush=True)
-                if not is_sleep_wake(_t):      # 兜底也要“你好”+小皮族完整称呼，避免噪声误启动
-                    continue
-                text = _t
-                print(">>> WAKE(asr-fallback)", flush=True)
+                if not is_sleep_wake(_t):
+                    if is_idle_command(_t):
+                        text = _t
+                        vlog("direct", asr=_t)
+                        print(">>> DIRECT(cmd) %r" % _t, flush=True)
+                    else:
+                        continue
+                else:
+                    text = _t
+                    print(">>> WAKE(asr-fallback)", flush=True)
             else:
                 text = transcribe("/tmp/voice_rec.wav", use_prompt=False)
                 print("[wake-asr] %r" % text, flush=True)
         clean = strip_wake(text)
+        # 2026-11-05：唤醒后必须退出休眠态。此前 asleep 只置 True 从未置 False，
+        # 一旦说过“小皮休息”，之后每句话都被当休眠态静默，表现为“喊一次不响应/要喊两次”。
+        asleep = False
+        vlog("wake", asr=text, clean=clean)
         # "小皮，休息" -> 休眠（"不要轻易启动"，直到再次听到"你好小皮"）
         if clean and any(w in clean for w in SLEEP_WORDS):
             speak("好的")
@@ -1467,7 +1635,8 @@ def main():
             continue
         # 只喊唤醒词（含 '小皮你好小皮小' 剥离后的残渣）⇒ 应答“在呢，请说”，不要送去问答
         if len(clean) <= 2:
-            speak("在呢，请说")
+            vlog("wake_prompt")
+            speak("在呢")
         # "你好小皮，启动工作" -> 工作确认
         elif any(w in clean for w in WORK_WORDS):
             speak("好的，开始工作")
@@ -1478,16 +1647,21 @@ def main():
             # VAD 录一句；ACTIVE_TIMEOUT 内无人说话则自动退出对话
             if wait_muted():
                 continue
+            vlog("listen_start")
             if not vad_record("/tmp/voice_rec.wav", start_wait_s=ACTIVE_TIMEOUT):
                 # 静默退场（不播报）
+                vlog("listen_timeout")
                 break
             t = transcribe("/tmp/voice_rec.wav")
             print("[TURN? ] ASR_TEXT=%r" % t, flush=True)
+            vlog("turn", asr=t)
             if is_garbage(t):
                 _drop[0] += 1
+                vlog("drop", asr=t)
                 print("[drop] 幻觉/杂音 %r (第%d次)" % (t[:24], _drop[0]), flush=True)
                 if _drop[0] >= 2:
                     break          # 连续捡到垃圾 ⇒ 静默退场，回到只认唤醒词的待机
+                # 2026-11-06 用户要求：噪声/幻觉片段不要自说自话（场馆嘈杂常误触发）
                 continue
             _drop[0] = 0
             if not t:
@@ -1507,11 +1681,22 @@ def main():
             clean = strip_wake(t)
             if not clean:
                 break          # 静默退场
+            # 2026-11-06：场馆里常收到旁人半句话，短且无明确意图的不再送 LLM（避免“我没听清…”长回复）
+            if len(re.findall(r"[\u4e00-\u9fff]", clean)) < 4:
+                try:
+                    _intent = classify(clean)[0]
+                except Exception:
+                    _intent = "LLM_OR_HERMES"
+                if _intent == "LLM_OR_HERMES":
+                    vlog("drop_short", asr=clean)
+                    print("[drop] 短片段/无意图 %r" % clean[:24], flush=True)
+                    continue
             try:
                 # 每轮独立: turn_id 隔离 + 30/60 秒双超时统一在 handle_turn 内管理
                 respond(clean)
             except Exception as e:
                 print("route error:", e, flush=True)
+                vlog("error", where="route", err=str(e)[:200])
                 speak("我走神了，再说一次")
 
 
