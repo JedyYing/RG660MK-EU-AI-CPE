@@ -282,13 +282,17 @@ def cpe_info():
             continue
         ip, mac = p[0], p[i + 1].lower()
         state = p[-1] if p[-1].isupper() else ""
-        if state in ("FAILED", "INCOMPLETE"):
+        if state in ("FAILED", "INCOMPLETE", "STALE"):
             continue
         if ip == "192.168.1.1" or not ip.startswith("192.168.1."):
             continue
         if mac in wm or mac in own or mac.startswith("01:00:5e") or mac == "ff:ff:ff:ff:ff:ff":
             continue
         lan[mac] = ip
+    # 同一台 WiFi 设备可能有多个 MLO 链路 MAC，ARP 里会以另一个 MAC 出现 → 按 IP 去重，别算成“有线”
+    _wm_ips = set(leases.get(m) for m in wm if leases.get(m))
+    if _wm_ips:
+        lan = {k: v for k, v in lan.items() if v not in _wm_ips}
     d["clients"] = len(wm | set(lan)); d["clients_wifi"] = len(wm); d["clients_lan"] = len(set(lan) - wm)
     # 「WiFi 信号」只给数值（dBm）；设备名归到「接入终端」清单，避免两处语义混淆。
     # 取有主机名 STA 的最强值：无名设备的 iw 读数出现过 -11/+16 这类非物理值，不能代表 WiFi 信号
