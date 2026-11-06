@@ -1096,20 +1096,22 @@ def _play_clips(clip_dir, ids):
     if not os.path.isdir(clip_dir):
         return False
     try:
-        gap = b"\x00\x00" * 1102   # 50ms 静音
         frames = []
+        rate = 22050
         for i in ids:
             fp = os.path.join(clip_dir, "%03d.wav" % i)
             if not os.path.exists(fp):
                 return False
             with wave.open(fp, "rb") as w:
+                rate = w.getframerate()       # 片段可能是 piper 22.05k 或百度 16k
                 frames.append(_trim_frames(w.readframes(w.getnframes())))
+        gap = b"\x00\x00" * int(rate * 0.05)  # 50ms 静音
         body = gap.join(frames)
         out = "/tmp/voice_fast.wav"
         with wave.open(out, "wb") as w:
             w.setnchannels(1)
             w.setsampwidth(2)
-            w.setframerate(22050)
+            w.setframerate(rate)
             w.writeframes(body)
         dur = len(body) / 2.0 / 22050.0
         mute_for(dur + 0.8)
