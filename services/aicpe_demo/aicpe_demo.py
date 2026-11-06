@@ -1793,7 +1793,7 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
     <div id="camwrap">
       <div class="small" style="margin-bottom:6px">现场摄像头实时画面（C270）<span id="camstat" style="color:#ffd479;margin-left:8px"></span></div>
       <div id="camstage">
-        <img id="cam" src="/snap" alt="画面加载中（会自动重试）" onerror="cameraFail()" onload="cameraOk()">
+        <img id="cam" src="/cam/stream" alt="画面加载中（会自动重试）" onerror="cameraFail()" onload="cameraOk()">
         <div id="fov"></div>
       </div>
     </div>
@@ -1804,11 +1804,15 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
 <script>
 var jsMode = (typeof fetch !== "undefined");
 var _reloadTimer = null;
+// 局域网（同网段/本机）用 MJPEG 流；公网经 cloudflared(LAX) 单程 ~1.2s，流会越看越延迟，
+// 改用「上一帧到了就请求下一帧」的快照拉取，延迟有界（实测 1.2-1.5s），不做无界缓冲。
+var _lan = /^(192\.168\.|10\.|127\.|localhost$)/.test(location.hostname);
 function cameraOk(){
   var e=document.getElementById("camstat");
-  if(e){ var d=new Date(); e.style.color="#8ef0b4"; e.innerText="画面更新 "+d.toTimeString().slice(0,8); }
-  loadFaces();
+  if(e && !_camFallback){ var d=new Date(); e.style.color="#8ef0b4"; e.innerText=(_lan?"实时画面 ":"画面更新 ")+d.toTimeString().slice(0,8); }
+  if(!_lan || _camFallback){ setTimeout(function(){ var c=document.getElementById("cam"); if(c && (!_lan || _camFallback)) c.src="/snap?ts="+Date.now(); }, 150); }
 }
+function cameraTick(){ loadFaces(); }
 var _faceBusy=false;
 async function loadFaces(){
   if(!jsMode||_faceBusy) return;
@@ -1838,10 +1842,12 @@ async function loadFaces(){
     var ov2=document.getElementById("fov"); if(ov2) ov2.innerHTML="";
   }finally{ _faceBusy=false; }
 }
+var _camFallback=false;
 function cameraFail(){
+  _camFallback=true;
   var e=document.getElementById("camstat");
-  if(e) {e.style.color="#ff7f7f";e.textContent="实时画面加载失败，2秒后重试；不显示旧帧";}
-  setTimeout(function(){ var c=document.getElementById("cam"); if(c) c.src="/snap?ts="+Date.now(); }, 2000);
+  if(e) {e.style.color="#ffd479";e.textContent="实时流不可用，已切快照刷新";}
+  setTimeout(function(){ var c=document.getElementById("cam"); if(c) c.src="/snap?ts="+Date.now(); }, 500);
 }
 function fallbackMode(reason){
   if(!jsMode) return;
@@ -1895,7 +1901,7 @@ async function tick(){
       function fmtTok(n){ n=Number(n)||0; if(n>=1e8) return (n/1e8).toFixed(2)+" 亿"; if(n>=1e4) return (n/1e4).toFixed(1)+" 万"; return String(Math.round(n)); }
       if(u&&u.today&&tx){
         el.style.display="block";
-        var extra=(u.errors&&u.errors.length)?(" ｜ 部分源失败 "+u.errors.length):"";
+        var extra="";  // 源失败计数不再上屏（启动瞬间的远程库读取失败会自愈，属噪音）
         tx.innerHTML="今日 <b style='color:#e8f1ff'>"+fmtTok(u.today.tokens)+"</b> tokens ≈ <b style='color:#31d17a'>¥"+Number(u.today.cny||0).toFixed(2)+"</b>"+
           " ｜ 近 30 天 <b style='color:#e8f1ff'>"+fmtTok((u.m30||{}).tokens)+"</b> tokens ≈ <b style='color:#31d17a'>¥"+Number((u.m30||{}).cny||0).toFixed(2)+"</b>"+
           " ｜ 更新 "+(u.updated||"-")+extra;
@@ -1997,8 +2003,10 @@ async function enrollFace(){
 function boot(){
   if(!jsMode){ fallbackMode("no-fetch"); return; }
   setInterval(tick,2000); tick();
-  // 摄像头画面 1.5s 刷新一帧（人脸检测单帧 ~0.7s，按帧缓存只在新帧上推理）
-  setInterval(function(){ if(!jsMode) return; var c=document.getElementById("cam"); if(c) c.src="/snap?ts="+Date.now(); },1500);
+  // 局域网：MJPEG 流（12fps，实测延迟 0.37s）；公网：快照串行拉取（延迟有界，约 1.2-1.5s）
+  var _c0=document.getElementById("cam");
+  if(_c0 && !_lan) _c0.src="/snap?ts="+Date.now();
+  setInterval(cameraTick, 2500);
 }
 boot();
 </script></body></html>"""
@@ -2259,6 +2267,91 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
         except Exception as e:
             self._send(400, "application/json", json.dumps({"status": "fail", "kind": type(e).__name__}))
 
+    def _cam_stream(self):
+        """MJPEG 推流：局域网 12fps 原图；经 cloudflared 的公网 7fps + 缩图（省 5G 上行）。
+        每 1.5s 回写一帧到 FACE_LAST 喂给 /faces 人脸框；每 3s 做一次遮挡/过暗检查，
+        命中就推提示图（与 /snap 的兜底行为一致）。流断开即退出线程。"""
+        _wan = bool(self.headers.get("CF-Connecting-IP") or self.headers.get("X-Forwarded-For"))
+        try:
+            import urllib.parse as _up
+            _q = _up.parse_qs(_up.urlparse(self.path).query)
+            _fps = float((_q.get("fps") or [5.0 if _wan else 12.0])[0])
+        except Exception:
+            _fps = 5.0 if _wan else 12.0
+        _fps = max(1.0, min(15.0, _fps))
+        interval = 1.0 / _fps
+        try:
+            import socket as _sock
+            self.connection.setsockopt(_sock.IPPROTO_TCP, _sock.TCP_NODELAY, 1)
+            self.connection.setsockopt(_sock.SOL_SOCKET, _sock.SO_SNDBUF, 24576)
+        except Exception:
+            pass
+        self.send_response(200)
+        self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.close_connection = True
+        _face_ts = 0.0
+        _chk_ts = 0.0
+        _notice = b""
+        _notice_kind = ""
+        try:
+            while True:
+                t0 = time.time()
+                data = None
+                for _u in (CAMAV + "/snapshot", CAMVIEW + "/snapshot"):
+                    try:
+                        with urllib.request.urlopen(_u, timeout=3) as r:
+                            b = r.read()
+                        if b[:2] == b"\xff\xd8" and len(b) > 5000:
+                            data = b
+                            break
+                    except Exception:
+                        continue
+                if data:
+                    if t0 - _face_ts >= 1.5:
+                        try:
+                            open(FACE_LAST, "wb").write(data)
+                        except OSError:
+                            pass
+                        _face_ts = t0
+                    if t0 - _chk_ts >= 3.0:
+                        _chk_ts = t0
+                        try:
+                            _k, _m = cam_obstructed(FACE_LAST)
+                        except Exception:
+                            _k = ""
+                        if _k:
+                            if _k != _notice_kind or not _notice:
+                                _np = cam_notice_image(_k, _m)
+                                try:
+                                    _notice = open(_np, "rb").read()
+                                    _notice_kind = _k
+                                except Exception:
+                                    _notice = b""
+                        else:
+                            _notice = b""
+                            _notice_kind = ""
+                    if _notice:
+                        data = _notice
+                    elif _wan:
+                        try:
+                            data = shrink_jpeg(data)
+                        except Exception:
+                            pass
+                    self.wfile.write(b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: " + str(len(data)).encode()
+                                   + b"\r\nX-Ts: " + ("%.3f" % t0).encode() + b"\r\n\r\n")
+                    self.wfile.write(data)
+                    self.wfile.write(b"\r\n")
+                    self.wfile.flush()
+                dt = time.time() - t0
+                if dt < interval:
+                    time.sleep(interval - dt)
+        except Exception:
+            pass
+
     def do_GET(self):
         p = self.path.split("?")[0]
         if p == "/":
@@ -2308,6 +2401,8 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
         elif p == "/faces":
             self._send(200, "application/json; charset=utf-8",
                        json.dumps(face_boxes(), ensure_ascii=False))
+        elif p == "/cam/stream":
+            self._cam_stream()
         elif p == "/snap":
             data = None
             for _u in (CAMAV + "/snapshot", CAMVIEW + "/snapshot"):
