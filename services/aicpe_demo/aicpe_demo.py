@@ -290,17 +290,16 @@ def cpe_info():
             continue
         lan[mac] = ip
     d["clients"] = len(wm | set(lan)); d["clients_wifi"] = len(wm); d["clients_lan"] = len(set(lan) - wm)
-    # WiFi 信号 chip 只展示一个：优先有主机名的 STA（排除 DHCP 里 hostname='*' 的无名设备），
-    # 再取信号最好的；dBm 必为负，iw 偶发返回正数的异常值直接忽略
+    # 「WiFi 信号」只给数值（dBm）；设备名归到「接入终端」清单，避免两处语义混淆。
+    # 取有主机名 STA 的最强值：无名设备的 iw 读数出现过 -11/+16 这类非物理值，不能代表 WiFi 信号
     _valid = [s for s in st if isinstance(s.get("rssi"), int) and s["rssi"] < 0]
-    _named = [s for s in _valid if (leases.get(s["mac"]) or "*") not in ("", "*")]
-    _pool = _named or _valid
-    _one = max(_pool, key=lambda x: x["rssi"]) if _pool else (st[0] if st else None)
-    if _one:
-        _nm = leases.get(_one["mac"]) or ""
-        d["sta"] = [{"name": _nm if _nm and _nm != "*" else _one["mac"][-8:], "rssi": _one.get("rssi")}]
-    else:
-        d["sta"] = []
+    _named_valid = [s for s in _valid if (leases.get(s["mac"]) or "*") not in ("", "*")]
+    _best_pool = _named_valid or _valid
+    d["rssi_best"] = max([s["rssi"] for s in _best_pool]) if _best_pool else None
+    _all = _valid or st
+    d["sta"] = [{"name": (leases.get(s["mac"]) or "").strip() or s["mac"][-8:],
+                 "rssi": s.get("rssi")} for s in _all]
+    d["sta_names"] = [x["name"] for x in d["sta"] if x["name"] and x["name"] != "*"]
     # 本机广播的 SSID（AP 接口；主 SSID jedy 置前）
     ssids = []
     for ifc in ("ra0", "rai0", "ra1"):
@@ -1938,10 +1937,12 @@ async function tick(){
       }
       if(c.rsrp!==undefined) chips+="<span class='chip' style='border-color:#31d17a'><b>当前信号（"+(c.rat||"5G")+"）</b> RSRP <b style='color:#31d17a'>"+c.rsrp+" dBm</b></span>";
       if(s.now) chips+="<span class='chip'><b>数据更新</b> "+s.now+"</span>";
-      if(c.sta&&c.sta.length){ chips+="<span class='chip'><b>WiFi 信号</b> "+c.sta.map(function(x){return (x.name||"")+" "+(x.rssi!==undefined?x.rssi+" dBm":"—");}).join(" · ")+"</span>"; }
+      if(c.rssi_best!==undefined&&c.rssi_best!==null){ chips+="<span class='chip'><b>WiFi 信号</b> "+c.rssi_best+" dBm</span>"; }
       else { chips+="<span class='chip'><b>WiFi</b> 无接入终端</span>"; }
       if(c.ssid) chips+="<span class='chip'><b>SSID</b> "+c.ssid+"</span>";
-      chips+="<span class='chip'><b>接入终端</b> "+c.clients+" 个（WiFi "+c.clients_wifi+" · 有线 "+c.clients_lan+"）</span>";
+      var _cnm=(c.sta_names||[]).filter(function(x){return x&&x!=="*";});
+      var _cntxt=_cnm.length?("："+_cnm.slice(0,3).join("、")+(_cnm.length>3?" 等 "+_cnm.length+" 台":"")):"";
+      chips+="<span class='chip'><b>接入终端</b> "+c.clients+" 个（WiFi "+c.clients_wifi+" · 有线 "+c.clients_lan+"）"+_cntxt+"</span>";
       if(c.wan_ip) chips+="<span class='chip'><b>WAN</b> "+c.wan_ip+(c.wan_up?" ✓":" ✗")+"</span>";
       if(c.temp_c) chips+="<span class='chip' title='thermal_zone0 (soc_max) 板载 SoC 最高温'><b>SoC温度</b> "+c.temp_c+" °C</span>";
       if(c.mem_total_mb) chips+="<span class='chip'><b>内存</b> 总 "+c.mem_total_mb+" MiB · 可用 "+c.mem_avail_mb+" MiB</span>";
