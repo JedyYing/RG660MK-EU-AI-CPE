@@ -1794,15 +1794,15 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
 <script>
 var jsMode = (typeof fetch !== "undefined");
 var _reloadTimer = null;
+// 局域网（同网段/本机）用 MJPEG 流；公网经 cloudflared(LAX) 单程 ~1.2s，流会越看越延迟，
+// 改用「上一帧到了就请求下一帧」的快照拉取，延迟有界（实测 1.2-1.5s），不做无界缓冲。
+var _lan = /^(192\.168\.|10\.|127\.|localhost$)/.test(location.hostname);
 function cameraOk(){
   var e=document.getElementById("camstat");
-  if(e && !_camFallback){ var d=new Date(); e.style.color="#8ef0b4"; e.innerText="实时画面 "+d.toTimeString().slice(0,8); }
+  if(e && !_camFallback){ var d=new Date(); e.style.color="#8ef0b4"; e.innerText=(_lan?"实时画面 ":"画面更新 ")+d.toTimeString().slice(0,8); }
+  if(!_lan || _camFallback){ setTimeout(function(){ var c=document.getElementById("cam"); if(c && (!_lan || _camFallback)) c.src="/snap?ts="+Date.now(); }, 150); }
 }
-function cameraTick(){
-  var e=document.getElementById("camstat");
-  if(e && !_camFallback){ var d=new Date(); e.style.color="#8ef0b4"; e.innerText="实时画面 "+d.toTimeString().slice(0,8); }
-  loadFaces();
-}
+function cameraTick(){ loadFaces(); }
 var _faceBusy=false;
 async function loadFaces(){
   if(!jsMode||_faceBusy) return;
@@ -1993,9 +1993,10 @@ async function enrollFace(){
 function boot(){
   if(!jsMode){ fallbackMode("no-fetch"); return; }
   setInterval(tick,2000); tick();
-  // 摄像头走 MJPEG 流（/cam/stream）；流失败时 cameraFail() 置 _camFallback，退回 300ms 快照刷新
+  // 局域网：MJPEG 流（12fps，实测延迟 0.37s）；公网：快照串行拉取（延迟有界，约 1.2-1.5s）
+  var _c0=document.getElementById("cam");
+  if(_c0 && !_lan) _c0.src="/snap?ts="+Date.now();
   setInterval(cameraTick, 2500);
-  setInterval(function(){ if(!jsMode || !_camFallback) return; var c=document.getElementById("cam"); if(c) c.src="/snap?ts="+Date.now(); },300);
 }
 boot();
 </script></body></html>"""
@@ -2261,7 +2262,20 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
         每 1.5s 回写一帧到 FACE_LAST 喂给 /faces 人脸框；每 3s 做一次遮挡/过暗检查，
         命中就推提示图（与 /snap 的兜底行为一致）。流断开即退出线程。"""
         _wan = bool(self.headers.get("CF-Connecting-IP") or self.headers.get("X-Forwarded-For"))
-        interval = 1.0 / (7.0 if _wan else 12.0)
+        try:
+            import urllib.parse as _up
+            _q = _up.parse_qs(_up.urlparse(self.path).query)
+            _fps = float((_q.get("fps") or [5.0 if _wan else 12.0])[0])
+        except Exception:
+            _fps = 5.0 if _wan else 12.0
+        _fps = max(1.0, min(15.0, _fps))
+        interval = 1.0 / _fps
+        try:
+            import socket as _sock
+            self.connection.setsockopt(_sock.IPPROTO_TCP, _sock.TCP_NODELAY, 1)
+            self.connection.setsockopt(_sock.SOL_SOCKET, _sock.SO_SNDBUF, 24576)
+        except Exception:
+            pass
         self.send_response(200)
         self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
         self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
@@ -2317,7 +2331,8 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
                             data = shrink_jpeg(data)
                         except Exception:
                             pass
-                    self.wfile.write(b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: " + str(len(data)).encode() + b"\r\n\r\n")
+                    self.wfile.write(b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: " + str(len(data)).encode()
+                                   + b"\r\nX-Ts: " + ("%.3f" % t0).encode() + b"\r\n\r\n")
                     self.wfile.write(data)
                     self.wfile.write(b"\r\n")
                     self.wfile.flush()
