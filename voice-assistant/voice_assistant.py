@@ -628,11 +628,33 @@ def safe_calc(expr):
         return None
 
 
+_WEATHER_CACHE = {}
+
+
 def get_weather_now(city):
     """优先 open-meteo（中文描述稳定；wttr.in 的 lang_zh 自 2026-10 起退化为英文）。
     失败回退 wttr.in；仍失败向上抛错由上层提示。"""
+    _hit = _WEATHER_CACHE.get(city)
+    if _hit and time.time() - _hit[0] < 300:
+        return _hit[1]
     try:
-        coordinates = {"上海": (31.23, 121.47), "北京": (39.90, 116.41)}
+        # 2026-11-06：中文城市名走 geocoding 要 1.7s（且偶发 403），常用城市内置坐标直接跳过
+        coordinates = {
+            "北京": (39.90, 116.41), "上海": (31.23, 121.47), "广州": (23.13, 113.26),
+            "深圳": (22.54, 114.06), "杭州": (30.27, 120.16), "南京": (32.06, 118.80),
+            "苏州": (31.30, 120.58), "成都": (30.57, 104.07), "重庆": (29.56, 106.55),
+            "武汉": (30.59, 114.31), "西安": (34.34, 108.94), "天津": (39.08, 117.20),
+            "青岛": (36.07, 120.38), "长沙": (28.23, 112.94), "郑州": (34.75, 113.63),
+            "合肥": (31.82, 117.23), "福州": (26.07, 119.30), "厦门": (24.48, 118.09),
+            "昆明": (25.04, 102.72), "贵阳": (26.65, 106.63), "南宁": (22.82, 108.32),
+            "海口": (20.04, 110.20), "三亚": (18.25, 109.51), "济南": (36.65, 117.12),
+            "沈阳": (41.81, 123.43), "大连": (38.91, 121.61), "哈尔滨": (45.80, 126.53),
+            "长春": (43.82, 125.32), "石家庄": (38.04, 114.51), "太原": (37.87, 112.55),
+            "兰州": (36.06, 103.83), "乌鲁木齐": (43.83, 87.62), "拉萨": (29.65, 91.14),
+            "呼和浩特": (40.84, 111.75), "银川": (38.49, 106.23), "西宁": (36.62, 101.78),
+            "南昌": (28.68, 115.86), "宁波": (29.87, 121.55), "无锡": (31.49, 120.31),
+            "佛山": (23.02, 113.12), "东莞": (23.02, 113.75), "珠海": (22.27, 113.58),
+        }
         if city in coordinates:
             lat, lon = coordinates[city]
         else:
@@ -660,8 +682,10 @@ def get_weather_now(city):
         if code not in descriptions or any(v is None for v in values):
             raise ValueError("incomplete weather data")
         print("[WEATHER] source=open-meteo city=%s time=%s" % (city, cur["time"]), flush=True)
-        return "%s现在%s，气温%s度，体感%s度，湿度百分之%s" % (
-            city, descriptions[code], *values)
+        # 短句优先：TTS 合成长度直接决定播报延迟（体感温度留在日志里）
+        text = "%s现在%s，%d度" % (city, descriptions[code], round(values[0]))
+        _WEATHER_CACHE[city] = (time.time(), text)
+        return text
     except Exception as e:
         print("[WEATHER] open-meteo failed: %s" % e, flush=True)
     # ---- 回退：wttr.in（注意其 lang_zh 可能为英文）----
@@ -1019,7 +1043,8 @@ def prepare_tts(text, timeout=TTS_TIMEOUT):
     """本地 sherpa-onnx 合成（wav），固定句缓存；不再走云端 TTS。"""
     os.makedirs(TTS_CACHE, exist_ok=True)
     key = hashlib.sha256((VOICE + "\n" + text).encode()).hexdigest()
-    cached = text in CACHED_SPEECH
+    # 2026-11-06：<=40 字的短句也落盘缓存（天气/股价这类重复问法第二次直接秒回）
+    cached = text in CACHED_SPEECH or len(text) <= 40
     target = os.path.join(TTS_CACHE, key + ".wav")
     if cached and os.path.exists(target) and os.path.getsize(target) > 0:
         return target, False
