@@ -73,7 +73,8 @@ C8090=$($SSH 'curl -s -m 5 -o /dev/null -w "%{http_code}" http://127.0.0.1:8090/
 [ "$C8099" = 200 ] && ok "看板 8099 正常" || { bad "看板 8099 不通"; [ "$FIX" = 1 ] && { say "     → 重启 aicpe-board"; $SSH '/etc/init.d/aicpe-board restart' >/dev/null 2>&1; }; }
 [ "$C8090" = 200 ] && ok "相机 8090 正常" || { bad "相机 8090 不通"; [ "$FIX" = 1 ] && { say "     → 重启 cam-stack"; $SSH '/etc/init.d/cam-stack restart' >/dev/null 2>&1; }; }
 # 2026-11-06：语音助手进程曾被杀后没人拉起，现场"喊三次没反应"——体检必须查
-VPID=$($SSH "pgrep -f voice_assistant.py | head -1" 2>/dev/null)
+# 注意：pgrep -f 会匹配到这条 ssh 命令自身，必须用 ps 过滤 python 进程
+VPID=$($SSH "ps w | awk '/[v]oice_assistant[.]py/ && \$5 ~ /python/ {print \$1; exit}'" 2>/dev/null)
 [ -n "$VPID" ] && ok "语音助手进程在 (pid $VPID)" || { bad "语音助手没在跑"; [ "$FIX" = 1 ] && { say "     → 看门狗拉起"; $SSH '/data/ai_cpe/voice_watchdog.sh' >/dev/null 2>&1; }; }
 
 # ---------- 5. 公网地址 ----------
@@ -113,7 +114,15 @@ fi
 say "----------------------------------------------"
 if [ "$FAILS" = 0 ]; then
   say "结论: 全通过，可以直接演示"
-  say "公网地址: ${URL:-'(读取失败)'}"
+  # 2026-11-06 用户要求：本机网线直连板子时只报局域网地址，不报公网
+  # 只认“走有线口到板子”的情况（en* 接口），WiFi 同网段不算
+  LAN_DEV=$(ip route get 192.168.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
+  case "$LAN_DEV" in en*) LAN_IP=$(ip -brief addr show dev "$LAN_DEV" 2>/dev/null | awk '{print $3}');; *) LAN_IP="";; esac
+  if [ -n "$LAN_IP" ]; then
+    say "局域网地址: http://192.168.1.1:8099/   (本机 $LAN_IP，12fps/0.37s)"
+  else
+    say "公网地址: ${URL:-'(读取失败)'}"
+  fi
 else
   say "结论: $FAILS 项异常，按上面的提示处理；或跑 $0 --fix"
 fi
