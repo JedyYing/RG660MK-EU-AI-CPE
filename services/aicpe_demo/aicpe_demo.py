@@ -364,10 +364,16 @@ def cpe_info():
         diag = {"verdict": None, "heal_today": 0, "heal_ok": 0, "recent": []}
         _eff_rows = []
         try:
-            rd = json.load(open("/data/ai_cpe/radiodiag_state.json"))
+            _rdp = "/data/ai_cpe/radiodiag_state.json"
+            rd = json.load(open(_rdp))
             diag["verdict"] = rd.get("verdict")
             diag["rsrp"] = rd.get("rsrp")
-            diag["ts"] = str(rd.get("ts", ""))[11:16]
+            diag["ts"] = str(rd.get("ts", ""))[5:16]
+            try:
+                diag["age_s"] = int(time.time() - _os.path.getmtime(_rdp))
+                diag["stale"] = diag["age_s"] > 900
+            except Exception:
+                diag["age_s"] = None
             cell = rd.get("cell") or {}
             if cell.get("nci"):
                 diag["cell"] = str(cell["nci"])
@@ -1987,7 +1993,9 @@ async function tick(){
       if(rd2.verdict){
         var vmap={ok:["正常","#31d17a"],weak:["弱信号","#ffd479"],severe:["严重弱信号","#ff7f7f"],congested:["拥塞","#ff9f7f"],down:["掉网","#ff7f7f"]};
         var vm=vmap[rd2.verdict]||[String(rd2.verdict),"#cfe0f5"];
-        chips+="<span class='chip'><b>网络诊断</b> <span style='color:"+vm[1]+";font-weight:700'>"+vm[0]+"</span>"+(rd2.rsrp!==undefined&&rd2.rsrp!==null?" · RSRP "+rd2.rsrp+" dBm":"")+(rd2.cell?" · 小区 "+rd2.cell:"")+(rd2.ts?" · "+rd2.ts:"")+"</span>";
+        var _vcol=rd2.stale?"#8fa6c4":vm[1];
+        var _tsTxt=rd2.ts?(" · 诊断快照 "+(rd2.stale?"<span style='color:#ffd479'>"+rd2.ts+"（已过期）</span>":rd2.ts)):"";
+        chips+="<span class='chip'><b>网络诊断</b> <span style='color:"+_vcol+";font-weight:700'>"+vm[0]+"</span>"+(rd2.cell?" · 小区 "+rd2.cell:"")+_tsTxt+"</span>";
         var _hv=(vm[0]==="正常")?"#9fb3cc":"#ffd479";
         chips+="<span class='chip' title='口径：触发=实际执行的射频自愈次数（不含演练）；成功=自愈后判定恢复（success=true）；未改善=执行了但没有恢复'><b>网络自愈</b> <span style='color:"+_hv+"'>今日触发 "+rd2.heal_today+" 次"+(rd2.heal_ok!==undefined?("（成功 "+rd2.heal_ok+" 次"+(rd2.heal_today>rd2.heal_ok?(" · 未改善 "+(rd2.heal_today-rd2.heal_ok)+" 次"):"")+"）"):"")+"</span>"+(rd2.eff_pct!==undefined?"<span class='small' style='color:"+(rd2.eff_pct>=80?"#31d17a":"#ffd479")+"'> · 近"+rd2.eff_pct+"%（近"+rd2.eff_n+"次）"+(rd2.probe_n?(" · 观察 "+rd2.probe_n+"/10"+(rd2.probe_pct!==undefined?(" · 新策略 "+rd2.probe_pct+"%"):"")):"")+(rd2.eff_mode?(" · "+rd2.eff_mode):"")+"</span>":"")+"</span>";
         if(rd2.recent&&rd2.recent.length){
