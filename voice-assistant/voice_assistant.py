@@ -1616,7 +1616,7 @@ def main():
         if wait_muted():
             continue
         # 尾部静音放宽到 1400ms：容忍“你好…小皮”中间的停顿（用户反馈第一遍常被切掉）
-        if not vad_record("/tmp/voice_rec.wav", max_s=8, start_wait_s=86400, end_sil_ms=700):
+        if not vad_record("/tmp/voice_rec.wav", max_s=5, start_wait_s=86400, end_sil_ms=700):
             continue
         if wait_muted():
             continue
@@ -1649,7 +1649,7 @@ def main():
                 _t = transcribe("/tmp/voice_rec.wav", use_prompt=False)
                 print("[miss] asr=%r" % _t, flush=True)
                 vlog("miss", asr=_t)     # 带时间戳留存，便于事后判断“没听到”还是“没匹配”
-                if not is_sleep_wake(_t):
+                if not (is_wake(_t) or is_sleep_wake(_t)):
                     if is_idle_command(_t):
                         text = _t
                         vlog("direct", asr=_t)

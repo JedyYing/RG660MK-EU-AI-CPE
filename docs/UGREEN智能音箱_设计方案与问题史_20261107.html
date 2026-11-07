@@ -98,7 +98,7 @@ li { margin:.7mm 0; page-break-inside: avoid; }
 <table>
   <thead><tr><th style="width:20%">环节</th><th style="width:34%">实测配置</th><th>说明与踩过的坑</th></tr></thead>
   <tbody>
-  <tr><td>麦克风</td><td>CM564，<code>plughw:2,0</code>，48 kHz，采集增益 <span class="num">140/255</span></td>
+  <tr><td>麦克风</td><td>CM564，<code>plughw:2,0</code>，48 kHz，采集增益 <span class="num">190/255</span>（75%，2026-11-07 现场上调）</td>
       <td>曾误判为「聋麦」——raw RMS 只有 70~150；后证实是信号弱而非硬件坏，靠增益与近场说话解决</td></tr>
   <tr><td>扬声器</td><td>同一 CM564 盒子，<code>plughw:2,0</code></td>
       <td>盒子喇叭本身正常，问题都出在采集侧；播放与采集共用一设备，需避免抢占</td></tr>
@@ -154,7 +154,7 @@ li { margin:.7mm 0; page-break-inside: avoid; }
 <table>
   <thead><tr><th style="width:24%">决策</th><th style="width:36%">为什么这么定</th><th>实测依据</th></tr></thead>
   <tbody>
-  <tr><td>麦克风用 CM564、增益 140</td><td>与扬声器同盒、走线简单；C270 麦会与 camview 抢 USB</td><td>双麦对照：CM564 RMS 70~150（近场可辨），C270 600~2400（但会抢占）</td></tr>
+  <tr><td>麦克风用 CM564、增益 190</td><td>与扬声器同盒、走线简单；C270 麦会与 camview 抢 USB</td><td>双麦对照：CM564 RMS 70~150（近场可辨），C270 600~2400（但会抢占）</td></tr>
   <tr><td>ASR 用 paraformer 常驻服务</td><td>whisper 单次 2.2 s，paraformer 常驻 0.78~1.6 s，且模型小</td><td>当前 18 次样本：p50 <span class="num">0.943 s</span>、max 1.614 s</td></tr>
   <tr><td>唤醒词变体表（小提/下皮/小陈…）</td><td>口音下 paraformer 稳定把「小皮」听成「小提」，单靠标准词永远唤不醒</td><td>2026-09-21 实测「你好小提」；2026-11-05 实测「你好小陈」</td></tr>
   <tr><td>休眠态只认完整「你好小皮」</td><td>用户要求「说了休息就别轻易启动」，避免电视/聊天误唤醒</td><td>休眠后单说「几点」不响应，说完整称呼才回「在呢」</td></tr>
@@ -208,7 +208,7 @@ li { margin:.7mm 0; page-break-inside: avoid; }
 <table>
   <thead><tr><th style="width:22%">现象</th><th style="width:38%">根因</th><th>处置</th></tr></thead>
   <tbody>
-  <tr><td>对着盒子说话无反应</td><td>CM564 采集 RMS 只有 70~150，接近本底噪声；不是硬件坏，是灵敏度低</td><td>提高采集增益到 140/255；近场说话；临时可切 C270 麦救急</td></tr>
+  <tr><td>对着盒子说话无反应</td><td>CM564 采集 RMS 只有 70~150，接近本底噪声；不是硬件坏，是灵敏度低</td><td>提高采集增益（140→190/255）；近场说话；临时可切 C270 麦救急</td></tr>
   <tr><td>切 C270 后唤醒好了但视觉异常</td><td>C270 麦与 camview 抢 USB 独占</td><td>回归 CM564；抓帧统一走 camview HTTP 口</td></tr>
   <tr><td>换了位置后又「听不见」</td><td>VAD 阈值是按旧位置标定的</td><td>用 <code>VOICE_VAD_ON/OFF</code> 现场重标（1400/1100 用于 C270，450/280 用于 CM564）</td></tr>
   </tbody>
@@ -222,6 +222,7 @@ li { margin:.7mm 0; page-break-inside: avoid; }
   <tr><td>2026-10 之后</td><td>KWS 模型文件丢失，声学唤醒恒 False，全靠 ASR 兜底</td><td class="warn">未恢复（当前状态），靠 ASR 文本兜底</td></tr>
   <tr><td>2026-11-05</td><td><code>asleep</code> 只置 True 从不置 False：说过一次「休息」后整场都在休眠态</td><td>唤醒成功后置 False（本轮修复）</td></tr>
   <tr><td>2026-11-05</td><td>变体表缺「小陈」：本次现场实际误听</td><td>补小陈/小晨/小成/小城</td></tr>
+  <tr><td>2026-11-07</td><td>非休眠态误用严格判定 is_sleep_wake（要求「你好」前缀），转写成「小皮」时被丢弃</td><td>非休眠改用 is_wake（接受「小皮」短变体）；待机录音 8 s→5 s</td></tr>
   <tr><td>2026-11-05</td><td>whisper-cli 与 ggml 模型文件丢失，ASR 抛 FileNotFoundError</td><td>切 paraformer 常驻服务（模型完好在机）</td></tr>
   </tbody>
 </table>
@@ -307,7 +308,7 @@ li { margin:.7mm 0; page-break-inside: avoid; }
   <tr><td>主程序</td><td><code>/data/ai_cpe/voice_assistant.py</code>（1739 行）</td></tr>
   <tr><td>TTS 模块</td><td><code>/data/ai_cpe/local_tts.py</code> + <code>tts_say.py</code></td></tr>
   <tr><td>ASR 服务</td><td><code>sherpa-onnx-offline-websocket-server --port=6006</code>，模型 paraformer-zh-small</td></tr>
-  <tr><td>录音 / 播放</td><td><code>plughw:2,0</code>（CM564），48 kHz，采集增益 140/255</td></tr>
+  <tr><td>录音 / 播放</td><td><code>plughw:2,0</code>（CM564），48 kHz，采集增益 190/255（75%）</td></tr>
   <tr><td>运行日志</td><td><code>/data/ai_cpe/logs/voice.log</code>（LATENCY/TURN/miss 行）</td></tr>
   <tr><td>启动方式</td><td><code>/etc/init.d/aicpe-boot</code> 内 nohup 拉起（无独立 init 脚本）</td></tr>
   <tr><td>回滚备份</td><td><code>voice_assistant.py.bak_20261105_asrpara</code> / <code>..._waketime2</code></td></tr>
