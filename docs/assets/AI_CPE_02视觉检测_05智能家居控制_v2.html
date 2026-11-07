@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>RG660MK-EU AI 视觉检测 / 智能家居控制 验收报告</title>
+<style>
+  :root{
+    --navy:#0B4B8A;
+    --navy2:#0E5A96;
+    --ink:#17293B;
+    --gray:#5C7086;
+    --line:#D8E5F2;
+    --blue-bg:#E8F2FE;
+    --green:#1E8E5A;
+    --green-bg:#E6F6EE;
+    --orange:#B26A00;
+    --orange-bg:#FDF1DE;
+    --blue:#1F6FB2;
+    --blue-bg2:#E9F3FD;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#fff;font-family:"Noto Sans CJK SC","Source Han Sans SC",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .stage{position:relative;width:1774px;height:887px;background:#FFFFFF;overflow:hidden;}
+
+  /* ---------- header ---------- */
+  header{position:absolute;left:0;top:0;width:1774px;height:116px;
+    background:linear-gradient(100deg,#063F76 0%,#0A4F90 48%,#0C5B9F 100%);}
+  header:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#2E86C1,#7FC4EA 55%,#2E86C1);}
+  h1{position:absolute;left:30px;top:22px;font-size:27.5px;font-weight:800;color:#fff;letter-spacing:.02em;}
+  .hsub{position:absolute;left:30px;top:64px;font-size:13.2px;color:#CFE3F5;letter-spacing:.03em;}
+  .hdiv{position:absolute;left:1246px;top:16px;width:1px;height:84px;background:rgba(255,255,255,.55);}
+  .hmeta{position:absolute;left:1262px;top:13px;width:490px;font-size:10.6px;line-height:1.72;color:#E4F0FA;}
+  .hmeta .row{display:flex;gap:6px;}
+  .hmeta .k{color:#9DC4E4;width:52px;flex:0 0 52px;text-align:justify;text-align-last:justify;}
+  .hmeta .v{color:#FFFFFF;}
+  .hmeta .v em{font-style:normal;color:#BFDCF1;}
+
+  /* ---------- section bar ---------- */
+  .sec{position:absolute;height:28px;background:linear-gradient(90deg,#0B4B8A,#14629F 70%,#1A6BA8);display:flex;align-items:center;padding-left:14px;}
+  .sec:before{content:"";position:absolute;left:7px;top:7px;width:2px;height:14px;background:rgba(255,255,255,.85);}
+  .sec .t{font-size:14.6px;font-weight:800;color:#fff;letter-spacing:.06em;}
+  .sec .r{margin-left:auto;margin-right:12px;font-size:10.6px;color:#BBD9F0;letter-spacing:.04em;font-weight:400;}
+
+  /* ---------- conclusions ---------- */
+  .concl{position:absolute;left:24px;top:170px;width:782px;height:246px;display:flex;flex-direction:column;justify-content:space-between;}
+  .ci{display:flex;gap:13px;align-items:flex-start;}
+  .num{flex:0 0 27px;width:27px;height:27px;border-radius:50%;color:#fff;font-size:13px;font-weight:800;display:grid;place-items:center;margin-top:1px;}
+  .n1{background:#2E8B57;} .n2{background:#1F6FB2;} .n3{background:#2E8B57;} .n4{background:#C98A00;}
+  .ct{font-size:13.1px;font-weight:800;color:#14314D;letter-spacing:.01em;}
+  .cd{margin-top:3px;font-size:12.1px;line-height:1.55;color:#45596D;}
+  .cd b{color:#0B4B8A;font-weight:700;}
+
+  /* ---------- table ---------- */
+  .tbl{position:absolute;left:24px;top:466px;width:782px;border:1px solid var(--line);}
+  .tbl .hd{display:flex;height:30px;background:var(--blue-bg);align-items:center;font-size:12.2px;font-weight:800;color:#0B4B8A;letter-spacing:.04em;}
+  .tbl .rw{display:flex;height:30px;align-items:center;font-size:12.1px;border-top:1px solid #E6EEF7;}
+  .tbl .rw:nth-child(even){background:#FAFCFE;}
+  .tbl .rw.grp{border-top:1.6px solid #C9DCEE;}
+  .c1{width:346px;padding-left:12px;}
+  .c2{width:286px;padding-left:6px;font-variant-numeric:tabular-nums;color:#22384C;}
+  .c3{width:82px;padding-left:6px;text-align:center;}
+  .pass{display:inline-block;background:var(--green-bg);color:var(--green);border:1px solid #B9E3CC;border-radius:4px;font-size:10.6px;font-weight:800;padding:2px 9px;letter-spacing:.10em;}
+  .tag02{display:inline-block;width:22px;height:16px;line-height:16px;text-align:center;border-radius:3px;background:#0B4B8A;color:#fff;font-size:9.6px;font-weight:800;margin-right:8px;vertical-align:1px;}
+  .tag05{display:inline-block;width:22px;height:16px;line-height:16px;text-align:center;border-radius:3px;background:#1E8E5A;color:#fff;font-size:9.6px;font-weight:800;margin-right:8px;vertical-align:1px;}
+  .mono{font-family:"Noto Sans Mono","DejaVu Sans Mono",monospace;font-size:11.4px;color:#2B4257;}
+
+  /* ---------- note ---------- */
+  .note{position:absolute;left:24px;top:750px;width:782px;background:#F4F8FC;border-left:3px solid #2E86C1;padding:9px 12px;}
+  .note .nt{font-size:11.4px;font-weight:800;color:#0B4B8A;letter-spacing:.05em;}
+  .note .nb{margin-top:3px;font-size:11.2px;line-height:1.55;color:#4A5F73;}
+
+  /* ---------- charts ---------- */
+  .chart{position:absolute;left:826px;width:924px;}
+  .chart .ct{font-size:11.4px;color:#5C7086;letter-spacing:.02em;}
+  .chart .ct b{color:#0B4B8A;font-size:12.2px;}
+  .bar{display:flex;height:36px;border-radius:2px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(11,75,138,.08);}
+  .bar .s1{background:linear-gradient(180deg,#1B6FB5,#125A97);color:#fff;display:flex;align-items:center;padding-left:12px;font-size:11.6px;font-weight:700;letter-spacing:.02em;}
+  .bar .s2{background:linear-gradient(180deg,#3FA0C8,#2A87AE);color:#fff;display:flex;align-items:center;padding-left:12px;font-size:11.6px;font-weight:700;letter-spacing:.02em;}
+  .axis{position:relative;height:22px;margin-top:5px;border-top:1px solid #CBDCEC;}
+  .axis span{position:absolute;top:4px;font-size:10.2px;color:#7A8FA3;transform:translateX(-50%);}
+  .axis i{position:absolute;top:0;width:1px;height:4px;background:#CBDCEC;}
+
+  .tl{position:relative;height:104px;margin-top:8px;}
+  .tl .line{position:absolute;left:0;right:0;top:52px;height:2px;background:#DCE8F3;}
+  .tl .dot{position:absolute;top:47px;width:12px;height:12px;border-radius:50%;background:#0B4B8A;border:2px solid #fff;box-shadow:0 0 0 1px #0B4B8A;}
+  .tl .lbl{position:absolute;font-size:10.6px;color:#41586E;}
+  .tl .lbl b{color:#0B4B8A;}
+  .tl .band{position:absolute;top:44px;height:18px;border-radius:3px;background:linear-gradient(90deg,#FBE3BE,#F6CE8C);border:1px solid #E8B96A;}
+  .tl .brk{position:absolute;top:44px;width:18px;height:18px;color:#8FA6BB;font-size:14px;font-weight:700;background:#fff;text-align:center;line-height:16px;}
+  .tl .lead{position:absolute;width:1px;background:#9DBBD6;}
+  .tl .callout{position:absolute;background:#EAF3FB;border:1px solid #C6DDEF;border-radius:3px;padding:2px 6px;font-size:10.2px;color:#0B4B8A;font-weight:700;}
+
+  /* ---------- capability list ---------- */
+  .cap{position:absolute;left:826px;top:566px;width:924px;}
+  .cap .row{display:flex;align-items:center;gap:12px;height:66px;border-bottom:1px solid #E4EDF6;}
+  .cap .ic{flex:0 0 34px;width:34px;height:34px;border-radius:6px;background:#EDF5FC;border:1px solid #CFE2F2;display:grid;place-items:center;color:#0B5E96;}
+  .cap .ic svg{width:19px;height:19px;}
+  .cap .tx{flex:1;min-width:0;}
+  .cap .tt{font-size:13.1px;font-weight:800;color:#14314D;}
+  .cap .td{margin-top:2px;font-size:11.4px;color:#4E6479;line-height:1.45;}
+  .cap .td b{color:#0B4B8A;font-weight:700;}
+  .cap .tg{flex:0 0 auto;font-size:10.2px;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.06em;}
+  .tg-g{color:#1E8E5A;background:#E6F6EE;border:1px solid #BFE6D1;}
+  .tg-b{color:#1F6FB2;background:#E9F3FD;border:1px solid #C4DDF4;}
+  .tg-o{color:#B26A00;background:#FDF1DE;border:1px solid #EFD3A6;}
+
+  /* ---------- footer ---------- */
+  footer{position:absolute;left:24px;right:24px;top:856px;border-top:1px solid #D8E5F2;padding-top:6px;display:flex;justify-content:space-between;font-size:10.8px;color:#71879C;letter-spacing:.01em;}
+  footer b{color:#41586E;font-weight:700;}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-cam" viewBox="0 0 24 24"><rect x="2.5" y="6.5" width="12.5" height="11" rx="2.4"/><path d="M15 10.2l6-3.2v10l-6-3.2"/><circle cx="8.6" cy="12" r="2.2"/></symbol>
+  <symbol id="i-face" viewBox="0 0 24 24"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="4"/><circle cx="8.9" cy="10.2" r=".9" fill="currentColor" stroke="none"/><circle cx="15.1" cy="10.2" r=".9" fill="currentColor" stroke="none"/><path d="M8.6 14.4c1 1.1 2.1 1.6 3.4 1.6s2.4-.5 3.4-1.6"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9.2 18.2h5.6M10 21h4"/><path d="M12 3.2a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2v.2h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3.2z"/><path d="M12 7.2v5.4"/></symbol>
+  <symbol id="i-net" viewBox="0 0 24 24"><path d="M12 3v18M5 8h14M7 8l-3 6h6zM17 8l-3 6h6z"/><circle cx="12" cy="3.6" r="1.2"/></symbol>
+</defs></svg>
+
+<div class="stage">
+
+  <!-- ================= HEADER ================= -->
+  <header>
+    <h1>RG660MK-EU AI 视觉检测 / 智能家居控制 验收报告</h1>
+    <div class="hsub">—— 端侧视觉 100 轮全通过 · Matter 真灯 3 轮一致 ——</div>
+    <div class="hdiv"></div>
+    <div class="hmeta">
+      <div class="row"><span class="k">报告编号</span><span class="v">RG660MK-CAP-02-05-20261106</span></div>
+      <div class="row"><span class="k">版本</span><span class="v">R1.0（02 视觉 / 05 家居）<em>　基于实测报告汇编</em></span></div>
+      <div class="row"><span class="k">报告日期</span><span class="v">2026-11-06</span></div>
+      <div class="row"><span class="k">测试对象</span><span class="v">RG660MK-EU CPE / Logitech C270 / MOES Matter 灯</span></div>
+      <div class="row"><span class="k">数据来源</span><span class="v">100 轮复测 2026-11-05 · 真灯验收 2026-11-03</span></div>
+    </div>
+  </header>
+
+  <!-- ================= LEFT: conclusions ================= -->
+  <div class="sec" style="left:24px;top:134px;width:782px;">
+    <span class="t">核心结论</span><span class="r">两项能力 · 四条结论</span>
+  </div>
+
+  <div class="concl">
+    <div class="ci">
+      <div class="num n1">1</div>
+      <div>
+        <div class="ct">视觉链路 100 / 100 轮通过</div>
+        <div class="cd">抓帧 → 目标检测 → 姿态估计 → 坐姿判定 → 人脸身份五步全链路执行；现场抓帧 <b>32 KB</b>，未检出时自动重抓 2 次（间隔 2 s），视觉项 100 / 100 通过，整轮复测 <b>0 fail / 0 超时</b>。</div>
+      </div>
+    </div>
+    <div class="ci">
+      <div class="num n2">2</div>
+      <div>
+        <div class="ct">端侧双模型实测 830 / 874 ms</div>
+        <div class="cd">YOLOv8n 目标检测 <b>830 ms</b>（person 0.83）、YOLOv8n-pose 姿态估计 <b>874 ms</b>（1 人 / 17 关键点）；单次双模型推理合计约 <b>1.70 s</b>，全程 CPE 本地推理。</div>
+      </div>
+    </div>
+    <div class="ci">
+      <div class="num n3">3</div>
+      <div>
+        <div class="ct">Matter 真灯 3 / 3 轮回读一致</div>
+        <div class="cd">直连 node 10（<b>192.168.1.224</b>），<span class="mono">driver=matter</span> / <span class="mono">proxy=false</span>；指令前关 → 开 → 现场恢复关，三轮 <b>False→True</b> 一致，非板载 LED 代理。</div>
+      </div>
+    </div>
+    <div class="ci">
+      <div class="num n4">4</div>
+      <div>
+        <div class="ct">控制面秒回、物理动作异步</div>
+        <div class="cd">状态回读 <b>54.5 ms</b>；物理动作 <b>4–12 s</b>（演示负载 19.2 s）。语音/看板只发指令即返回，避免「等灯」卡顿，物理结果可随时 <span class="mono">status</span> 回读。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= LEFT: table ================= -->
+  <div class="sec" style="left:24px;top:430px;width:782px;">
+    <span class="t">关键指标对照</span><span class="r">实测值 · 判定</span>
+  </div>
+
+  <div class="tbl">
+    <div class="hd"><div class="c1">项目</div><div class="c2">实测值</div><div class="c3">判定</div></div>
+    <div class="rw"><div class="c1"><span class="tag02">02</span>目标检测 · YOLOv8n</div><div class="c2">830 ms · person 0.83</div><div class="c3"><span class="pass">PASS</span></div></div>
+    <div class="rw"><div class="c1"><span class="tag02">02</span>姿态估计 · YOLOv8n-pose</div><div class="c2">874 ms · 1 人 / 17 关键点</div><div class="c3"><span class="pass">PASS</span></div></div>
+    <div class="rw"><div class="c1"><span class="tag02">02</span>人脸身份 · Immich</div><div class="c2">匹配「本人」</div><div class="c3"><span class="pass">PASS</span></div></div>
+    <div class="rw"><div class="c1"><span class="tag02">02</span>100 轮复测</div><div class="c2">100 / 100 轮 · 0 fail</div><div class="c3"><span class="pass">PASS</span></div></div>
+    <div class="rw grp"><div class="c1"><span class="tag05">05</span>状态回读 · smarthome.py</div><div class="c2">54.5 ms</div><div class="c3"><span class="pass">PASS</span></div></div>
+    <div class="rw"><div class="c1"><span class="tag05">05</span>物理执行 · Matter 真灯</div><div class="c2">4–12 s（空载） / 19.2 s（演示）</div><div class="c3"><span class="pass">PASS</span></div></div>
+    <div class="rw"><div class="c1"><span class="tag05">05</span>开关一致 · 三轮回读</div><div class="c2">3 / 3 轮 · False→True</div><div class="c3"><span class="pass">PASS</span></div></div>
+    <div class="rw"><div class="c1"><span class="tag05">05</span>云依赖 · 正常路径</div><div class="c2">0 · Matter 局域网直连</div><div class="c3"><span class="pass">PASS</span></div></div>
+  </div>
+
+  <div class="note">
+    <div class="nt">口径说明</div>
+    <div class="nb">画面无人、坐姿正常/异常、人脸未匹配均属<b>场景状态</b>，只要检测链路执行成功即 PASS；家居项以控制面三轮回读一致为验收依据，不以板载 LED 代理充数。所有数字取设备实测日志，不做估算。</div>
+  </div>
+
+  <!-- ================= RIGHT: chart 1 ================= -->
+  <div class="sec" style="left:826px;top:134px;width:924px;">
+    <span class="t">视觉链路 · 单次判定耗时</span><span class="r">端侧 CPU 推理 · ncnn</span>
+  </div>
+
+  <div class="chart" style="top:170px;height:150px;">
+    <div class="ct"><b>双模型推理合计 ≈ 1.70 s</b>　目标检测 830 ms + 姿态估计 874 ms（抓帧 32 KB 不计入模型耗时）</div>
+    <div class="bar" style="margin-top:12px;width:880px;">
+      <div class="s1" style="width:48.7%;">目标检测 830 ms</div>
+      <div class="s2" style="width:51.3%;">姿态估计 874 ms</div>
+    </div>
+    <div class="axis" style="width:880px;">
+      <i style="left:0"></i><span style="left:0">0</span>
+      <i style="left:29.3%"></i><span style="left:29.3%">500</span>
+      <i style="left:58.7%"></i><span style="left:58.7%">1000</span>
+      <i style="left:88%"></i><span style="left:88%">1500</span>
+      <i style="left:100%"></i><span style="left:100%">1704 ms</span>
+    </div>
+    <div class="ct" style="margin-top:14px;font-size:10.8px;color:#7A8FA3;">口径：两项均为 YOLOv8n 系列 ncnn 模型在 CPE（aarch64）上的单帧推理耗时，取自 2026-11-03 真灯验收现场日志。</div>
+  </div>
+
+  <!-- ================= RIGHT: timeline ================= -->
+  <div class="sec" style="left:826px;top:336px;width:924px;">
+    <span class="t">真灯控制时序</span><span class="r">指令秒回 · 物理异步</span>
+  </div>
+
+  <div class="chart" style="top:372px;height:150px;">
+    <div class="ct"><b>控制面 54.5 ms 返回</b>　物理动作 4–12 s 异步完成，不阻塞语音/看板</div>
+    <div class="tl" style="width:880px;">
+      <div class="line"></div>
+      <div class="dot" style="left:0"></div>
+      <div class="lbl" style="left:0;top:26px;"><b>指令下发</b><br>smarthome.py on</div>
+      <div class="lead" style="left:136px;top:33px;height:21px;"></div>
+      <div class="callout" style="left:88px;top:12px;">54.5 ms 状态回读</div>
+      <div class="brk" style="left:196px;">//</div>
+      <div class="band" style="left:230px;width:634px;"></div>
+      <div class="lbl" style="left:238px;top:23px;"><b>4 s</b>　Matter 物理执行窗口</div>
+      <div class="lbl" style="left:820px;top:23px;"><b>12 s</b></div>
+      <div class="lbl" style="left:230px;top:68px;">空载实测 4–12 s；演示负载下实测 19.2 s（时间轴为示意，非线性刻度）</div>
+      <div class="lbl" style="left:230px;top:86px;color:#7A8FA3;">验收方式：控制面三轮 False→True 回读一致，现场恢复关。</div>
+      
+    </div>
+  </div>
+
+  <!-- ================= RIGHT: capability ================= -->
+  <div class="sec" style="left:826px;top:530px;width:924px;">
+    <span class="t">能力定位与边界</span><span class="r">证据链 · 现场实测</span>
+  </div>
+
+  <div class="cap">
+    <div class="row">
+      <div class="ic"><svg><use href="#i-cam"/></svg></div>
+      <div class="tx">
+        <div class="tt">AI 视觉检测</div>
+        <div class="td">端侧 YOLOv8n + YOLOv8n-pose，抓帧、检测、姿态、坐姿、身份五步全链路执行；坐姿按肩/髋/头肩比/躯干四项几何阈值判定。</div>
+      </div>
+      <div class="tg tg-g">强支持</div>
+    </div>
+    <div class="row">
+      <div class="ic"><svg><use href="#i-face"/></svg></div>
+      <div class="tx">
+        <div class="tt">人脸身份</div>
+        <div class="td">Immich 人脸库比对，现场实测匹配「<b>本人</b>」；未匹配或画面无人只记场景状态，不判功能失败。</div>
+      </div>
+      <div class="tg tg-b">已实测</div>
+    </div>
+    <div class="row">
+      <div class="ic"><svg><use href="#i-bulb"/></svg></div>
+      <div class="tx">
+        <div class="tt">智能家居控制</div>
+        <div class="td">Matter node 10 直连 MOES 灯，<b>driver=matter / proxy=false</b>；三轮 False→True 回读一致，现场恢复关。</div>
+      </div>
+      <div class="tg tg-g">强支持</div>
+    </div>
+    <div class="row" style="border-bottom:none;">
+      <div class="ic"><svg><use href="#i-net"/></svg></div>
+      <div class="tx">
+        <div class="tt">边界与口径</div>
+        <div class="td">物理动作 4–12 s 异步；Matter 未配网时回退涂鸦云或板载代理（<b>proxy=true</b> 判 fail）；正常路径不经过云。</div>
+      </div>
+      <div class="tg tg-o">口径</div>
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer>
+    <div>数据来源：<b>AI CPE 看板 100 轮复测（2026-11-05）</b> · <b>真灯验收（2026-11-03）</b> · RG660MK-EU-AI-CPE 仓库实测日志</div>
+    <div>口径：<b>链路执行成功即 PASS</b>　｜　生成 2026-11-06　｜　RG660MK-EU</div>
+  </footer>
+</div>
+</body>
+</html>
