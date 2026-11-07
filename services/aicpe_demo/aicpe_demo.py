@@ -1989,24 +1989,6 @@ async function tick(){
       if(c.mem_total_mb) chips+="<span class='chip'><b>内存</b> 总 "+c.mem_total_mb+" MiB · 可用 "+c.mem_avail_mb+" MiB</span>";
       if(c.hermes_mb) chips+="<span class='chip'><b>Hermes 占用</b> "+c.hermes_mb+" MiB</span>";
       if(c.uptime_s) chips+="<span class='chip'><b>运行</b> "+Math.floor(c.uptime_s/3600)+"h"+Math.floor(c.uptime_s%3600/60)+"m</span>";
-      var rd2=c.radiodiag||{};
-      if(rd2.verdict){
-        var vmap={ok:["正常","#31d17a"],weak:["弱信号","#ffd479"],severe:["严重弱信号","#ff7f7f"],congested:["拥塞","#ff9f7f"],down:["掉网","#ff7f7f"]};
-        var vm=vmap[rd2.verdict]||[String(rd2.verdict),"#cfe0f5"];
-        var _vcol=rd2.stale?"#8fa6c4":vm[1];
-        var _tsTxt=rd2.ts?(" · 诊断快照 "+(rd2.stale?"<span style='color:#ffd479'>"+rd2.ts+"（已过期）</span>":rd2.ts)):"";
-        chips+="<span class='chip'><b>网络诊断</b> <span style='color:"+_vcol+";font-weight:700'>"+vm[0]+"</span>"+(rd2.cell?" · 小区 "+rd2.cell:"")+_tsTxt+"</span>";
-        var _hv=(vm[0]==="正常")?"#9fb3cc":"#ffd479";
-        chips+="<span class='chip' title='口径：触发=实际执行的射频自愈次数（不含演练）；成功=自愈后判定恢复（success=true）；未改善=执行了但没有恢复'><b>网络自愈</b> <span style='color:"+_hv+"'>今日触发 "+rd2.heal_today+" 次"+(rd2.heal_ok!==undefined?("（成功 "+rd2.heal_ok+" 次"+(rd2.heal_today>rd2.heal_ok?(" · 未改善 "+(rd2.heal_today-rd2.heal_ok)+" 次"):"")+"）"):"")+"</span>"+(rd2.eff_pct!==undefined?"<span class='small' style='color:"+(rd2.eff_pct>=80?"#31d17a":"#ffd479")+"'> · 近"+rd2.eff_pct+"%（近"+rd2.eff_n+"次）"+(rd2.probe_n?(" · 观察 "+rd2.probe_n+"/10"+(rd2.probe_pct!==undefined?(" · 新策略 "+rd2.probe_pct+"%"):"")):"")+(rd2.eff_mode?(" · "+rd2.eff_mode):"")+"</span>":"")+"</span>";
-        if(rd2.recent&&rd2.recent.length){
-          var _last=rd2.recent[rd2.recent.length-1];
-          var _more=rd2.recent.slice(0,-1).join("　｜　");
-          chips+="<div style='flex-basis:100%;font-size:12px;color:#8ea4bf;margin-top:3px'><b style='color:#7fb7ff'>最近一次自愈</b>（历史，非当前值）： "+_last+
-            (_more?"　<details style='display:inline'><summary style='display:inline;cursor:pointer;color:#7fb7ff'>更早 "+(rd2.recent.length-1)+" 条</summary><div style='margin-top:3px;color:#8ea4bf'>"+_more+"</div></details>":"")+"</div>";
-        }
-      } else {
-        chips+="<span class='chip'><b>网络诊断</b> <span style='color:#8fa6c4'>服务未运行</span></span>";
-      }
       document.getElementById("cpewrap").innerHTML=chips;
     }
     var lg=document.getElementById("log");
