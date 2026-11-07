@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>RG660MK × UGREEN 智能音箱：设计方案、测试方案与问题史</title>
+<style>
+@page { size: A4; margin: 15mm 14mm; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
+       font-size: 9.6pt; line-height: 1.54; color: #1b2430; margin: 0; }
+h1 { font-size: 19pt; margin: 0 0 2mm; }
+h2 { font-size: 13pt; margin: 6mm 0 2.5mm; padding-left: 3mm;
+     border-left: 4px solid #2f6feb; page-break-after: avoid; }
+h3 { font-size: 10.6pt; margin: 3.5mm 0 1.5mm; color: #24405f; page-break-after: avoid; }
+p { margin: 1.4mm 0; }
+.head { background: linear-gradient(135deg,#0f2a4d 0%,#2f6feb 100%);
+        color:#fff; padding: 8mm 9mm; border-radius: 3mm; }
+.head .sub { font-size: 10.3pt; opacity: .94; margin-top: 1.5mm; }
+.head .meta { font-size: 8.4pt; opacity: .85; margin-top: 4mm; line-height: 1.65; }
+.chips { margin-top: 3.5mm; }
+.chip { display:inline-block; font-size:8.2pt; padding:1.1mm 3mm; border-radius:4mm;
+        background:rgba(255,255,255,.18); margin:0 1.6mm 1.6mm 0; }
+table { width:100%; border-collapse:collapse; margin:2mm 0 3mm; font-size:8.7pt; }
+th { background:#eaf1fb; color:#12325c; text-align:left; padding:1.75mm 2.2mm;
+     border-bottom:1.2px solid #b9cfe8; font-weight:600; }
+td { padding:1.55mm 2.2mm; border-bottom:.6px solid #dbe4ee; vertical-align:top; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.num { font-variant-numeric: tabular-nums; }
+.ok { color:#127a45; font-weight:700; }
+.warn { color:#a86400; font-weight:700; }
+.bad { color:#a52020; font-weight:700; }
+.big { display:flex; gap:2.8mm; margin:3mm 0 3.5mm; }
+.card { flex:1; background:#f6f9fd; border:.8px solid #d5e3f4; border-radius:2.5mm; padding:2.8mm 3.2mm; }
+.card .v { font-size:15.5pt; font-weight:700; color:#1a4f9c; font-variant-numeric:tabular-nums; line-height:1.2; }
+.card .l { font-size:8pt; color:#5a6a7d; margin-top:.8mm; }
+.callout { background:#effaf3; border-left:4px solid #2ecc71; padding:2.8mm 3.8mm;
+           border-radius:2mm; margin:2.5mm 0; font-size:9.1pt; }
+.callout.blue { background:#eef4fd; border-left-color:#2f6feb; }
+.callout.amber { background:#fff8e8; border-left-color:#f0a020; }
+.callout.red { background:#fdeeee; border-left-color:#d94b4b; }
+pre { background:#f2f6fb; border:.7px solid #d5e3f4; border-radius:2mm; padding:2.4mm 3mm;
+      font-family:"DejaVu Sans Mono",monospace; font-size:8pt; line-height:1.5;
+      white-space:pre-wrap; overflow-wrap:anywhere; margin:1.6mm 0; }
+.small { font-size:8.2pt; color:#5f6f82; }
+.foot { margin-top:5mm; padding-top:2.3mm; border-top:.6px solid #cfd9e6; font-size:7.8pt; color:#6b7a8d; }
+ul { margin:1.3mm 0 2mm; padding-left:5.2mm; }
+li { margin:.7mm 0; page-break-inside: avoid; }
+.flow { display:flex; align-items:center; gap:1.2mm; flex-wrap:wrap; margin:2.5mm 0; }
+.step { background:#eef4fd; border:1px solid #b9cfe8; border-radius:2mm; padding:1.8mm 2.4mm;
+        font-size:8.2pt; color:#12325c; }
+.step.new { background:#e9f9ef; border-color:#8ad3a8; }
+.step.ext { background:#fff6e6; border-color:#e8c07a; }
+.arrow { color:#7d95b3; font-size:9pt; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <h1>RG660MK × UGREEN 智能音箱</h1>
+  <div class="sub">设计方案、测试方案与问题史复盘（截至 2026-11-07）</div>
+  <div class="chips">
+    <span class="chip">设备 RG660MK / MediaTek T930</span>
+    <span class="chip">声卡 UGREEN CM564 (plughw:2,0)</span>
+    <span class="chip">ASR paraformer · TTS 本地 piper</span>
+    <span class="chip">代码 1739 行 + 4 个支撑模块</span>
+  </div>
+  <div class="meta">
+    生成者：hermes ｜ 数据来源：设备端代码与运行日志、git 提交历史（25 条语音相关）、
+    2026-09-14 设计基线 V1.0、2026-09-21 麦克风验证记录<br>
+    所有延迟数字取自设备 /data/ai_cpe/logs/voice.log 的 LATENCY 行，样本量在各表标注<br>
+    <strong>现场：中国移动网络大会（2026-11-07）</strong>｜设备在线，语音与看板实测正常
+  </div>
+</div>
+
+<h2>一、系统形态与设计目标</h2>
+
+<p>一台 RG660MK（5G CPE）外接 UGREEN CM564 USB 声卡，盒子的麦克风与扬声器共用
+<code>plughw:2,0</code>，构成「能听会说、本地闭环」的智能音箱。设计目标来自
+2026-09-14 的《智能音箱优化设计 V1.0》，三条硬约束至今未变：</p>
+
+<table>
+  <thead><tr><th style="width:22%">目标</th><th style="width:38%">定义</th><th>验收口径</th></tr></thead>
+  <tbody>
+  <tr><td>快</td><td>简单确定性问题不进大模型，本机 1~2 秒内开始回复</td><td>唤醒→「在呢」≤ 2 s；报时/算术 ≤ 2 s</td></tr>
+  <tr><td>准</td><td>天气、股价等实时信息必须来自实时数据，不能用模型常识猜</td><td>答案带数据源与时间戳</td></tr>
+  <tr><td>稳</td><td>每轮 turn_id 隔离，旧答案/迟到结果不得串入下一轮</td><td>30 s 未出结果播「请稍等」，60 s 终止</td></tr>
+  </tbody>
+</table>
+
+<div class="callout blue">
+<strong>为什么强调「本地」：</strong>展会与派出所场景经常没有稳定公网。设计上把唤醒、ASR、TTS、
+时间/算术/灯控全部放在设备侧；只有天气、股价、知识问答才出网。断网时音箱仍然可用，只是「变笨」。
+</div>
+
+<h2>二、硬件与音频链路</h2>
+
+<table>
+  <thead><tr><th style="width:20%">环节</th><th style="width:34%">实测配置</th><th>说明与踩过的坑</th></tr></thead>
+  <tbody>
+  <tr><td>麦克风</td><td>CM564，<code>plughw:2,0</code>，48 kHz，采集增益 <span class="num">140/255</span></td>
+      <td>曾误判为「聋麦」——raw RMS 只有 70~150；后证实是信号弱而非硬件坏，靠增益与近场说话解决</td></tr>
+  <tr><td>扬声器</td><td>同一 CM564 盒子，<code>plughw:2,0</code></td>
+      <td>盒子喇叭本身正常，问题都出在采集侧；播放与采集共用一设备，需避免抢占</td></tr>
+  <tr><td>摄像头麦克风</td><td>C270 麦（<code>plughw:1,0</code>）<span class="bad">已禁用</span></td>
+      <td>灵敏度是 CM564 的 3~10 倍，一度切过去救急；但会与 camview 抢占 USB，最终回归 CM564</td></tr>
+  <tr><td>VAD</td><td>RMS 门限 <span class="num">450</span> 起 / <span class="num">280</span> 停（滞回）</td>
+      <td>可用 <code>VOICE_VAD_ON/OFF</code> 覆盖；换麦或换位置必须重新标定，否则「一直录」或「听不见」</td></tr>
+  <tr><td>回声</td><td>无 AEC，靠「播报时静音采集」规避</td>
+      <td>播 TTS 期间 <code>mute_for()</code> 屏蔽录音，避免把自己的声音当成用户说话</td></tr>
+  </tbody>
+</table>
+
+<h2>三、软件架构</h2>
+
+<div class="flow">
+  <span class="step">KWS 声学唤醒<br><span class="small">当前缺失</span></span><span class="arrow">→</span>
+  <span class="step">VAD 录音</span><span class="arrow">→</span>
+  <span class="step">ASR<br><span class="small">paraformer ws:6006</span></span><span class="arrow">→</span>
+  <span class="step">唤醒判定<br><span class="small">变体表 + 剥离</span></span><span class="arrow">→</span>
+  <span class="step new">意图路由</span><span class="arrow">→</span>
+  <span class="step">L0 本地</span><span class="step ext">L1 联网</span><span class="step">L2 大模型</span><span class="arrow">→</span>
+  <span class="step new">TTS<br><span class="small">piper 0.7s</span></span><span class="arrow">→</span>
+  <span class="step">CM564 播放</span>
+</div>
+
+<table>
+  <thead><tr><th style="width:24%">模块</th><th style="width:18%">规模/位置</th><th>职责</th></tr></thead>
+  <tbody>
+  <tr><td><code>voice_assistant.py</code></td><td>1739 行 / root</td><td>主循环：唤醒、VAD、ASR、路由、对话管理、TTS 调度</td></tr>
+  <tr><td>paraformer 常驻服务</td><td><code>ws://127.0.0.1:6006</code></td><td>sherpa-onnx offline websocket，模型 paraformer-zh-small（int8）</td></tr>
+  <tr><td><code>local_tts.py</code></td><td>8.5 KB</td><td>piper 优先（zh_CN-huayan-medium），sherpa VITS 兜底；音频不出设备</td></tr>
+  <tr><td><code>tts_say.py</code></td><td>1.5 KB</td><td>命令行播报入口：合成 → aplay 到 CM564</td></tr>
+  <tr><td><code>vad.py</code></td><td>小模块</td><td>RMS 滞回端点检测，阈值可环境变量覆盖</td></tr>
+  <tr><td>KWS（sherpa keywords）</td><td><span class="bad">模型已缺失</span></td><td>原设计为声学唤醒第一道门；缺失后 <code>kws_hit()</code> 恒返 False，全靠 ASR 文本兜底</td></tr>
+  </tbody>
+</table>
+
+<h3>分层路由（强规则优先）</h3>
+<p>优先级固定为 <strong>设备控制 &gt; 天气/实时 &gt; 本地时间 &gt; 本地计算 &gt; 大模型</strong>。
+这条顺序是硬约束：「今天上海什么天气」必须命中天气而不是日期；「开灯」必须走设备控制不能进大模型。</p>
+
+<table>
+  <thead><tr><th style="width:14%">层级</th><th style="width:30%">典型请求</th><th style="width:20%">处理器</th><th>响应目标</th></tr></thead>
+  <tbody>
+  <tr><td>L0 本地</td><td>现在几点、今天几号、1+1、开灯、灯是不是开着</td><td>本地函数 / smarthome.py</td><td class="ok">1~2 秒内开始播报</td></tr>
+  <tr><td>L1 实时</td><td>今天上海什么天气、移远通信股价</td><td>open-meteo / 腾讯行情</td><td>3~6 秒（含网络）</td></tr>
+  <tr><td>L2 复杂</td><td>相对论是怎么回事、5G SA 和 NSA 区别</td><td>在线大模型 / Hermes</td><td>5~15 秒，超 30 s 播「请稍等」</td></tr>
+  </tbody>
+</table>
+
+<h2>四、关键设计决策（每条都对应一次实测）</h2>
+
+<table>
+  <thead><tr><th style="width:24%">决策</th><th style="width:36%">为什么这么定</th><th>实测依据</th></tr></thead>
+  <tbody>
+  <tr><td>麦克风用 CM564、增益 140</td><td>与扬声器同盒、走线简单；C270 麦会与 camview 抢 USB</td><td>双麦对照：CM564 RMS 70~150（近场可辨），C270 600~2400（但会抢占）</td></tr>
+  <tr><td>ASR 用 paraformer 常驻服务</td><td>whisper 单次 2.2 s，paraformer 常驻 0.78~1.6 s，且模型小</td><td>当前 18 次样本：p50 <span class="num">0.943 s</span>、max 1.614 s</td></tr>
+  <tr><td>唤醒词变体表（小提/下皮/小陈…）</td><td>口音下 paraformer 稳定把「小皮」听成「小提」，单靠标准词永远唤不醒</td><td>2026-09-21 实测「你好小提」；2026-11-05 实测「你好小陈」</td></tr>
+  <tr><td>休眠态只认完整「你好小皮」</td><td>用户要求「说了休息就别轻易启动」，避免电视/聊天误唤醒</td><td>休眠后单说「几点」不响应，说完整称呼才回「在呢」</td></tr>
+  <tr><td>热词 prompt 默认关闭</td><td>把业务词表塞进 ASR 上文会污染解码，且每次 +2.2 s</td><td>真实录音 A/B：开 prompt 无收益、更慢、更易出碎片</td></tr>
+  <tr><td>TTS 走本地 piper</td><td>edge-tts 云端 403、连接重置、延迟不可控；本地合成不吃网络</td><td>piper RTF≈0.76（A55），就绪 <span class="num">0.72~0.86 s</span>，缓存命中 0.005 s</td></tr>
+  <tr><td>报时用预合成片段</td><td>逐字合成「现在是 11 月 6 日上午 9 点 34 分 星期四」要 8 s</td><td>改为片段拼接后 <span class="num">2.4 s</span>（历史记录）</td></tr>
+  <tr><td>灯控走 <code>--nowait</code></td><td>Matter 真灯确认要 12~19 s，语音侧 6 s 超时会误报「操作失败」</td><td>发令即返回 0.3 s，实际开关由后台确认</td></tr>
+  </tbody>
+</table>
+
+<h2>五、测试方案</h2>
+
+<h3>5.1 三层测试</h3>
+<table>
+  <thead><tr><th style="width:16%">层级</th><th style="width:34%">测什么</th><th>方法</th></tr></thead>
+  <tbody>
+  <tr><td>单元</td><td>时间解析、计算器、唤醒词剥离、垃圾判定</td><td>设备上直接 import 调函数断言（如 <code>classify("现在几点…噪音")</code> 必须返回 LOCAL_DATE_TIME）</td></tr>
+  <tr><td>链路</td><td>录音→ASR→路由→TTS→播放</td><td>真实说话，日志看 <code>[TURN] ASR_TEXT / ROUTER / RESPONSE / TTS_START</code> 四段是否齐全</td></tr>
+  <tr><td>场景</td><td>唤醒、连续对话、休眠/唤回、噪音、断网</td><td>按 9 条验收检查项逐条过（2026-10-14 落档）</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 九条验收检查项（2026-10-14 定稿）</h3>
+<ul>
+  <li>唤醒一次成功，应答「在呢」≤ 2 s</li>
+  <li>报时/日期准确，与设备 <code>date</code> 一致</li>
+  <li>算术与设备控制不进大模型（日志无 LLM 调用）</li>
+  <li>天气/股价带数据源与时间</li>
+  <li>连续两轮不串答案（turn_id 隔离）</li>
+  <li>说「小皮休息」后静默，完整称呼可唤回</li>
+  <li>环境噪音不触发误唤醒</li>
+  <li>断网时本地功能仍可用（唤醒/报时/灯控）</li>
+  <li>播报期间不录自己的声音（无自问自答）</li>
+</ul>
+
+<h3>5.3 指标口径</h3>
+<table>
+  <thead><tr><th style="width:22%">指标</th><th style="width:30%">取数方式</th><th>当前基线</th></tr></thead>
+  <tbody>
+  <tr><td>ASR 延迟</td><td>日志 <code>[LATENCY] asr_s=</code></td><td class="num">p50 0.943 s / max 1.614 s（n=18）</td></tr>
+  <tr><td>TTS 就绪</td><td>日志 <code>tts_ready_s=</code></td><td class="num">0.72~0.86 s（n=6）；缓存 0.005 s</td></tr>
+  <tr><td>唤醒→应答</td><td>WAKE 到「在呢」播放</td><td class="num">1.25 s（2026-09-21 实测）~2.1 s</td></tr>
+  <tr><td>端到端问答</td><td>说完到开始播报</td><td>L0 2~4 s；L1 3~6 s；L2 5~15 s</td></tr>
+  <tr><td>唤醒成功率</td><td>喊 N 次成功次数</td><td>正脸正说 5/5（有 KWS 时期）；当前靠 ASR 兜底，受噪音影响更大</td></tr>
+  </tbody>
+</table>
+
+<h2>六、问题史（按主题，含根因与当前状态）</h2>
+
+<h3>6.1 麦克风：从「聋麦」到「信号弱」</h3>
+<table>
+  <thead><tr><th style="width:22%">现象</th><th style="width:38%">根因</th><th>处置</th></tr></thead>
+  <tbody>
+  <tr><td>对着盒子说话无反应</td><td>CM564 采集 RMS 只有 70~150，接近本底噪声；不是硬件坏，是灵敏度低</td><td>提高采集增益到 140/255；近场说话；临时可切 C270 麦救急</td></tr>
+  <tr><td>切 C270 后唤醒好了但视觉异常</td><td>C270 麦与 camview 抢 USB 独占</td><td>回归 CM564；抓帧统一走 camview HTTP 口</td></tr>
+  <tr><td>换了位置后又「听不见」</td><td>VAD 阈值是按旧位置标定的</td><td>用 <code>VOICE_VAD_ON/OFF</code> 现场重标（1400/1100 用于 C270，450/280 用于 CM564）</td></tr>
+  </tbody>
+</table>
+
+<h3>6.2 唤醒：四次不同根因，同一个症状</h3>
+<table>
+  <thead><tr><th style="width:16%">时间</th><th style="width:34%">根因</th><th>修复</th></tr></thead>
+  <tbody>
+  <tr><td>2026-09-21</td><td>变体表缺「小提」：ASR 听对了但唤醒词不认</td><td>补小提/下提/小蹄等变体（提交 d046e77）</td></tr>
+  <tr><td>2026-10 之后</td><td>KWS 模型文件丢失，声学唤醒恒 False，全靠 ASR 兜底</td><td class="warn">未恢复（当前状态），靠 ASR 文本兜底</td></tr>
+  <tr><td>2026-11-05</td><td><code>asleep</code> 只置 True 从不置 False：说过一次「休息」后整场都在休眠态</td><td>唤醒成功后置 False（本轮修复）</td></tr>
+  <tr><td>2026-11-05</td><td>变体表缺「小陈」：本次现场实际误听</td><td>补小陈/小晨/小成/小城</td></tr>
+  <tr><td>2026-11-05</td><td>whisper-cli 与 ggml 模型文件丢失，ASR 抛 FileNotFoundError</td><td>切 paraformer 常驻服务（模型完好在机）</td></tr>
+  </tbody>
+</table>
+
+<div class="callout red">
+<strong>当前最大隐患：KWS 声学唤醒模型缺失。</strong>
+<code>/data/ai_cpe/sherpa-onnx/model/</code> 目录不存在，<code>kws_hit()</code> 直接返回 False。
+这意味着每一次唤醒都要先做一遍完整 ASR（0.8~1.6 s）再判文本，唤醒延迟和误唤醒率都比设计值差。
+恢复方式：把 keywords 模型放回该目录（或改用 paraformer 的唤醒词检测），属于待办第一项。
+</div>
+
+<h3>6.3 ASR 引擎演进</h3>
+<table>
+  <thead><tr><th style="width:18%">阶段</th><th style="width:30%">方案</th><th>结果</th></tr></thead>
+  <tbody>
+  <tr><td>2026-09</td><td>whisper.cpp + ggml-base</td><td>可用但慢：单次 2.2 s；对连续笑声等噪声易出长串幻觉</td></tr>
+  <tr><td>2026-09-23</td><td>接入 paraformer（常驻 6006，可切换）</td><td>延迟降到 0.8~1.6 s；48k→16k 重采样后送 ws</td></tr>
+  <tr><td>2026-11-05</td><td>whisper 文件丢失 → 默认切 paraformer</td><td class="ok">当前状态；日志无 FileNotFoundError</td></tr>
+  </tbody>
+</table>
+
+<h3>6.4 时间与实时信息</h3>
+<ul>
+  <li><strong>问「现在几点」答错</strong>：① ASR 把环境音拼在问句后（「现在几点朋友后面上次很多人…」），
+      而时间正则用 <code>fullmatch</code> 整句匹配，直接漏到大模型，模型答「我没有查时间的工具」→
+      改为「句首命中且 ≤30 字即按本地时间处理」；② 设备无 RTC 电池，断电后时间漂移 → 启用 NTP
+      （后又因 overlay 重置被关掉，属待办）。</li>
+  <li><strong>天气答英文</strong>：wttr.in 的 lang_zh 退化 → 改 open-meteo 为主源（提交 1ea1836）。</li>
+  <li><strong>股票必超时</strong>：名称解析放大到 23~29 s，7 s 快失败掐断 → 名称解析移出快路径（提交 4eb4ace）。</li>
+</ul>
+
+<h3>6.5 TTS 演进</h3>
+<table>
+  <thead><tr><th style="width:20%">阶段</th><th style="width:34%">问题</th><th>结果</th></tr></thead>
+  <tbody>
+  <tr><td>edge-tts（微软云）</td><td>端点变更全局 403；偶发连接重置；延迟不可控</td><td>打补丁 + 3 次重试，仍不稳定</td></tr>
+  <tr><td>sherpa-onnx 本地 VITS</td><td>不依赖网络，但 RTF 偏高</td><td>可用，作兜底</td></tr>
+  <tr><td>piper（当前）</td><td>加载 1.4 s、RTF≈0.76，比 VITS 快约 4 倍</td><td class="ok">就绪 0.72~0.86 s；短句持久缓存命中 0.005 s</td></tr>
+  </tbody>
+</table>
+
+<h3>6.6 其它已闭环的问题</h3>
+<ul>
+  <li><strong>灯控误报失败</strong>：Matter 真灯确认 12~19 s，语音侧 6 s 超时 → 改 <code>--nowait</code>，0.3 s 返回。</li>
+  <li><strong>报时慢</strong>：逐字合成 8 s → 预合成片段拼接 2.4 s。</li>
+  <li><strong>噪声误触发/自说自话</strong>：垃圾文本判定 + 连续两次垃圾即静默退场；播报期间静音采集。</li>
+  <li><strong>看门狗把进程杀错</strong>：<code>pgrep -f voice_assistant.py</code> 会匹配到检查脚本自己 → 改用
+      <code>[v]oice_assistant.py</code> 括号法，且按文件名精确匹配。</li>
+  <li><strong>断电丢文件</strong>：whisper 二进制/模型、KWS 模型都在一次断电后消失（/data 分区）；已改为
+      paraformer 常驻 + 待补 KWS。</li>
+  </ul>
+
+<h2>七、当前状态与待办</h2>
+
+<table>
+  <thead><tr><th style="width:26%">能力</th><th style="width:18%">状态</th><th>证据 / 说明</th></tr></thead>
+  <tbody>
+  <tr><td>唤醒（ASR 兜底）</td><td class="warn">可用但不理想</td><td>无 KWS，每次唤醒先跑一遍 ASR；正脸正说可稳定唤醒</td></tr>
+  <tr><td>ASR 转写</td><td class="ok">正常</td><td>paraformer，p50 0.94 s；日志无报错</td></tr>
+  <tr><td>本地问答（时间/算术）</td><td class="ok">正常</td><td>已修 fullmatch 与变体；报时 2.4 s</td></tr>
+  <tr><td>联网问答（天气/股价）</td><td class="ok">正常</td><td>open-meteo / 腾讯行情，带数据源</td></tr>
+  <tr><td>TTS 播报</td><td class="ok">正常</td><td>piper 本地，0.72~0.86 s，缓存 0.005 s</td></tr>
+  <tr><td>休眠 / 唤回</td><td class="ok">正常</td><td>本轮修复 asleep 未复位</td></tr>
+  <tr><td>KWS 声学唤醒</td><td class="bad">缺失</td><td>模型目录不存在，需补模型文件</td></tr>
+  <tr><td>NTP 校时</td><td class="warn">关闭</td><td>无 RTC，断电会漂；建议恢复 <code>ntp.enabled=1</code></td></tr>
+  </tbody>
+</table>
+
+<h3>建议的三步收尾</h3>
+<ul>
+  <li><strong>补 KWS 模型</strong>：把 keywords 模型与 spot 脚本恢复到 <code>/data/ai_cpe/sherpa-onnx/model/</code>，
+      唤醒延迟可从「ASR 0.9 s + 判定」降到 200 ms 级，误唤醒率也同步下降。</li>
+  <li><strong>恢复 NTP</strong>：<code>uci set system.ntp.enabled=1</code> 并重启 ntpd，避免断电后报时错。</li>
+  <li><strong>把语音自检加入开机流程</strong>：现有 <code>demo_boot_check.sh</code> 已检查进程与 ASR 引擎，
+      建议再加一条「试录 2 秒 + 断言 RMS &gt; 阈值」，防止麦克风掉线却静默通过。</li>
+</ul>
+
+<h2>附录：关键路径与参数</h2>
+
+<table>
+  <thead><tr><th style="width:30%">项</th><th>值</th></tr></thead>
+  <tbody>
+  <tr><td>主程序</td><td><code>/data/ai_cpe/voice_assistant.py</code>（1739 行）</td></tr>
+  <tr><td>TTS 模块</td><td><code>/data/ai_cpe/local_tts.py</code> + <code>tts_say.py</code></td></tr>
+  <tr><td>ASR 服务</td><td><code>sherpa-onnx-offline-websocket-server --port=6006</code>，模型 paraformer-zh-small</td></tr>
+  <tr><td>录音 / 播放</td><td><code>plughw:2,0</code>（CM564），48 kHz，采集增益 140/255</td></tr>
+  <tr><td>运行日志</td><td><code>/data/ai_cpe/logs/voice.log</code>（LATENCY/TURN/miss 行）</td></tr>
+  <tr><td>启动方式</td><td><code>/etc/init.d/aicpe-boot</code> 内 nohup 拉起（无独立 init 脚本）</td></tr>
+  <tr><td>回滚备份</td><td><code>voice_assistant.py.bak_20261105_asrpara</code> / <code>..._waketime2</code></td></tr>
+  </tbody>
+</table>
+
+
+<h2>附录 B：典型故障 60 秒定位表</h2>
+
+<table>
+  <thead><tr><th style="width:22%">症状</th><th style="width:40%">第一条要看的证据</th><th>结论方向</th></tr></thead>
+  <tbody>
+  <tr><td>喊了完全没反应</td><td><code>ps w | grep [v]oice_assistant.py</code>；<code>head -3 logs/voice.log</code></td><td>进程不在 → 拉起；日志 asr=whisper → 引擎配置回退</td></tr>
+  <tr><td>日志有 <code>[ASR] error=FileNotFoundError</code></td><td>检查 whisper-cli / 模型文件是否存在</td><td>文件被断电清掉 → 切 paraformer（改默认引擎后重启）</td></tr>
+  <tr><td>要喊两次才应</td><td>日志有无 <code>[miss] sleep kws=miss asr=...</code></td><td>处于休眠态且变体没命中 → 补变体；确认 asleep 在唤醒后置 False</td></tr>
+  <tr><td>答非所问（如问时间却答「没有查时间的工具」）</td><td><code>[TURN?] ASR_TEXT=</code> 原文</td><td>ASR 尾部噪音导致规则未命中 → 放宽匹配或做句首匹配</td></tr>
+  <tr><td>播报没声音</td><td><code>aplay -D plughw:2,0 /tmp/tts_say.wav</code> 手工试</td><td>设备被占用 / 音量 0 / 合成失败（看 <code>tts_ready_s</code> 是否出现）</td></tr>
+  <tr><td>报时错</td><td><code>date</code> 与本机对比</td><td>差 > 60 s → 无 RTC 且 NTP 关闭，手工校时并恢复 NTP</td></tr>
+  <tr><td>采集电平异常</td><td>录 3 秒算 raw RMS（正常说话数百量级）</td><td>几十 → 增益/麦克风问题；上千且削顶 → 增益过高或离太近</td></tr>
+  </tbody>
+</table>
+
+<div class="callout amber">
+<strong>一条通用原则：</strong>音箱的问题几乎都能在 <code>voice.log</code> 里找到一行证据
+（<code>[miss]</code> / <code>[LATENCY]</code> / <code>[TURN]</code>）。先读日志再改参数，
+不要凭感觉调 VAD 阈值或换模型——这是过去两个月最容易走的弯路。
+</div>
+
+<div class="foot">
+源文件：~/Desktop/UGREEN智能音箱_设计方案与问题史_20261107.html（可改后重出）｜
+数据口径：延迟取 voice.log 的 LATENCY 行（样本量已标注），问题史取 git 提交历史与本机验证记录｜
+本文不含推算值；未实测的项目明确标注「未验证」。
+</div>
+
+</body>
+</html>

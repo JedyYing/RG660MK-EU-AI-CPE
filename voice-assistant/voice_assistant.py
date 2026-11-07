@@ -52,10 +52,10 @@ VOICE = "zh-CN-XiaoxiaoNeural"
 RATE = 48000
 LISTEN_SECS = 5
 RMS_THRESHOLD = 200
-ACTIVE_TIMEOUT = int(os.environ.get("VOICE_ACTIVE_TIMEOUT", "8"))
-# 2026-11-06：默认关闭“答完继续听”的追问窗口。场馆嘈杂时它会捡旁人聊天并回“我没听清…”，
-# 用户明确说“没人说话它自己说话”。改为每句话都要先喊“小皮”（VOICE_FOLLOWUP_TURNS=1 可恢复）。
-FOLLOWUP_TURNS = int(os.environ.get("VOICE_FOLLOWUP_TURNS", "0"))
+# 用户 2026-11-06 定稿的交互：喊一次“你好小皮”进入连续对话，任意话题多轮，
+# 直到说“小皮休息”退出。ACTIVE_TIMEOUT 只作为长期无人说话时的兜底退出（默认 10 分钟）。
+ACTIVE_TIMEOUT = int(os.environ.get("VOICE_ACTIVE_TIMEOUT", "600"))
+FOLLOWUP_TURNS = int(os.environ.get("VOICE_FOLLOWUP_TURNS", "-1"))   # -1 = 无限轮
 
 # ---- 结构化语音日志（2026-11-02）：排查不再依赖 logread 的几分钟缓冲 ----
 VOICE_LOG = os.environ.get("VOICE_LOG", "/data/ai_cpe/logs/voice.jsonl")
@@ -1259,7 +1259,13 @@ def is_idle_command(text):
         return True
     if re.search(r"^(现在)?几点(了|钟)?$|^(现在)?(什么)?时间$", s):
         return True
-    if re.search(r"^今天.{0,6}天气|^天气(怎么样|如何)", s):
+    # 2026-11-06：现场直接问“广州什么天气”被丢（没喊小皮又不在白名单）——补城市+天气句式；
+    # 同时收紧“今天天气不错”这类陈述，避免旁人闲聊触发
+    if re.search(r"^今天.{0,6}天气(怎么样|如何|咋样|好吗)?$", s):
+        return True
+    if re.search(r"^天气(怎么样|如何|咋样)$", s):
+        return True
+    if re.search(r"^[\u4e00-\u9fff]{2,6}(什么|咋样)?天气(怎么样|如何|咋样)?$", s):
         return True
     if re.search(r"^(看看|看一眼|有人吗|画面|摄像头)", s) or "画面里" in s or "在干什么" in s:
         return True
@@ -1642,6 +1648,7 @@ def main():
                     pass
                 _t = transcribe("/tmp/voice_rec.wav", use_prompt=False)
                 print("[miss] asr=%r" % _t, flush=True)
+                vlog("miss", asr=_t)     # 带时间戳留存，便于事后判断“没听到”还是“没匹配”
                 if not is_sleep_wake(_t):
                     if is_idle_command(_t):
                         text = _t
@@ -1675,8 +1682,6 @@ def main():
         else:
             respond(clean)
         _drop = [0]
-        if FOLLOWUP_TURNS <= 0:
-            continue          # 不进入追问监听，直接回到只认唤醒词的待机
         while True:
             # VAD 录一句；ACTIVE_TIMEOUT 内无人说话则自动退出对话
             if wait_muted():
@@ -1715,17 +1720,11 @@ def main():
             clean = strip_wake(t)
             if not clean:
                 break          # 静默退场
-            # 2026-11-06：场馆嘈杂，追问阶段只接受“本地可判定意图”或再次带唤醒词的请求。
-            # 旁人闲聊（转写很长但无本地意图）一律静默——大模型回一句“我没听清…”还要再合成 8s，
-            # 这正是“没人说话它自己说话”的根源。
-            try:
-                _intent = classify(clean)[0]
-            except Exception:
-                _intent = "LLM_OR_HERMES"
-            _has_wake = any(w in t for w in WAKE_WORDS)
-            if _intent == "LLM_OR_HERMES" and not _has_wake:
-                vlog("drop_followup", asr=clean)
-                print("[drop] 追问非本地意图 %r" % clean[:24], flush=True)
+            # 2026-11-06 用户定稿：连续对话内“任意话题”都回答，不再按本地意图过滤。
+            # 只保留极短语气词过滤（“嗯/啊”这类噪声），避免环境音触发一轮空对话。
+            if len(re.findall(r"[\u4e00-\u9fff]", clean)) < 2:
+                vlog("drop_short", asr=clean)
+                print("[drop] 过短片段 %r" % clean[:16], flush=True)
                 continue
             try:
                 # 每轮独立: turn_id 隔离 + 30/60 秒双超时统一在 handle_turn 内管理
