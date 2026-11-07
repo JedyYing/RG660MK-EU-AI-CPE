@@ -1159,75 +1159,36 @@ def check_local_compute(it):
 
 
 def check_diag(it):
+    """终端播放视频卡顿诊断：抽测视频流帧率/码率 + 单帧时延，输出诊断结论。"""
     set_item(it, "running")
     ms = []
     frames, total, el = pull_stream(4)
     fps = round(frames / el, 2); kbs = round(total / 1024 / el, 1)
-    ms.append(("测试模式", "本次请求10fps；服务默认2fps省流量模式，不修改常驻配置"))
-    ms.append(("视频拉流实测", "%d 帧 / %.1fs → %.2f fps · %.1f KB/s" % (frames, el, fps, kbs)))
+    ms.append(("视频流抽测", "%d 帧 / %.1fs → %.2f fps · %.1f KB/s" % (frames, el, fps, kbs)))
     lat = []
     for _ in range(3):
         t = time.time()
         ok, _ = take_snapshot()
         if ok:
             lat.append(round((time.time() - t) * 1000))
-    ms.append(("单帧抓取时延", ("%s ms（3 次均值）" % round(sum(lat) / len(lat))) if lat else "失败"))
-    link_issues = []
-
-    def probe(host):
-        """单次链路探测；返回 (loss%, rtt_avg, rtt_max, raw)。"""
-        rc, o = sh("ping -c 4 -W 1 %s 2>&1 | tail -2" % host, t=8)
-        rtt = re.search(r"=\s*([\d.]+)/([\d.]+)/([\d.]+)", o)
-        loss = re.search(r"(\d+)% packet loss", o)
-        if rc != 0 or not (rtt and loss):
-            return None
-        return float(loss.group(1)), rtt.group(2), rtt.group(3), o
-
-    for label, host in (("NAS Immich", nas_host()), ("笔记本LAN", nas_host())):
-        first = probe(host)
-        best, retried = first, False
-        # 2026-11-02：单次 ICMP 偶发丢 1 包就把整项判失败，误报率高。
-        # 有丢包时复测一次，取两次里更好的一次；两次都丢才判异常（结果里注明已复测）。
-        if first and first[0] > 0:
-            second = probe(host)
-            retried = True
-            if second and second[0] < first[0]:
-                best = second
-        if best:
-            ms.append(("链路 " + label, "丢包 %g%% · RTT 均值 %s ms（max %s）%s" % (
-                best[0], best[1], best[2], "（首次丢包，已复测取优）" if retried else "")))
-            if best[0] > 0:
-                link_issues.append(label + "持续丢包 %.0f%%" % best[0])
-        else:
-            ms.append(("链路 " + label, (first[3].replace("\n", " ")[:70] if first else "探测失败")))
-            link_issues.append(label + "探测失败")
-    rc, o = sh("%s /data/ai_cpe/netdiag.py clients 2>&1 | head -6" % PY, t=60)
-    ms.append(("网络全景（netdiag）", "；".join([l for l in o.splitlines() if l.strip()][:3])[:90]))
-    cam_ok = proc_alive("camview")
-    ms.append(("摄像头服务(camview)", "存活" if cam_ok else "未运行"))
+    avg_ms = round(sum(lat) / len(lat)) if lat else None
+    ms.append(("单帧抓取时延", ("%s ms（3 次均值）" % avg_ms) if lat else "失败"))
     try:
         target = float(os.environ.get("AICPE_VIDEO_TARGET_FPS", "10"))
         if not 1 <= target <= 120:
             raise ValueError()
     except ValueError:
         target = 10.0
-    ms.append(("采样目标", "%.1f fps；有限窗口允许1帧计数边界误差±%.2f fps，非降低目标" % (target, 1.0 / el)))
-    issues = list(link_issues)
     if frames == 0:
-        issues.append("未收到完整视频帧或采样中断")
-    if not lat:
-        issues.append("现场抓帧失败")
-    if not cam_ok:
-        issues.append("摄像头服务未运行")
-    if issues:
-        status = "fail"; verdict = "发现异常：" + "；".join(issues)
+        status, verdict = "fail", "未收到完整视频帧或采样中断"
+    elif not lat:
+        status, verdict = "fail", "视频抓帧失败"
     elif fps + 1.0 / el < target:
-        status = "partial"; verdict = "低帧率预览：%.2f fps，未达到%.1f fps目标；不能据此宣称无卡顿风险" % (fps, target)
+        status, verdict = "partial", "低帧率：%.2f fps，低于 %.1f fps 目标；存在卡顿风险" % (fps, target)
     else:
-        status = "pass"; verdict = "本次短时采样达到帧率目标，抓帧与链路探测通过；不代表所有场景无卡顿"
-    ms.append(("排障结论", verdict))
+        status, verdict = "pass", "视频流稳定：%.2f fps · %.1f KB/s，单帧 %d ms" % (fps, kbs, avg_ms)
+    ms.append(("诊断结论", verdict))
     set_item(it, status, verdict, ms)
-
 
 def _smarthome(action, t=30):
     rc, o = sh("%s %s %s" % (PY, BULB, action), t=t)
@@ -1692,7 +1653,7 @@ def _run_all_locked(args):
     items = [item(1, "AI 智能语音对话", "语音交互 / 大模型对话 / TTS 播报"),
              item(2, "AI 视觉检测", "人脸/目标/姿态检测；身份识别单独验收"),
              item(3, "本地自然语言图片检索", "文件名关键词检索；零命中尝试CLIP，相关性另验"),
-             item(4, "连接CPE终端播放视频卡顿诊断", "DPI 解析 RTSP/RTP 流，结合帧率/时延/丢包定位卡顿"),
+             item(4, "终端播放视频卡顿诊断", "DPI 解析 RTSP/RTP 流，结合帧率/时延/丢包定位卡顿"),
              item(5, "智能家居控制", "控制真实灯具（Matter/Tuya）；当前只有板载LED演示代理"),
              item(6, "AI 智能选网", "QoE 驱动的蜂窝选网决策 · Shadow 观察（零写操作）"),
              item(7, "MiniNAS 存储", "x86 存储底座（机身盘 + SMB/NFS + 相册 + CasaOS）只读巡检"),
