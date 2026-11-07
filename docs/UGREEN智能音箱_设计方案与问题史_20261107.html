@@ -7,9 +7,9 @@
 @page { size: A4; margin: 15mm 14mm; }
 html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font-family: "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
-       font-size: 9.6pt; line-height: 1.54; color: #1b2430; margin: 0; }
+       font-size: 9.4pt; line-height: 1.49; color: #1b2430; margin: 0; }
 h1 { font-size: 19pt; margin: 0 0 2mm; }
-h2 { font-size: 13pt; margin: 6mm 0 2.5mm; padding-left: 3mm;
+h2 { font-size: 12.6pt; margin: 5mm 0 2.2mm; padding-left: 3mm;
      border-left: 4px solid #2f6feb; page-break-after: avoid; }
 h3 { font-size: 10.6pt; margin: 3.5mm 0 1.5mm; color: #24405f; page-break-after: avoid; }
 p { margin: 1.4mm 0; }
@@ -23,7 +23,7 @@ p { margin: 1.4mm 0; }
 table { width:100%; border-collapse:collapse; margin:2mm 0 3mm; font-size:8.7pt; }
 th { background:#eaf1fb; color:#12325c; text-align:left; padding:1.75mm 2.2mm;
      border-bottom:1.2px solid #b9cfe8; font-weight:600; }
-td { padding:1.55mm 2.2mm; border-bottom:.6px solid #dbe4ee; vertical-align:top; }
+td { padding:1.42mm 2.1mm; border-bottom:.6px solid #dbe4ee; vertical-align:top; }
 tr { page-break-inside: avoid; }
 thead { display: table-header-group; }
 .num { font-variant-numeric: tabular-nums; }
@@ -114,7 +114,7 @@ li { margin:.7mm 0; page-break-inside: avoid; }
 <h2>三、软件架构</h2>
 
 <div class="flow">
-  <span class="step">KWS 声学唤醒<br><span class="small">当前缺失</span></span><span class="arrow">→</span>
+  <span class="step">KWS 声学唤醒<br><span class="small">已评估·不可部署</span></span><span class="arrow">→</span>
   <span class="step">VAD 录音</span><span class="arrow">→</span>
   <span class="step">ASR<br><span class="small">paraformer ws:6006</span></span><span class="arrow">→</span>
   <span class="step">唤醒判定<br><span class="small">变体表 + 剥离</span></span><span class="arrow">→</span>
@@ -286,18 +286,20 @@ li { margin:.7mm 0; page-break-inside: avoid; }
   <tr><td>联网问答（天气/股价）</td><td class="ok">正常</td><td>open-meteo / 腾讯行情，带数据源</td></tr>
   <tr><td>TTS 播报</td><td class="ok">正常</td><td>piper 本地，0.72~0.86 s，缓存 0.005 s</td></tr>
   <tr><td>休眠 / 唤回</td><td class="ok">正常</td><td>本轮修复 asleep 未复位</td></tr>
-  <tr><td>KWS 声学唤醒</td><td class="bad">缺失</td><td>模型目录不存在，需补模型文件</td></tr>
-  <tr><td>NTP 校时</td><td class="warn">关闭</td><td>无 RTC，断电会漂；建议恢复 <code>ntp.enabled=1</code></td></tr>
+  <tr><td>KWS 声学唤醒</td><td class="warn">已评估·不可部署</td><td>musl 环境 + GitHub 不可达，无法部署 sherpa-onnx KWS；已用短窗 ASR 替代（见附录 C）</td></tr>
+  <tr><td>NTP 校时</td><td class="ok">已启用</td><td>2026-11-07 恢复 <code>ntp.enabled=1</code>，ntpd 运行，时差 0 s</td></tr>
   </tbody>
 </table>
 
-<h3>建议的三步收尾</h3>
+<h3>三项待办的处置结果</h3>
 <ul>
-  <li><strong>补 KWS 模型</strong>：把 keywords 模型与 spot 脚本恢复到 <code>/data/ai_cpe/sherpa-onnx/model/</code>，
-      唤醒延迟可从「ASR 0.9 s + 判定」降到 200 ms 级，误唤醒率也同步下降。</li>
-  <li><strong>恢复 NTP</strong>：<code>uci set system.ntp.enabled=1</code> 并重启 ntpd，避免断电后报时错。</li>
-  <li><strong>把语音自检加入开机流程</strong>：现有 <code>demo_boot_check.sh</code> 已检查进程与 ASR 引擎，
-      建议再加一条「试录 2 秒 + 断言 RMS &gt; 阈值」，防止麦克风掉线却静默通过。</li>
+  <li><strong>KWS 模型 —— 已评估，当前不可部署</strong>：sherpa-onnx 的 python 包在 pypi 无 aarch64-musl wheel
+      （设备是 OpenWrt musl，manylinux 不可用）；GitHub releases 及 ghfast / gh-proxy / kgithub 镜像均不可达；
+      现有 sherpa-onnx-offline 与 websocket-server 二进制不含 keyword-spotter 功能。替代方案见附录 C。</li>
+  <li><strong>NTP 校时 —— 已完成</strong>：<code>system.ntp.enabled=1</code>，服务器改为阿里云 + cn.pool，
+      sysntpd 随系统启动，实测与本机时差 0 s。</li>
+  <li><strong>语音自检 —— 已完成</strong>：<code>demo_boot_check.sh</code> 新增 6/7 音频自检段
+      （检查 card2 是否存在、采集增益，能独占设备时实测 2 秒录音字节数；被语音助手占用时改为检查最近日志活动）。</li>
 </ul>
 
 <h2>附录：关键路径与参数</h2>
@@ -337,8 +339,54 @@ li { margin:.7mm 0; page-break-inside: avoid; }
 不要凭感觉调 VAD 阈值或换模型——这是过去两个月最容易走的弯路。
 </div>
 
+
+<h2>附录 C：KWS 声学唤醒恢复评估（2026-11-07）</h2>
+
+<p>报告初版把「补 KWS 模型」列为第一待办。本次逐条尝试后确认：<strong>在当前网络与系统环境下无法部署</strong>，
+不是配置问题。三条路径全部堵死：</p>
+
+<table>
+  <thead><tr><th style="width:22%">路径</th><th style="width:44%">尝试结果</th><th>结论</th></tr></thead>
+  <tbody>
+  <tr><td>pip 安装 sherpa-onnx</td><td>清华源可访问，但 <code>onnxruntime</code> 无 aarch64-musl wheel；
+      manylinux（glibc）包在 OpenWrt musl 上不可用</td><td class="bad">不可行</td></tr>
+  <tr><td>GitHub releases 下载静态包</td><td>github.com 超时；ghfast.top 403、gh-proxy.com 404、kgithub.com 无响应</td>
+      <td class="bad">不可行</td></tr>
+  <tr><td>复用现有 sherpa-onnx 二进制</td><td><code>strings</code> 检查 offline 与 websocket-server 均无 keyword-spotter 符号，
+      版本也不支持 kws 参数</td><td class="bad">不可行</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+<strong>替代方案（已实施）：</strong>把唤醒的「等待与判定」压缩到最短 ——
+① 待机录音窗口 8 s → 5 s；② 唤醒应答「在呢」用预合成缓存（<span class="num">0.000 s</span>）；
+③ 非休眠态接受「小皮」短变体，不再强制「你好」前缀；④ 采集增益 140 → 190。
+实测唤醒链路从约 2.5 s 降到 1.2~1.8 s，现场一次唤醒成功。
+</div>
+
+<p class="small">后续如果网络可达：下载 <code>sherpa-onnx-*-linux-aarch64-static.tar.bz2</code>（含 keyword-spotter），
+配 3.3M 中文 KWS 模型（encoder/decoder/joiner + tokens.txt），把唤醒压到 200 ms 级。
+模型可从 hf-mirror 获取（实测可达），只差二进制。</p>
+
+
+<h2>附录 D：语音链路现场快验（1 分钟）</h2>
+
+<table>
+  <thead><tr><th style="width:26%">要看什么</th><th>命令 / 判据</th></tr></thead>
+  <tbody>
+  <tr><td>进程与引擎</td><td>日志首行应含 <code>asr=paraformer</code>；<code>ps w | grep [v]oice_assistant.py</code> 有 1 个进程</td></tr>
+  <tr><td>最近一轮是否通</td><td>日志出现 <code>WAKE</code> → <code>[TURN=…] ROUTER</code> → <code>RESPONSE</code> → <code>TTS_DONE</code> 四段齐全</td></tr>
+  <tr><td>本地快路径是否命中</td><td>报时/算术应出现 <code>time_fast_ok</code>，且无 LLM 调用记录</td></tr>
+  <tr><td>麦克风增益</td><td><code>amixer -c 2 sget Mic</code> 末行应为 <code>Capture 190 [75%] [on]</code></td></tr>
+  <tr><td>是否处于休眠态</td><td>日志出现 <code>[miss] sleep</code> 说明在休眠，需完整说「你好小皮」唤回</td></tr>
+  <tr><td>一键全检</td><td>笔记本执行 <code>bash ~/demo_boot_check.sh</code>（7 步：网线→看板→摄像头→视觉→语音→校时→温度→音频）</td></tr>
+  </tbody>
+</table>
+
+<p class="small">判据都来自 voice.log 的实际输出格式，不含推测；任一条不符，先按附录 B 的 60 秒定位表查证据，再改参数。</p>
+
 <div class="foot">
-源文件：~/Desktop/UGREEN智能音箱_设计方案与问题史_20261107.html（可改后重出）｜
+源文件：~/RG660MK-EU-AI-CPE/docs/UGREEN智能音箱_设计方案与问题史_20261107.html（可改后重出）｜
 数据口径：延迟取 voice.log 的 LATENCY 行（样本量已标注），问题史取 git 提交历史与本机验证记录｜
 本文不含推算值；未实测的项目明确标注「未验证」。
 </div>
