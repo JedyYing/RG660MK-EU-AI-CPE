@@ -114,7 +114,7 @@ li { margin:.7mm 0; page-break-inside: avoid; }
 <h2>三、软件架构</h2>
 
 <div class="flow">
-  <span class="step">KWS 声学唤醒<br><span class="small">已评估·不可部署</span></span><span class="arrow">→</span>
+  <span class="step new">KWS 声学唤醒<br><span class="small">已上线 386 ms</span></span><span class="arrow">→</span>
   <span class="step">VAD 录音</span><span class="arrow">→</span>
   <span class="step">ASR<br><span class="small">paraformer ws:6006</span></span><span class="arrow">→</span>
   <span class="step">唤醒判定<br><span class="small">变体表 + 剥离</span></span><span class="arrow">→</span>
@@ -227,11 +227,11 @@ li { margin:.7mm 0; page-break-inside: avoid; }
   </tbody>
 </table>
 
-<div class="callout red">
-<strong>当前最大隐患：KWS 声学唤醒模型缺失。</strong>
-<code>/data/ai_cpe/sherpa-onnx/model/</code> 目录不存在，<code>kws_hit()</code> 直接返回 False。
-这意味着每一次唤醒都要先做一遍完整 ASR（0.8~1.6 s）再判文本，唤醒延迟和误唤醒率都比设计值差。
-恢复方式：把 keywords 模型放回该目录（或改用 paraformer 的唤醒词检测），属于待办第一项。
+<div class="callout blue">
+<strong>KWS 状态更新（2026-11-07 下午）：已上线。</strong>
+此前 <code>/data/ai_cpe/sherpa-onnx/model/</code> 缺失、<code>kws_hit()</code> 恒返 False，唤醒全靠 ASR 兜底；
+现已交叉编译 keyword-spotter 并部署常驻服务，单次判定 <span class="num">386~505 ms</span>，
+命中「你好小皮」、负样本无误报，cron 看门狗 20 s 自愈。细节与代价见附录 C。
 </div>
 
 <h3>6.3 ASR 引擎演进</h3>
@@ -286,16 +286,17 @@ li { margin:.7mm 0; page-break-inside: avoid; }
   <tr><td>联网问答（天气/股价）</td><td class="ok">正常</td><td>open-meteo / 腾讯行情，带数据源</td></tr>
   <tr><td>TTS 播报</td><td class="ok">正常</td><td>piper 本地，0.72~0.86 s，缓存 0.005 s</td></tr>
   <tr><td>休眠 / 唤回</td><td class="ok">正常</td><td>本轮修复 asleep 未复位</td></tr>
-  <tr><td>KWS 声学唤醒</td><td class="warn">已评估·不可部署</td><td>musl 环境 + GitHub 不可达，无法部署 sherpa-onnx KWS；已用短窗 ASR 替代（见附录 C）</td></tr>
+  <tr><td>KWS 声学唤醒</td><td class="ok">已上线（常驻 386 ms）</td><td>交叉编译 keyword-spotter + 自写常驻服务，socket 调用；看门狗 20 s 自愈（见附录 C）</td></tr>
   <tr><td>NTP 校时</td><td class="ok">已启用</td><td>2026-11-07 恢复 <code>ntp.enabled=1</code>，ntpd 运行，时差 0 s</td></tr>
   </tbody>
 </table>
 
 <h3>三项待办的处置结果</h3>
 <ul>
-  <li><strong>KWS 模型 —— 已评估，当前不可部署</strong>：sherpa-onnx 的 python 包在 pypi 无 aarch64-musl wheel
-      （设备是 OpenWrt musl，manylinux 不可用）；GitHub releases 及 ghfast / gh-proxy / kgithub 镜像均不可达；
-      现有 sherpa-onnx-offline 与 websocket-server 二进制不含 keyword-spotter 功能。替代方案见附录 C。</li>
+  <li><strong>KWS 模型 —— 已上线</strong>：交叉编译 sherpa-onnx-keyword-spotter（aarch64 glibc，工具链用
+      <code>apt-get download</code> + <code>dpkg -x</code> 解出，无需 sudo），并自写常驻服务 <code>kws_server</code>
+      （模型只加载一次，unix socket 调用）。实测单次 <span class="num">386~505 ms</span>（按需命令行要 5.4~6.3 s），
+      命中「你好小皮」、负样本无误报；cron 看门狗 20 s 自愈。</li>
   <li><strong>NTP 校时 —— 已完成</strong>：<code>system.ntp.enabled=1</code>，服务器改为阿里云 + cn.pool，
       sysntpd 随系统启动，实测与本机时差 0 s。</li>
   <li><strong>语音自检 —— 已完成</strong>：<code>demo_boot_check.sh</code> 新增 6/7 音频自检段
@@ -340,35 +341,49 @@ li { margin:.7mm 0; page-break-inside: avoid; }
 </div>
 
 
-<h2>附录 C：KWS 声学唤醒恢复评估（2026-11-07）</h2>
+<h2>附录 C：KWS 声学唤醒 —— 从「不可部署」到「已上线」（2026-11-07）</h2>
 
-<p>报告初版把「补 KWS 模型」列为第一待办。本次逐条尝试后确认：<strong>在当前网络与系统环境下无法部署</strong>，
-不是配置问题。三条路径全部堵死：</p>
+<h3>C.1 上午的结论（当天下午被推翻）</h3>
+<p>三条路径确实都堵死：pip 无 aarch64-musl wheel；GitHub releases 及 ghfast / gh-proxy / kgithub 镜像不可达；
+现有 <code>sherpa-onnx-offline</code> 与 <code>websocket-server</code> 二进制不含 keyword-spotter。
+但结论「不可部署」下得太早——真正缺的不是网络，是编译。</p>
 
+<h3>C.2 实际走通的路径</h3>
 <table>
-  <thead><tr><th style="width:22%">路径</th><th style="width:44%">尝试结果</th><th>结论</th></tr></thead>
+  <thead><tr><th style="width:26%">步骤</th><th>做法</th></tr></thead>
   <tbody>
-  <tr><td>pip 安装 sherpa-onnx</td><td>清华源可访问，但 <code>onnxruntime</code> 无 aarch64-musl wheel；
-      manylinux（glibc）包在 OpenWrt musl 上不可用</td><td class="bad">不可行</td></tr>
-  <tr><td>GitHub releases 下载静态包</td><td>github.com 超时；ghfast.top 403、gh-proxy.com 404、kgithub.com 无响应</td>
-      <td class="bad">不可行</td></tr>
-  <tr><td>复用现有 sherpa-onnx 二进制</td><td><code>strings</code> 检查 offline 与 websocket-server 均无 keyword-spotter 符号，
-      版本也不支持 kws 参数</td><td class="bad">不可行</td></tr>
+  <tr><td>源码</td><td>本机已有 sherpa-onnx v1.13.4 完整源码（含 <code>sherpa-onnx-keyword-spotter.cc</code> 与 C++ API）</td></tr>
+  <tr><td>交叉工具链</td><td><code>apt-get download</code> + <code>dpkg -x</code> 解出 aarch64-linux-gnu 的 gcc/g++ 与 sysroot，
+      <strong>不需要 sudo</strong>；hello world 验证可生成 ARM64 ELF</td></tr>
+  <tr><td>依赖</td><td>cmake 从 <strong>hf-mirror</strong> 拉 onnxruntime 静态库（github 失败自动回退），实测可达</td></tr>
+  <tr><td>模型</td><td>本机历史部署包 <code>pipi_kws_deploy_20260721_200856</code>（int8，5.2 MB）——正是用户记得的「以前部署过」的那套</td></tr>
+  <tr><td>常驻服务</td><td>自写 <code>kws_server.cpp</code>（C++ API，unix socket，模型只加载一次），约 120 行</td></tr>
+  <tr><td>看门狗</td><td><code>kws_watchdog.sh</code> + cron 每分钟，<code>pgrep -f "[k]ws_server"</code> 避免自匹配</td></tr>
+  </tbody>
+</table>
+
+<h3>C.3 三种调用方式实测</h3>
+<table>
+  <thead><tr><th style="width:30%">方式</th><th style="width:20%">单次耗时</th><th>结论</th></tr></thead>
+  <tbody>
+  <tr><td>命令行按需（keyword-spotter）</td><td class="num">5400~6300 ms</td><td class="bad">每次加载模型，比 ASR 还慢，不可用</td></tr>
+  <tr><td>常驻服务（kws_server + socket）</td><td class="num">386~505 ms</td><td class="ok">已上线；含脚本与 python 启动开销</td></tr>
+  <tr><td>原 ASR 兜底（对照）</td><td class="num">约 900 ms</td><td>保留为 fallback</td></tr>
   </tbody>
 </table>
 
 <div class="callout">
-<strong>替代方案（已实施）：</strong>把唤醒的「等待与判定」压缩到最短 ——
-① 待机录音窗口 8 s → 5 s；② 唤醒应答「在呢」用预合成缓存（<span class="num">0.000 s</span>）；
-③ 非休眠态接受「小皮」短变体，不再强制「你好」前缀；④ 采集增益 140 → 190。
-实测唤醒链路从约 2.5 s 降到 1.2~1.8 s，现场一次唤醒成功。
+<strong>验证证据（ad-hoc，2026-11-07 13:40）：</strong>常驻进程在、socket 在、正样本 386 ms 命中、负样本无误报、
+看门狗未重复拉起——五项全过。看门狗自愈实测：杀掉进程后 20 秒被 cron 拉起。
 </div>
 
-<p class="small">后续如果网络可达：下载 <code>sherpa-onnx-*-linux-aarch64-static.tar.bz2</code>（含 keyword-spotter），
-配 3.3M 中文 KWS 模型（encoder/decoder/joiner + tokens.txt），把唤醒压到 200 ms 级。
-模型可从 hf-mirror 获取（实测可达），只差二进制。</p>
-
-
+<h3>C.4 仍然存在的代价</h3>
+<ul>
+  <li><strong>常驻内存</strong> +18~52 MB（板子 available 约 496 MB）。</li>
+  <li><strong>多一个进程要守护</strong>：已加 cron 看门狗；自愈窗口（≤60 s）内 <code>kws_spot.sh</code> 会回退到 5.4 s 命令行，
+      功能不中断、只是当次唤醒变慢。</li>
+  <li><strong>存储</strong> 二进制 30 MB + 模型 5.2 MB。</li>
+</ul>
 <h2>附录 D：语音链路现场快验（1 分钟）</h2>
 
 <table>
