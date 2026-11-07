@@ -66,6 +66,19 @@ pip3 install opencv-python onnxruntime numpy
 (crontab -l; echo "@reboot sleep 20 && $HOME/attrctl start >/dev/null 2>&1") | crontab -
 ```
 
+## 实时预览页（推荐演示用）
+
+```bash
+~/attrctl start      # 同时起 API(8093) 和 预览页(8094)
+```
+
+浏览器打开 **http://192.168.1.212:8094/** —— 摄像头画面 + 人脸框 + 性别/年龄段叠加，
+多人时逐条列出，右上角显示实时状态。5–10 fps（受 snapshot 轮询限制，非推理瓶颈，单帧推理仅 12–32 ms）。
+
+**为什么不直接改 8099**：8099 的页面内嵌在 `aicpe_demo.py` 的 `DASH_HTML` 字符串里，
+改它必须重启 aicpe-board（2–5 秒中断且有起不来的风险）。演示主线不能赌，所以做独立页面。
+8099 一个字节都没动。
+
 ## 接口
 
 ```bash
