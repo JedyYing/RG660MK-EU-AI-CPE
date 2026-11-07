@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""attr_service_pc.py v4 — 人脸性别 + 年龄段识别（情绪已移除，精确年龄不对外）
+"""attr_service_pc.py v5 — 人脸性别识别（年龄与情绪经实测不具备交付条件，均已移除）
 
 为什么去掉情绪（实测依据，2026-11-06）：
   在 1254 张带标注公开数据上测试（FER2013 700 张 + RAF-DB 554 张真实场景）：
@@ -38,6 +38,7 @@ _yunet_lock = threading.Lock()
 _state = {"calls": 0, "ok": 0, "fail": 0, "last_ms": None}
 _lock = threading.Lock()
 
+GENDER_MIN_CONF = 0.85   # 低于此值判定不可信（用户本人实测 0.94-0.999；非目标 0.52-0.70）
 TEMPLATE = np.array([[38.2946, 51.6963], [73.5318, 51.5014], [56.0252, 71.7366],
                      [41.5493, 92.3655], [70.7299, 92.2041]], dtype=np.float32)
 
@@ -87,7 +88,9 @@ def crop_bbox(bgr, box, pad=0.45):
     return bgr[max(0, y - p):y + h + p, max(0, x - p):x + w + p]
 
 
-def pred_gender_age(face):
+def pred_gender(face, bbox=None):
+    """只输出性别。年龄已移除（2026-11-07 实测：两个模型在亚洲人脸上均无判别力，
+    InsightFace 32岁/50岁都输出~50，FairFace 都输出30-39，详见 bench/results.md）"""
     s = _sess.get("ga")
     if s is None or face is None or face.size == 0:
         return {}
@@ -95,14 +98,18 @@ def pred_gender_age(face):
     b = np.ascontiguousarray(img.transpose(2, 0, 1))[None]
     v = s.run(None, {s.get_inputs()[0].name: b})[0].ravel()
     g = np.exp(v[:2] - v[:2].max()); g /= g.sum()
-    age = float(v[2] * 100)
-    # 年龄段划分：50 岁属于中年，不能算老年（原阈值 55 定错了）
-    band = "儿童" if age < 18 else "青年" if age < 40 else "中年" if age < 60 else "老年"
-    # 只对外返回年龄段：16 帧实测年龄系统性高估 +5.3 岁（真实 50 → 中位 55.6），
-    # 精确值不可靠，但段位判断 5/5 全对。原始值仅内部保留，不写入响应。
+    conf = float(max(g))
+    if conf < GENDER_MIN_CONF:
+        return {"gender": "uncertain", "gender_score": round(conf, 3),
+                "note": "low_confidence_face"}
+    try:
+        with open("/tmp/attr_requests.log", "a") as lf:
+            bb = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}" if bbox else "-"
+            lf.write(f"{time.strftime('%F %T')}\tgender={'male' if g[1]>g[0] else 'female'}\tconf={conf:.3f}\tbbox={bb}\n")
+    except Exception:
+        pass
     return {"gender": "male" if g[1] > g[0] else "female",
-            "gender_score": round(float(max(g)), 3),
-            "age_band": band}
+            "gender_score": round(conf, 3), "note": None}
 
 
 def analyse(bgr):
@@ -111,10 +118,10 @@ def analyse(bgr):
     for box, lm in detect_faces(bgr):
         face = crop_bbox(bgr, box)
         item = {"bbox": box}
-        item.update(pred_gender_age(face))
+        item.update(pred_gender(face, box))
         out.append(item)
     return {"ok": True, "faces": out, "face_count": len(out),
-            "elapsed_ms": int((time.time() - t0) * 1000), "capability": "gender+age_band"}
+            "elapsed_ms": int((time.time() - t0) * 1000), "capability": "gender"}
 
 
 def grab(device, timeout=6):
@@ -146,8 +153,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/health":
-            self._send(200, {"ok": True, "service": "attr-pc", "version": 4,
-                             "capability": ["gender", "age_band"], "port": PORT,
+            self._send(200, {"ok": True, "service": "attr-pc", "version": 5,
+                             "capability": ["gender"], "port": PORT,
                              "models": {k: v is not None for k, v in _sess.items()},
                              "yunet": _yunet is not None, "device": self.device, "stats": _state})
         elif self.path == "/metrics":
@@ -237,5 +244,5 @@ if __name__ == "__main__":
         bench(a.bench, a.device)
     else:
         Handler.device = a.device
-        print(f"attr_service_pc v4 on {a.host}:{PORT} (gender + age_band only)", flush=True)
+        print(f"attr_service_pc v5 on {a.host}:{PORT} (gender only)", flush=True)
         ThreadingHTTPServer((a.host, PORT), Handler).serve_forever()

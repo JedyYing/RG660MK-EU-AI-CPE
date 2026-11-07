@@ -65,7 +65,7 @@ footer{padding:10px 22px;font-size:11.5px;color:#5b7290;border-top:1px solid #16
 <body>
 <header>
   <h1>人脸属性 · 实时预览</h1>
-  <span class="badge">性别 + 年龄段</span>
+  <span class="badge">性别识别</span>
   <span class="badge">旁路部署 · 不影响 8099</span>
   <span class="sp"></span>
   <span class="st"><span class="dot" id="dot"></span><span id="stxt">连接中…</span></span>
@@ -89,7 +89,7 @@ footer{padding:10px 22px;font-size:11.5px;color:#5b7290;border-top:1px solid #16
     </div>
   </aside>
 </main>
-<footer>数据源：RG660MK camview:8090/snapshot（只读）｜ 推理在本机执行，设备 CPU 零占用 ｜ 情绪识别经实测不达标，已移除</footer>
+<footer>数据源：RG660MK camview:8090/snapshot（只读）｜ 推理在本机执行，设备 CPU 零占用 ｜ 年龄与情绪经实测不具备交付条件，均已移除</footer>
 <script>
 const cam=document.getElementById('cam'), ov=document.getElementById('ov'), ctx=ov.getContext('2d');
 const dot=document.getElementById('dot'), stxt=document.getElementById('stxt');
@@ -110,7 +110,7 @@ function drawBoxes(faces, w, h){
     [[x,y,1,1],[x+bw,y,-1,1],[x,y+bh,1,-1],[x+bw,y+bh,-1,-1]].forEach(([px,py,sx,sy])=>{
       ctx.beginPath(); ctx.moveTo(px, py+sy*len); ctx.lineTo(px,py); ctx.lineTo(px+sx*len, py); ctx.stroke();
     });
-    const label = bad ? '无法判定' : `${f.gender==='male'?'男':'女'} · ${f.age_band||''}`;
+    const label = bad ? '无法判定' : (f.gender==='male'?'男':'女');
     ctx.font = `600 ${Math.max(13, w/36)}px "Noto Sans CJK SC",system-ui,sans-serif`;
     const tw = ctx.measureText(label).width + 14;
     const th = Math.max(20, w/28);
@@ -135,13 +135,11 @@ async function tick(){
       p.innerHTML = faces.map((f,i)=>{
         const cls = f.gender==='uncertain' ? 'uncertain' : f.gender;
         const txt = f.gender==='uncertain' ? '无法判定' : (f.gender==='male'?'男':'女');
-        const band = (f.age_band && f.age_band!=='null') ? f.age_band : '';
         const warn = f.note==='low_confidence_face' ? '<div class="sub" style="color:#f59e0b;margin-top:4px">人脸不够清晰，已拒绝输出</div>' : '';
         const multi = faces.length>1 ? `<div class="sub" style="color:#7f9ac0">人脸 ${i+1}</div>` : '';
         return `<div style="padding:6px 0;border-bottom:1px dashed #1e3350">`
           + multi
           + `<span class="big ${cls}" style="font-size:${faces.length>1?25:34}px">${txt}</span>`
-          + (band ? ` <span class="band" style="font-size:${faces.length>1?17:22}px">${band}</span>` : '')
           + `<div class="sub">置信度 ${f.gender_score}</div>${warn}</div>`;
       }).join('');
     } else {
