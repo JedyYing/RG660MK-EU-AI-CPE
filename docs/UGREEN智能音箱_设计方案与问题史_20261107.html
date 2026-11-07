@@ -369,12 +369,15 @@ li { margin:.7mm 0; page-break-inside: avoid; }
   <tr><td>命令行按需（keyword-spotter）</td><td class="num">5400~6300 ms</td><td class="bad">每次加载模型，比 ASR 还慢，不可用</td></tr>
   <tr><td>常驻服务（kws_server + socket）</td><td class="num">386~505 ms</td><td class="ok">已上线；含脚本与 python 启动开销</td></tr>
   <tr><td>原 ASR 兜底（对照）</td><td class="num">约 900 ms</td><td>保留为 fallback</td></tr>
+  <tr><td><strong>真人「你好小皮」（现场实测 14:11）</strong></td><td class="num">命中</td><td class="ok">日志出现 <code>&gt;&gt;&gt; WAKE(sleep)</code>（KWS 直接命中，无 <code>,asr</code> 兜底后缀）</td></tr>
   </tbody>
 </table>
 
 <div class="callout">
-<strong>验证证据（ad-hoc，2026-11-07 13:40）：</strong>常驻进程在、socket 在、正样本 386 ms 命中、负样本无误报、
-看门狗未重复拉起——五项全过。看门狗自愈实测：杀掉进程后 20 秒被 cron 拉起。
+<strong>验证证据（ad-hoc，2026-11-07 13:40 / 14:11）：</strong>常驻进程在、socket 在、正样本 386 ms 命中、负样本无误报、
+看门狗未重复拉起——五项全过；杀掉进程后 20 秒被 cron 拉起。<br>
+<strong>真人验证（14:11 现场）：</strong>说「小皮休息」进入休眠 → 喊「你好小皮」→ 日志出现
+<code>&gt;&gt;&gt; WAKE(sleep)</code>（KWS 命中，非 ASR 兜底），送检音频 <code>/tmp/kws_last.wav</code> 手动复测同样命中。
 </div>
 
 <h3>C.4 仍然存在的代价</h3>
