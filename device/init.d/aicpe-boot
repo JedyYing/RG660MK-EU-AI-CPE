@@ -1,0 +1,55 @@
+#!/bin/sh /etc/rc.common
+# RG660MK demo boot (hermes 2026-11-04)
+START=99
+STOP=10
+
+start() {
+  [ -e /data/opt/ffmpeg/ffmpeg ] && { [ -e /usr/bin/ffmpeg ] || ln -sf /data/opt/ffmpeg/ffmpeg /usr/bin/ffmpeg; }
+  [ -e /data/opt/bash-root/bin/bash ] && { [ -e /usr/bin/bash ] || ln -sf /data/opt/bash-root/bin/bash /usr/bin/bash; }
+  [ -e /proc/asound/card2 ] && amixer -c 2 sset Mic 75% >/dev/null 2>&1
+  [ -x /data/ai_cpe/tools/led_net_solid.sh ] && /data/ai_cpe/tools/led_net_solid.sh
+  if ! pgrep -f 'zerotier-one -d' >/dev/null 2>&1; then
+    LD_LIBRARY_PATH=/data/zerotier/libs nohup /data/zerotier/bin/zerotier-one -d /data/zerotier/home >/dev/null 2>&1 &
+  fi
+  if ! pgrep -f 'sherpa-onnx-offline-websocket-server' >/dev/null 2>&1; then
+    cd /data/ai_cpe
+    nohup /data/ai_cpe/glibc/ld-linux-aarch64.so.1 --library-path /data/ai_cpe/glibc \
+      /data/ai_cpe/sherpa-onnx/bin/sherpa-onnx-offline-websocket-server --port=6006 \
+      --num-work-threads=2 --num-threads=2 --model-type=paraformer \
+      --tokens=/data/ai_cpe/sherpa-onnx/paraformer-zh-small/tokens.txt \
+      --paraformer=/data/ai_cpe/sherpa-onnx/paraformer-zh-small/model.int8.onnx \
+      > /data/ai_cpe/logs/sherpa_asr.log 2>&1 &
+  fi
+  if ! pgrep -f 'voice_assistant.py' >/dev/null 2>&1; then
+    cd /data/ai_cpe
+    nohup /data/hermes/venv/bin/python /data/ai_cpe/voice_assistant.py > /data/ai_cpe/logs/voice.log 2>&1 &
+  fi
+  if ! pgrep -f 'aicpe_demo.py --serve-only' >/dev/null 2>&1; then
+    cd /data/ai_cpe/hermes/home/aicpe_demo
+    nohup /data/hermes/venv/bin/python aicpe_demo.py --serve-only --port 8099 > /data/ai_cpe/logs/board.log 2>&1 &
+  fi
+  if ! pgrep -f 'ai_net.service' >/dev/null 2>&1; then
+    cd /data/ai_cpe/ai_net
+    nohup /usr/bin/python3 -u -m ai_net.service --config config/main.json --log logs/service.log > /dev/null 2>&1 &
+  fi
+  if ! pgrep -f 'vframe_http.py' >/dev/null 2>&1; then
+    nohup /usr/bin/python3 /data/ai_cpe/tools/vframe_http.py > /data/ai_cpe/logs/vframe_http.out 2>&1 &
+  fi
+  if ! pgrep -f 'at_bridge.py' >/dev/null 2>&1; then
+    nohup /usr/bin/python3 /data/ai_cpe/tools/at_bridge.py > /data/ai_cpe/logs/at_bridge.out 2>&1 &
+  fi
+  if ! pgrep -f 'cloudflared tunnel --url http://127.0.0.1:8099' >/dev/null 2>&1; then
+    nohup /data/cloudflared/cloudflared tunnel --url http://127.0.0.1:8099 --no-autoupdate >> /data/cloudflared/tun8099.log 2>&1 &
+  fi
+  if ! pgrep -f 'cloudflared tunnel --url http://127.0.0.1:8080' >/dev/null 2>&1; then
+    nohup /data/cloudflared/cloudflared tunnel --url http://127.0.0.1:8080 --no-autoupdate >> /data/cloudflared/tun8080.log 2>&1 &
+  fi
+}
+
+stop() {
+  pkill -f 'cloudflared tunnel --url http://127.0.0.1:8099' 2>/dev/null
+  pkill -f 'cloudflared tunnel --url http://127.0.0.1:8080' 2>/dev/null
+  pkill -f 'aicpe_demo.py --serve-only' 2>/dev/null
+  pkill -f 'voice_assistant.py' 2>/dev/null
+  pkill -f 'ai_net.service' 2>/dev/null
+}
