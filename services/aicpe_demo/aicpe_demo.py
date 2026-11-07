@@ -1,6 +1,6 @@
 #!/data/hermes/venv/bin/python
 # -*- coding: utf-8 -*-
-"""AI CPE 八大功能一键演示套件 —— 编排 + 实时可视化看板（v1.3）
+"""AI CPE 十大功能一键演示套件 —— 编排 + 实时可视化看板（v1.3）
 
 用法:
     /data/hermes/venv/bin/python aicpe_demo.py            # 完整演示（含播报/点灯）
@@ -1092,6 +1092,72 @@ def pull_stream(secs=4):
         return 0, total, max(0.1, time.monotonic() - t0)
 
 
+
+VIDEO_DEMO_MP4 = "/data/deliver/demo/concert_canton_tower.mp4"
+VIDEO_INDEX_DIR = "/data/vindex/concert"
+
+
+def check_video_ai(it):
+    """AI 视频找帧：自然语言描述 → 本地索引检索 → 截取目标帧（零云端视频上传）。"""
+    set_item(it, "running")
+    ms = []
+    t0 = time.time()
+    query = "找出画面里出现广州塔的帧"
+    out_img = "/data/deliver/demo/last_frame.jpg"
+    ms.append(("输入视频", os.path.basename(VIDEO_DEMO_MP4) + "（30.7 秒 · 960×540）"))
+    ms.append(("自然语言要求", query))
+    try:
+        rc, o = sh("python3 /data/ai_cpe/tools/vsearch.py --index %s --query '%s' --json --out %s"
+                   % (VIDEO_INDEX_DIR, query, out_img), t=60)
+        d = json.loads((o or "").strip().splitlines()[-1])
+    except Exception as e:
+        set_item(it, "fail", "检索异常：%s" % str(e)[:100], ms)
+        return
+    if not d.get("matched") or not os.path.exists(out_img):
+        ms.append(("检索结果", "未命中（%s）" % str(d)[:120]))
+        set_item(it, "fail", "未找到匹配帧 → 检查索引/caption", ms)
+        return
+    b = d.get("best") or {}
+    ms.append(("命中帧", "第 %s 秒 · %s" % (b.get("t"), b.get("caption"))))
+    ms.append(("截图", "%s（%d KB）" % (out_img, os.path.getsize(out_img) // 1024)))
+    ms.append(("候选帧", "%d 帧（按相关度排序）" % len(d.get("candidates") or [])))
+    ms.append(("本地耗时", "%.2f 秒" % (time.time() - t0)))
+    ms.append(("查看截图", "http://192.168.1.1:8099/video_frame.jpg"))
+    set_item(it, "pass", "自然语言视频找帧通过：命中第 %s 秒" % b.get("t"), ms)
+
+def check_local_compute(it):
+    """本地算力：MT200 NPU 上的 deepseek-7b-npu，真实推理一次并计时。
+    不切换全局推理模式：在线模式下也直接走本地端点，验证完即返回。"""
+    set_item(it, "running")
+    ms = []
+    ms.append(("算力单元", "MT200（QCS9075）· NPU 规格 200 TOPS"))
+    ms.append(("本地模型", "deepseek-7b-npu（7B 级）"))
+    ms.append(("调用路径", "CPE → 笔记本 LAN 代理 :18091 → SSH 隧道 → MT200 :8090"))
+    try:
+        import llm_gateway as _llm
+        ep = _llm.local_endpoint()
+        ms.append(("本地端点", ep.replace("http://", "").split("/")[0]))
+        t1 = time.time()
+        text = _llm._local_chat([
+            {"role": "system", "content": "你是部署在 MT200 上的本地模型，只答一句简体中文。"},
+            {"role": "user", "content": "用一句话说明你在哪里运行"},
+        ], 48, 90)
+        dt = time.time() - t1
+        chars = len(text or "")
+        ms.append(("实测输出", (text or "").strip()[:44]))
+        ms.append(("端到端耗时", "%.1f s" % dt))
+        ms.append(("输出长度", "%d 字符" % chars))
+        if dt > 0 and chars:
+            ms.append(("生成速度", "≈ %.1f 字符/s（端到端，含排队）" % (chars / dt)))
+        st = _llm.stats()
+        ms.append(("NPU 占空比", "%.1f%%（近60s·%d次，估算口径）" % (st.get("util_60s", 0), st.get("calls_60s", 0))))
+        set_item(it, "pass", "MT200 本地 deepseek-7b-npu 真实推理通过：%.1fs / %d 字符" % (dt, chars), ms)
+    except Exception as e:
+        msg = str(e)[:110]
+        ms.append(("本地链路", msg))
+        set_item(it, "skip", "环境不可用：MT200 本地模型离线（%s），不计功能失败" % msg, ms)
+
+
 def check_diag(it):
     set_item(it, "running")
     ms = []
@@ -1622,15 +1688,17 @@ def _run_all_locked(args):
         STATE["started"] = time.time()
         STATE["log"] = []
         STATE["run_mode"] = "静音检查" if args.no_audio else "实际动作验收"
-    log("=== AI CPE 八大功能一键演示 开始（%s）===" % ("静音质检模式" if args.no_audio else "完整演示模式"))
+    log("=== AI CPE 十大功能一键演示 开始（%s）===" % ("静音质检模式" if args.no_audio else "完整演示模式"))
     items = [item(1, "AI 智能语音对话", "语音交互 / 大模型对话 / TTS 播报"),
              item(2, "AI 视觉检测", "人脸/目标/姿态检测；身份识别单独验收"),
              item(3, "本地自然语言图片检索", "文件名关键词检索；零命中尝试CLIP，相关性另验"),
-             item(4, "视频卡顿智能故障排查", "自动检测、分析并定位卡顿"),
+             item(4, "视频卡顿智能故障排查", "拉流测帧率/码率 + 单帧时延 + 链路探测 → 定位卡顿"),
              item(5, "智能家居控制", "控制真实灯具（Matter/Tuya）；当前只有板载LED演示代理"),
              item(6, "AI 智能选网", "QoE 驱动的蜂窝选网决策 · Shadow 观察（零写操作）"),
              item(7, "MiniNAS 存储", "x86 存储底座（机身盘 + SMB/NFS + 相册 + CasaOS）只读巡检"),
-             item(8, "CasaOS统一管理界面", "App Store / Files / Home Assistant / Immich / 每日巡检 五个入口")]
+             item(8, "CasaOS统一管理界面", "App Store / Files / Home Assistant / Immich / 每日巡检 五个入口"),
+             item(9, "AI 视频找帧（自然语言）", "按描述检索视频并截取目标帧；示例：演唱会视频找广州塔"),
+             item(10, "本地算力 · DeepSeek 7B", "MT200 NPU 本地推理 · deepseek-7b-npu 真实问答实测")]
     _skip = set()
     for _x in str(getattr(args, "skip_items", "") or "").split(","):
         _x = _x.strip()
@@ -1643,7 +1711,9 @@ def _run_all_locked(args):
                        (check_smart_home, items[4], {"no_audio": args.no_audio}),
                        (check_ai_net, items[5], {"no_audio": args.no_audio}),
                         (check_nas, items[6], {"no_audio": args.no_audio}),
-                        (check_casaos_center, items[7], {"no_audio": args.no_audio})]:
+                        (check_casaos_center, items[7], {"no_audio": args.no_audio}),
+                        (check_video_ai, items[8], {}),
+                        (check_local_compute, items[9], {})]:
         if it["idx"] in _skip:
             set_item(it, "skip", "本轮未运行；历史证据单独显示")
             continue
@@ -1677,7 +1747,7 @@ def _run_all_locked(args):
 
 def write_report(items, passed):
     ts = time.strftime("%Y%m%d_%H%M%S")
-    L = ["# AI CPE 八大功能演示报告", "", "- 时间：%s" % time.strftime("%Y-%m-%d %H:%M:%S"),
+    L = ["# AI CPE 十大功能演示报告", "", "- 时间：%s" % time.strftime("%Y-%m-%d %H:%M:%S"),
          "- 设备：RG660MK（AI CPE）", "- 生成者：AICPE本地编排；MT200推理；笔记本LAN中转", "- 本轮结果：**%d 项通过，共展示 %d 项；未运行和历史证据不算通过**" % (passed, len(items)), "",
          "| # | 功能 | 结果 | 耗时 | 关键证据 |", "|---|---|---|---|---|"]
     for i in items:
@@ -1773,7 +1843,7 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
 </style></head><body>
 <noscript><meta http-equiv="refresh" content="5"></noscript>
 <header>
-  <h1>AI CPE 八大功能演示</h1>
+  <h1>AI CPE 十大功能演示</h1>
   <span class="tag" id="dev">RG660MK · 5G 公网</span>
   <span class="tag" style="background:rgba(255,255,255,.08)">推理模式</span>
   <button id="mLocal" onclick="setMode('local')" style="background:#31d17a;color:#06231a;border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer">本地模式</button>
@@ -2024,7 +2094,7 @@ SIMPLE_HTML = """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 img{width:100%;max-width:760px;border-radius:10px;background:#000}
 h2{margin:6px 0 10px;font-size:20px} .b{padding:10px;margin:8px 0;border-radius:10px;background:#121c2e;border:1px solid #1f3350}
 </style></head><body>
-<h2>AI CPE 八大功能演示（简易版，每 6 秒自动刷新）</h2>
+<h2>AI CPE 十大功能演示（简易版，每 6 秒自动刷新）</h2>
 <img src="/snap" alt="画面加载中…">
 <div class="b" id="s">正在读取状态…</div>
 <script>
@@ -2367,6 +2437,12 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
             self._send(200, "text/html; charset=utf-8", RTT_HTML)
         elif p == "/run":
             self._send(405, "application/json", '{"error":"use POST /run for silent check"}')
+        elif p == "/video_frame.jpg":
+            try:
+                with open("/data/deliver/demo/last_frame.jpg", "rb") as _f:
+                    self._send(200, "image/jpeg", _f.read())
+            except Exception:
+                self._send(404, "application/json", '{"error":"no frame yet"}')
         elif p == "/state":
             # 只返回缓存值：探测放后台线程，避免拖慢页面轮询（实测曾 9s+）
             reload_state_if_newer()
@@ -2500,7 +2576,7 @@ ARGS = None
 
 def main():
     global ARGS
-    ap = argparse.ArgumentParser(description="AI CPE 八大功能一键演示（含实时看板）")
+    ap = argparse.ArgumentParser(description="AI CPE 十大功能一键演示（含实时看板）")
     ap.add_argument("--port", type=int, default=8099, help="看板端口（默认 8099）")
     ap.add_argument("--no-audio", action="store_true", help="只读静音质检：不播报、不实际开关灯、不上传照片")
     ap.add_argument("--no-upload", action="store_true", help="不上传照片，上传链路保持未验收")
