@@ -1692,7 +1692,7 @@ def _run_all_locked(args):
     items = [item(1, "AI 智能语音对话", "语音交互 / 大模型对话 / TTS 播报"),
              item(2, "AI 视觉检测", "人脸/目标/姿态检测；身份识别单独验收"),
              item(3, "本地自然语言图片检索", "文件名关键词检索；零命中尝试CLIP，相关性另验"),
-             item(4, "视频播放卡顿诊断", "DPI 解析 RTSP/RTP 流，结合帧率/时延/丢包定位卡顿"),
+             item(4, "连接CPE终端播放视频卡顿诊断", "DPI 解析 RTSP/RTP 流，结合帧率/时延/丢包定位卡顿"),
              item(5, "智能家居控制", "控制真实灯具（Matter/Tuya）；当前只有板载LED演示代理"),
              item(6, "AI 智能选网", "QoE 驱动的蜂窝选网决策 · Shadow 观察（零写操作）"),
              item(7, "MiniNAS 存储", "x86 存储底座（机身盘 + SMB/NFS + 相册 + CasaOS）只读巡检"),
