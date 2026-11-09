@@ -19,7 +19,7 @@ STATE = "/data/ai_cpe/services/smarthome/state.json"
 class MatterDriver:
     name = "matter"
 
-    def __init__(self, node_id=None, endpoint=1, timeout=12, state_file=STATE):
+    def __init__(self, node_id=None, endpoint=1, timeout=25, state_file=STATE):
         self.node_id = node_id
         self.endpoint = int(endpoint or 1)
         self.timeout = timeout
