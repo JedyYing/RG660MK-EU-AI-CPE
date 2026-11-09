@@ -1,7 +1,7 @@
 {
  "driver": "auto",
  "matter": {
-  "node_id": null,
+  "node_id": 11,
   "endpoint": 1,
   "chip_tool": "/data/ai_cpe/matter/bin/chip-tool",
   "kvs": "/data/ai_cpe/matter/kvs/chip_kvs"
