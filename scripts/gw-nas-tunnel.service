@@ -1,0 +1,11 @@
+[Unit]
+Description=Gateway reverse tunnels for NAS services (Immich 18082 / CasaOS 18083)
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/ssh -N -i %h/.ssh/rg660_vps_viewer -o IdentitiesOnly=yes -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -R 127.0.0.1:18082:127.0.0.1:2283 -R 127.0.0.1:18083:127.0.0.1:80 cpe-view@47.116.191.31
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
