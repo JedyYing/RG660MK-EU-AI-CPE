@@ -1,0 +1,18 @@
+*/2 * * * * sh /data/ai_cpe/tools/board_tunnel_keeper.sh >/dev/null 2>&1
+*/5 * * * * sh /data/hermes/.hermes/scripts/board_keeper.sh >/dev/null 2>&1
+*/1 * * * * /data/ai_cpe/tools/led_net_solid.sh >/dev/null 2>&1
+*/5 * * * * /usr/bin/python3 /data/hermes/.hermes/scripts/nbr_guard.py >/dev/null 2>&1
+*/15 * * * * /data/hermes/venv/bin/python /data/ai_cpe/token_cost.py >/dev/null 2>&1
+0 * * * * /usr/bin/python3 /data/ai_cpe/hermes/home/posture_check.py >> /data/ai_cpe/hermes/home/photos/posture.log 2>&1
+* * * * * sh /data/ai_cpe/tools/thermal_log.sh >/dev/null 2>&1
+* * * * * /data/ai_cpe/voice_watchdog.sh
+* * * * * sh /data/ai_cpe/kws_watchdog.sh >/dev/null 2>&1
+* * * * * sh /data/ai_cpe/tools/wifi_assoc_log.sh >/dev/null 2>&1
+*/15 * * * * sh /data/ai_cpe/tools/disk_guard.sh >/dev/null 2>&1
+* * * * * /data/hermes/venv/bin/python /data/hermes/.hermes/scripts/gateway_watchdog.py >/dev/null 2>&1
+*/2 * * * * /data/hermes/venv/bin/python /data/ai_cpe/tools/wan_watchdog.py >/dev/null 2>&1
+*/2 * * * * sh /data/ai_cpe/tools/health_watch.sh >/dev/null 2>&1
+*/2 * * * * sh /data/ai_cpe/tools/voice_guard.sh >/dev/null 2>&1
+10 3 * * * sh /data/ai_cpe/tools/disk_daily.sh >/dev/null 2>&1
+*/2 * * * * /usr/sbin/logrotate /var/run/hostapd.logrotate.conf
+*/2 * * * * /usr/sbin/logrotate /var/run/wpa_supplicant.logrotate.conf

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>RG660MK 本周问题复盘报告</title>
+<style>
+  @page { size: A4; margin: 14mm 13mm 13mm 13mm; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family:"Noto Sans CJK SC","Noto Sans SC",sans-serif; font-size:9.3pt; line-height:1.52; color:#1b2b3d; margin:0; }
+  h1 { font-size:17.5pt; margin:0 0 2mm 0; }
+  h2 { font-size:12pt; color:#0b3d6b; margin:4.4mm 0 2mm 0; padding-left:3.2mm; border-left:4px solid #1f6fb2; page-break-after:avoid; }
+  h3 { font-size:10pt; color:#124a7a; margin:2.6mm 0 1.2mm 0; page-break-after:avoid; }
+  p { margin:0 0 1.8mm 0; text-align:justify; }
+  .hd { background:linear-gradient(100deg,#0a2f52 0%,#124a7a 60%,#1a6aa8 100%); color:#fff; padding:4.6mm 5mm 3.8mm 5mm; border-radius:3px; margin-bottom:3.2mm; }
+  .hd .sub { font-size:9.5pt; color:#cfe4f7; margin-top:1mm; }
+  .hd .meta { font-size:7.9pt; color:#a9cbe8; margin-top:2mm; line-height:1.7; }
+  .kpi { display:flex; gap:2.2mm; margin:1.6mm 0 2.6mm 0; }
+  .kpi div { flex:1 1 0; min-width:0; background:#f2f7fc; border:1px solid #d6e6f4; border-radius:3px; padding:2mm; }
+  .kpi b { display:block; font-size:12pt; color:#0b3d6b; }
+  .kpi span { font-size:7.4pt; color:#5a7793; }
+  table { width:100%; border-collapse:collapse; margin:1.3mm 0 2.3mm 0; font-size:8.1pt; }
+  th { background:#e8f1fa; color:#0b3d6b; text-align:left; padding:1.25mm 1.4mm; border-bottom:1.4px solid #b9d3ea; }
+  td { padding:1.1mm 1.4mm; border-bottom:.6px solid #dde8f2; vertical-align:top; }
+  tr { page-break-inside:avoid; }
+  li { page-break-inside:avoid; margin-bottom:.7mm; }
+  .callout { border-left:4px solid #1f6fb2; background:#f3f8fd; padding:2.1mm 2.6mm; margin:1.6mm 0 2.2mm 0; font-size:8.7pt; }
+  .callout.green { border-left-color:#12703a; background:#f2faf5; }
+  .callout.amber { border-left-color:#b8860b; background:#fdf9ec; }
+  .callout.red { border-left-color:#b3261e; background:#fdf3f2; }
+  .ok { color:#12703a; font-weight:700; }
+  .no { color:#b3261e; font-weight:700; }
+  .dim { color:#b8860b; font-weight:700; }
+  code { font-size:7.9pt; background:#f4f7fa; padding:0 1px; }
+  pre { background:#f6f8fa; border:1px solid #e1e8ef; border-radius:3px; padding:1.6mm 2mm; font-size:7.4pt; line-height:1.45; white-space:pre-wrap; overflow-wrap:anywhere; margin:1mm 0 2mm 0; }
+  .foot { margin-top:3.4mm; padding-top:1.4mm; border-top:.8px solid #cfdded; font-size:7.4pt; color:#6b8399; }
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <h1>RG660MK 本周问题复盘报告</h1>
+  <div class="sub">智能音箱无响应 · 5G 掉网 · 本机与设备网线不通</div>
+  <div class="meta">
+    周期 2026-11-10 ~ 11-17｜设备 RG660MK-EU（OpenWrt 23.05 / 4×A55 / 1.4GB / /data 2.7G）｜本机 Ubuntu（USB 网卡 192.168.1.212）<br>
+    方法：现象 → 分层定位 → 证据（日志/命令输出）→ 根因或待验证假设 → 处置与回滚｜结论区分"已修复 / 已定位未修复 / 未定位"
+  </div>
+</div>
+
+<div class="kpi">
+  <div><b>3 组</b><span>本周主要问题</span></div>
+  <div><b>4 个</b><span>已定位根因</span></div>
+  <div><b>2 个</b><span>仍待验证</span></div>
+  <div><b>1 个</b><span>观测侧误判（非设备）</span></div>
+</div>
+
+<h2>一、摘要：三组问题一句话结论</h2>
+
+<table>
+  <thead><tr><th style="width:17%">问题</th><th style="width:38%">本质</th><th style="width:17%">定位程度</th><th>当前状态</th></tr></thead>
+  <tbody>
+  <tr><td><b>智能音箱无响应</b></td><td>不是单一原因，本周共 4 个独立根因叠加：休眠死锁、CM564 静音、<code>os.read</code> 短读回归、ASR 把"你好小皮"截断成"好小皮"</td><td class="ok">4 个均已定位<br>3 个已修</td><td>软件链路已通（ASR 能转写真实人声，唤醒判定自测全过）；待一次人声唤醒确认</td></tr>
+  <tr><td><b>RG660MK 5G 掉网</b></td><td>模组侧数据呼叫丢失（ccmni 全部 DOWN、无默认路由），恢复必须重拨或重启模组</td><td class="dim">现象已定<br>根因未定</td><td>本周多次复现；已建掉线取证器，尚无掉线瞬间的模组日志</td></tr>
+  <tr><td><b>本机与设备网线不通</b></td><td><b>不是设备故障</b>：本机 USB 网卡从系统消失，去 192.168.1.1 的流量改走办公网网关，"ping 通但端口不通"是假象</td><td class="ok">已定位<br>（观测侧）</td><td>重插 USB 网卡即恢复；已加"外部路径"监控避免再次误判</td></tr>
+  </tbody>
+</table>
+
+<div class="callout red">
+<b>必须先说清的一条：</b>本周有两次"板子服务全灭"的判断是<b>错的</b>。板端健康日志同期显示服务全部 <code>listen=1</code>、内存 650MB、uptime 连续。真正的问题是本机观测链路断了。<b>以后判断设备故障，先看板端日志与 uptime，再看本机探测结果。</b>
+</div>
+
+<h2>二、智能音箱无响应</h2>
+
+<h3>2.1 现象</h3>
+<p>对音箱说"你好，小皮"多次无任何回应；有时表现为"要喊两次才应"，有时是"完全没反应但飞书正常"。同一句现象背后，本周实测到 <b>4 种完全不同的根因</b>。</p>
+
+<h3>2.2 分层定位方法（按顺序，逐层排除）</h3>
+<table>
+  <thead><tr><th style="width:22%">层</th><th style="width:34%">判据</th><th>本周命中</th></tr></thead>
+  <tbody>
+  <tr><td>① 进程/心跳</td><td><code>voice_assistant</code> 在？<code>/tmp/voice_hb</code> 是否 2–6 秒前进？</td><td>11-16 19:23 命中：心跳停滞 → 休眠死锁</td></tr>
+  <tr><td>② 麦克风能量</td><td>RMS p50/peak；正常环境音 p50 70–150，人声峰值 &gt;1000</td><td>11-17 09:20 命中：CM564 p50=31/peak=325 → 静音</td></tr>
+  <tr><td>③ 音频读取完整性</td><td>心跳前进但无 <code>[miss]</code> 日志 = 帧被截断</td><td>11-17 09:40 命中：<code>os.read</code> 短读 → VAD 永不完成</td></tr>
+  <tr><td>④ ASR 文本</td><td><code>voice.jsonl</code> 里的 <code>asr=</code> 是否接近唤醒词</td><td>11-17 11:49 命中：转写成"好小皮"，丢了"你"</td></tr>
+  <tr><td>⑤ 唤醒词匹配</td><td><code>is_wake/strip_wake</code> 对该文本是否为 True</td><td>同上：三处正则都不认"好小皮"</td></tr>
+  </tbody>
+</table>
+
+<h3>2.3 四个根因与处置</h3>
+
+<table>
+  <thead><tr><th style="width:18%">根因</th><th style="width:32%">证据</th><th style="width:26%">处置</th><th>回滚</th></tr></thead>
+  <tbody>
+  <tr><td><b>① 休眠死锁</b><br>（11-16 19:23）</td><td><code>arecord</code> utime 6 ticks 4 秒零增长；主线程 <code>do_select</code>；日志停在 <code>asr="小皮休息"</code>。根因：<code>vad.py</code> 的 <code>proc.wait()</code> 在 arecord 不可中断时永久阻塞</td><td>所有 wait 加超时；帧循环写心跳；<code>voice_guard</code> 每 2 分钟检查，心跳 &gt;180s 才重启，每小时≤3 次</td><td><code>vad.py.bak_*</code></td></tr>
+  <tr><td><b>② CM564 静音</b><br>（11-17 09:20）</td><td>30 秒录音 p50=31、peak=325，无一帧达 VAD 阈值 450；同期增益 191/75%、开关 on；C270 同环境 rms=387/peak=7837</td><td>采集切 C270（<code>plughw:CARD=WEBCAM,DEV=0</code>），写入 <code>voice_rec_dev</code> 统一启动路径；增益 50%（18dB）</td><td>改回 <code>plughw:2,0</code>；换线/换口后复测</td></tr>
+  <tr><td><b>③ os.read 短读</b><br>（11-17 09:40，修复引入的回归）</td><td>心跳前进、RMS p50 500–1500，但 <code>voice.jsonl</code> 一条 <code>[miss]</code> 都没有。原因：<code>os.read</code> 只返回半帧，<code>len(chunk)&lt;frame_bytes→break</code> 每次掐断录音</td><td>新增 <code>_read_exact()</code>（select 3s 超时 + 循环读满一帧）；修复后 09:47:16 立刻恢复 <code>miss asr=...</code>（ASR 0.5s）</td><td><code>vad.py.bak_readexact_*</code></td></tr>
+  <tr><td><b>④ 唤醒词被截断</b><br>（11-17 11:49）</td><td>日志实锤：<code>{"kind":"miss","asr":"好小皮"}</code>——声学与 ASR 都正常，只丢了开头"你"；原正则要求"你好/小皮"开头，故不匹配</td><td>加 <code>_wake_norm()</code>：<code>好小皮/好小屁/好下皮</code> 自动补"你"；<code>is_wake / is_sleep_wake / strip_wake</code> 三处统一。自测：好小皮=True、你好小皮=True、小皮=True</td><td><code>voice_assistant.py.bak_wakenorm_*</code></td></tr>
+  </tbody>
+</table>
+
+<h3>2.4 当前状态与待验证</h3>
+<div class="callout green">
+<b>已通：</b>软件链路自测——TTS 合成"你好小皮" → ASR 回读"你好小皮"（0.353s）→ <code>is_wake=True</code>；实景 ASR 已能转写真实人声（"所以他要不说不行""你什么时候"）。<br>
+<b>待验证：</b>① C270 在演示距离下的一次唤醒成功率；② 噪声误触发率（门限已从 450/280 调到 <code>VOICE_VAD_ON=900/OFF=500</code>，误触发约降至原来的 1/7）；③ 播放侧 CM564 是否可用（不行可切小米音箱）。
+</div>
+
+<h2>三、RG660MK 5G 掉网</h2>
+
+<h3>3.1 现象与现场</h3>
+<pre>ifstatus wan      → up=False
+ip addr           → ccmni0–16 全部 DOWN
+ip route          → 无默认路由
+nslookup open.feishu.cn → REFUSED
+curl open.feishu.cn     → 000
+网关日志 09:01:57–09:02:29 连续三次 HTTPSConnectionPool(...:443) Max retries exceeded</pre>
+<p>恢复后：<code>ccmni2</code> 重新拿到地址（本周见过 <code>10.130.16.222/29</code>、<code>10.36.125.234/29</code>、<code>10.142.191.26/29</code> 等），默认路由恢复，飞书 404/292ms。<b>IP 每次不同，说明是重新拨号而不是原连接恢复。</b></p>
+
+<h3>3.2 分析</h3>
+<table>
+  <thead><tr><th style="width:22%">层面</th><th>结论</th></tr></thead>
+  <tbody>
+  <tr><td>链路层</td><td><code>ql_datacall</code> 数据呼叫消失；重拨可恢复 → 排除 SIM 欠费/无信号（有信号时也会掉）</td></tr>
+  <tr><td>影响面</td><td>飞书、在线大模型、ZeroTier 全部依赖 WAN，掉线时一起不可用；<b>本地 8099 与局域网仍可用</b>（无大模型模式不受影响）</td></tr>
+  <tr><td>恢复阶梯</td><td><code>ifup wan</code> → <code>/etc/init.d/mipc_wan.init restart</code> → <code>AT+CFUN=1,1</code>（经 ttyGS0） → 整机重启。<b>重启模组常把整机带重启</b>（uptime 归零），需谨慎</td></tr>
+  <tr><td>驱动层线索</td><td>dmesg 中每个发往 ccmni 的包都打印 <code>[ccci1/net]skb_headroom(32) &lt; ccci_header(16)+18</code>（ping、zerotier-one 均命中），约 0.4 条/秒；25 分钟内核内存采样（6 点）未见泄漏（MemAvailable -1MB、Slab +0.2MB）</td></tr>
+  <tr><td>频率</td><td>24h 探测只完成 6.5 小时（09:42–16:13），期间 <code>wan_up</code> 全为 1、<b>未捕获掉线</b>，因此无法给出掉线频率</td></tr>
+  </tbody>
+</table>
+
+<div class="callout amber">
+<b>待验证假设（不写成结论）：</b>① 模组固件在特定小区/信号条件下丢失 PDP；② ccci 驱动的 skb 处理异常导致数据面挂死；③ 供电/温度瞬态。<b>缺的是掉线瞬间的模组状态</b>（注册状态、信号、数据呼叫、mipc 进程），应用层日志不足以定位。
+</div>
+
+<h3>3.3 下一步取证</h3>
+<ul>
+  <li>低负载 <code>wan_watch</code>（30 秒）：掉线瞬间落盘 dmesg 尾 120 行、路由、mipc 进程、conntrack，并记录掉线起止时长</li>
+  <li>只读 AT 查询（以该固件支持为准，确认不争用管理通道）：注册状态、信号、数据呼叫</li>
+  <li>恢复阶梯加超时、退避、次数上限，禁止无限重启；重启模组前先回传证据</li>
+</ul>
+
+<h2>四、本机与 RG660MK 网线不通</h2>
+
+<h3>4.1 现象</h3>
+<p>本机打开 <code>http://192.168.1.1:8099/</code> 打不开，SSH 报 <code>kex_exchange_identification: Connection reset by peer</code>；但 <code>ping 192.168.1.1</code> 有回应（RTT 6–100ms）。ZeroTier 地址 <code>172.25.25.224:8099</code> 同时打不开。</p>
+
+<h3>4.2 定位过程与根因</h3>
+<table>
+  <thead><tr><th style="width:24%">检查</th><th style="width:38%">结果</th><th>含义</th></tr></thead>
+  <tbody>
+  <tr><td>本机接口</td><td><code>enx00e04c557598</code> 不在 <code>ip addr</code> 里；无任何 192.168.1.x 地址</td><td><b>USB 网卡从系统消失</b>（拔线时连带脱落/被拔出）</td></tr>
+  <tr><td>到设备的路由</td><td><code>ip route get 192.168.1.1</code> → <code>via 10.83.96.1 dev wlp0s20f3</code></td><td>流量被送到<b>办公网网关</b>，由别的设备回 ICMP</td></tr>
+  <tr><td>ARP</td><td><code>192.168.1.1</code> 在 docker0/br-*/enp1s0 上均为 <code>INCOMPLETE</code></td><td>本机根本没有到设备的二层路径</td></tr>
+  <tr><td>板端对照</td><td>健康日志同期：sshd/web/mqtt/asr/demo 全部 <code>listen=1</code>，MemAvailable 650MB，uptime 连续</td><td><b>设备一直正常</b>；"全灭"是观测侧假象</td></tr>
+  <tr><td>恢复</td><td>重插 USB 网卡后：<code>192.168.1.212</code> 出现、8099=200、RTT 0.9ms</td><td>确认根因</td></tr>
+  </tbody>
+</table>
+
+<div class="callout red">
+<b>为什么容易误判：</b>拔掉 USB 网卡后，本机仍能 ping 通 <code>192.168.1.1</code>（办公网里另有设备响应），于是"ping 通但端口全关"看起来像设备服务崩了。实际是<b>探测目标根本不是设备</b>。
+</div>
+
+<h3>4.3 改进</h3>
+<ul>
+  <li>监控新增<b>外部路径探测</b>：板子每 30 秒主动访问本机 <code>192.168.1.212:2283</code>，失败且本地 8099 正常时落盘 <code>ext_unreachable</code> 快照，区分"设备本地正常"与"链路不可达"</li>
+  <li>演示前检查固定先验证本机是否存在 <code>192.168.1.x</code> 接口、路由是否指向 <code>enx*</code>，再判断设备</li>
+  <li>演示建议全程插着 USB 网卡与网线；ZeroTier 作为备份而非主入口</li>
+</ul>
+
+<h2>五、本周其他相关发现</h2>
+<table>
+  <thead><tr><th style="width:26%">发现</th><th style="width:36%">证据</th><th>处置</th></tr></thead>
+  <tbody>
+  <tr><td>凌晨内存瞬时耗尽</td><td>03:50 快照：MemAvailable 16MB、MemFree 22MB、load 44.96/53.24/54.93，ASR 停止监听；25 分钟后采样已恢复正常且无泄漏趋势</td><td>列入待验证；快照增加 top/printk 计数，等下次复现</td></tr>
+  <tr><td>灯泡失联</td><td>6.5h 探测内 3 次失败，均在 60 秒内自愈；另有历史 2 次必须断电，<b>两类分开统计</b></td><td>固件缺陷仅列为假设；演示前断电兜底</td></tr>
+  <tr><td>/data 空间</td><td>清理 strace 溯源任务后 90%；实测日增约 6MB（约 40 天余量）；state.db 370MB</td><td>已备份 DB、裁 25 个旧会话、每日记录增长</td></tr>
+  <tr><td>服务假死（历史）</td><td>曾因 /data 100% 写满导致 sshd/8099/ASR 全挂，内核 ping 仍正常</td><td>已停用 strace 任务、装 disk_guard 每 15 分钟检查</td></tr>
+  </tbody>
+</table>
+
+<h2>六、结论与下一步</h2>
+
+<table>
+  <thead><tr><th style="width:22%">类别</th><th>内容</th></tr></thead>
+  <tbody>
+  <tr><td class="ok">已修复</td><td>音箱：休眠死锁、<code>os.read</code> 短读、"好小皮"截断；本机网线不通（换回 USB 网卡）；/data 写满的增量源（strace 任务）</td></tr>
+  <tr><td class="dim">已定位未修复</td><td>CM564 麦克风链路静音（已用 C270 顶替，硬件待换）；灯泡"必须断电"的固件行为</td></tr>
+  <tr><td class="no">未定位</td><td>5G 掉网的模组侧根因；03:50 内存瞬时耗尽的触发源</td></tr>
+  </tbody>
+</table>
+
+<p><b>下一步（按优先级）：</b></p>
+<ul>
+  <li>补"5G 掉线瞬间"取证：低负载 wan_watch + 只读 AT 查询，拿到模组状态再谈根因</li>
+  <li>做一次 C270 人声唤醒确认与 50 次"休息—唤醒"回归；确认播放侧是否切小米音箱</li>
+  <li>24 小时代表性运行（演示结束后）：记录服务中断、语音失败、WAN 掉线、灯泡失联与自动恢复；<b>24h 通过只记阶段验证，不宣称长期稳定</b></li>
+  <li>灯泡做对照实验（常驻控制进程 vs 每次 chip-tool），再决定是否更换</li>
+</ul>
+
+<div class="callout">
+<b>证据与脚本位置：</b>板端 <code>/data/ai_cpe/logs/health/</code>（health.log、fail_*.txt、events.log、disk_daily.csv、voice_guard.log）；语音 <code>/data/ai_cpe/logs/voice.jsonl</code>、<code>/tmp/voice_rms.csv</code>、<code>/tmp/voice_hb</code>；本机 <code>~/rg660_diag/</code>（postboot、health/lan_probe.csv、backup/state.db）；脚本 <code>/data/ai_cpe/tools/{health_watch.sh,voice_guard.sh,disk_daily.sh,disk_guard.sh}</code>。
+</div>
+
+
+<h2>附录 A：本周事件时间线（可追溯到日志）</h2>
+<table>
+  <thead><tr><th style="width:16%">时间</th><th style="width:26%">事件</th><th>关键证据 / 处置</th></tr></thead>
+  <tbody>
+  <tr><td>11-16 09:01</td><td>5G 掉网，飞书三次超时</td><td>网关日志 09:01:57–09:02:29 <code>HTTPSConnectionPool Max retries</code>；重拨后恢复</td></tr>
+  <tr><td>11-16 09:42</td><td>启动双链路探测</td><td>767 点、6.5 小时、零缺口；飞书 0 失败、灯泡 3 次（60s 内自愈）</td></tr>
+  <tr><td>11-16 19:23</td><td>音箱无响应（休眠死锁）</td><td><code>arecord</code> 零 CPU、主线程 <code>do_select</code>、日志停在"小皮休息"</td></tr>
+  <tr><td>11-17 03:50</td><td>内存瞬时耗尽</td><td>快照 MemAvailable 16MB、load 55、ASR 停止监听</td></tr>
+  <tr><td>11-17 09:04</td><td>语音进程退出</td><td>快照 reason=voice_exit；看门狗拉起</td></tr>
+  <tr><td>11-17 09:06</td><td>误判"设备全灭"</td><td>本机 USB 网卡消失、路由走办公网；板端日志服务全 UP</td></tr>
+  <tr><td>11-17 09:20</td><td>CM564 静音</td><td>p50=31/peak=325 vs C270 rms=387/peak=7837 → 切换采集</td></tr>
+  <tr><td>11-17 09:40</td><td><code>os.read</code> 短读回归</td><td>心跳正常但零 <code>[miss]</code>；<code>_read_exact</code> 修复</td></tr>
+  <tr><td>11-17 09:47</td><td>语音链路恢复</td><td>日志出现 <code>miss asr=...</code>（ASR 0.5s）</td></tr>
+  <tr><td>11-17 11:49</td><td>"好小皮"截断</td><td><code>asr="好小皮"</code>；<code>_wake_norm</code> 补"你"后自测全过</td></tr>
+  </tbody>
+</table>
+<div class="foot">
+  RG660MK 本周问题复盘 ｜ 2026-11-17 ｜ 结论均挂日志或命令输出；未验证项已明确标注，不以"重启后恢复"替代根因结论
+</div>
+
+</body>
+</html>
