@@ -359,6 +359,63 @@ def _wifi_noise(ifc):
     return None
 
 
+_STAINFO_ROW = re.compile(
+    r"^(?P<mac>[0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})\s+STA\s+STA\s+\d+\s+\d+\s+\S+\s+\d+\s+\d+\s+\d+\s+"
+    r"(?P<rssi>-?\d+(?:/-?\d+){3})\s+(?P<snr>-?\d+(?:/-?\d+){3})",
+    re.M)
+_STAINFO_CACHE = {"t": 0.0, "st": []}
+
+
+def _dmesg_last_ts():
+    try:
+        rc, o = sh("dmesg 2>/dev/null | tail -1", t=4)
+    except Exception:
+        return 0.0
+    m = re.search(r"\[\s*(\d+\.\d+)\]", o or "")
+    return float(m.group(1)) if m else 0.0
+
+
+def wifi_sta_table(ifc="ra0"):
+    """MTK 专用：iwpriv show stainfo 把每站每链 RSSI/SNR 打进 dmesg。
+
+    本机 MT7992 的 survey dump 噪声底恒为 0，拿不到经典 SNR；
+    这条路能拿到驱动按 EVM 计算的 SNR（实测 SNR0/1/2/3 四链）。
+    不清 dmesg（避免破坏现场），改用内核时间戳判断是不是本次输出。
+    返回 [{mac, rssi_best, snr_best, rssi, snr}]，取不到返回 []。
+    """
+    now = time.time()
+    if _STAINFO_CACHE["st"] and now - _STAINFO_CACHE["t"] < 30:
+        return _STAINFO_CACHE["st"]
+    t0 = _dmesg_last_ts()
+    try:
+        sh("iwpriv %s show stainfo >/dev/null 2>&1" % ifc, t=6)
+        time.sleep(0.4)
+        rc, o = sh("dmesg 2>/dev/null", t=8)
+    except Exception:
+        return _STAINFO_CACHE["st"]
+    st = []
+    for ln in (o or "").splitlines():
+        mt = re.match(r"^\[\s*(\d+\.\d+)\]", ln)
+        if mt and float(mt.group(1)) <= t0:
+            continue            # 旧行，跳过
+        body = re.sub(r"^\[\s*\d+\.\d+\]\s*", "", ln)
+        m = _STAINFO_ROW.match(body)
+        if not m:
+            continue
+        try:
+            rssi = [int(x) for x in m.group("rssi").split("/")]
+            snr = [int(x) for x in m.group("snr").split("/")]
+        except ValueError:
+            continue
+        i = rssi.index(max(rssi))
+        st.append({"mac": m.group("mac").lower(), "rssi": rssi, "snr": snr,
+                   "rssi_best": max(rssi),
+                   "snr_best": snr[i] if i < len(snr) else max(snr)})
+    if st:
+        _STAINFO_CACHE.update({"t": now, "st": st})
+    return st
+
+
 def cpe_info():
     """CPE 基本信息（5G 信号/接入终端/WiFi 信号/温度等），12s 缓存供看板轮询。"""
     now = time.time()
@@ -446,6 +503,19 @@ def cpe_info():
                 d["wifi_noise"] = _n
                 d["snr_wifi"] = int(_rb) - _n
                 break
+    # MTK 专用通道：iwpriv stainfo → dmesg（本机唯一能拿到 SNR 的路）
+    try:
+        _st = wifi_sta_table()
+    except Exception:
+        _st = []
+    if _st:
+        _named_macs = set(leases.keys())
+        _pool = [x for x in _st if x["mac"] in _named_macs] or _st
+        _p = max(_pool, key=lambda x: x["rssi_best"])
+        d["rssi_best"] = _p["rssi_best"]
+        d["snr_wifi"] = _p["snr_best"]
+        d["wifi_src"] = "iwpriv stainfo"
+        d["wifi_noise"] = None   # 驱动 SNR 按 EVM 算，倒推噪声底不成立，不显示
     _all = _valid or st
     d["sta"] = [{"name": (leases.get(s["mac"]) or "").strip() or s["mac"][-8:],
                  "rssi": s.get("rssi")} for s in _all]
@@ -2229,7 +2299,7 @@ async function tick(){
           var _ws=_sigCol(c.snr_wifi,25,10);
           chips+="<span class='chip' style='border-color:"+_ws+"' title='WiFi 质量：SNR = RSSI − 噪声底("+(c.wifi_noise!==undefined&&c.wifi_noise!==null?c.wifi_noise:"?")+" dBm)；绿≥25 / 黄10~25 / 红<10 dB'><b>WiFi SNR</b> <b style='color:"+_ws+"'>"+c.snr_wifi+" dB</b></span>";
         } else {
-          chips+="<span class='chip' title='本机 MT7992 驱动固定上报 noise=0（实测 iw survey dump 全为 0），无噪声底即无法算 SNR'><b>WiFi SNR</b> N/A</span>";
+          chips+="<span class='chip' title='SNR 来自 MTK 驱动 iwpriv stainfo（按 EVM 计算，取最强链）；本机 survey dump 噪声底恒为 0，故不走 RSSI−noise'><b>WiFi SNR</b> N/A</span>";
         }
       }
       else { chips+="<span class='chip'><b>WiFi</b> 无接入终端</span>"; }
