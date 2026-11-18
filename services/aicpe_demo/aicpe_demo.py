@@ -231,13 +231,101 @@ CPE_MODEL = "RG660MK-EU"
 CPE_PLATFORM = "MediaTek T930 + Wi-Fi MT7992 · 支持R18, 5GA"
 _CPE_CACHE = {"t": 0.0, "d": {}}
 
+# ===== 信号质量三段阈值（绿 / 黄 / 红），2026-11-18 =====
+# 5G SINR (dB): >=13 绿(3GPP "Good") | 0~13 黄 | <0 红(解调边缘)
+SINR_GOOD, SINR_FAIR = 13.0, 0.0
+# 5G RSRQ (dB): >-10 绿 | -15~-10 黄 | <-15 红   （SINR 拿不到时的退路）
+RSRQ_GOOD, RSRQ_FAIR = -10.0, -15.0
+# WiFi SNR (dB): >=25 绿(可跑 HE-MCS11) | 10~25 黄 | <10 红(802.11 可靠通信底线)
+WSNR_GOOD, WSNR_FAIR = 25, 10
+# 强度参考（仅用于配色，不单独作质量判据）:
+#   RSRP >=-85 绿 / -105~-85 黄 / <-105 红 ；RSSI >=-60 绿 / -70~-60 黄 / <-70 红
+
+# 5G 质量缓存：AT 查询较慢，60s 一次即可（页面本身还有 12s 缓存）
+_Q5G_CACHE = {"t": 0.0, "sinr": None, "rsrq": None, "src": None}
+
+
+def _cesq_to_db(v, kind):
+    """3GPP 27.007 CESQ 索引 → 物理值。越界/不可用返回 None。"""
+    try:
+        n = int(v)
+    except (TypeError, ValueError):
+        return None
+    if kind == "rsrq":
+        # 0..34 → -19.5 + 0.5*n dB；35=< -19.5；255=不可用
+        return round(-19.5 + 0.5 * n, 1) if 0 <= n <= 34 else None
+    if kind == "rsrp":
+        # 0..97 → -140 + n dBm；255=不可用
+        return (-140 + n) if 0 <= n <= 97 else None
+    return None
+
+
+def probe_5g_quality(force=False):
+    """探测 5G 链路质量：优先 SINR，其次 RSRQ。
+
+    数据源按可靠性排序，任一拿到就返回；全都拿不到则两者为 None —
+    页面显示 N/A，绝不编造数值。
+    """
+    now = time.time()
+    _ttl = _Q5G_CACHE.get("ttl", 60)
+    if not force and _Q5G_CACHE["t"] and (now - _Q5G_CACHE["t"]) < _ttl:
+        return _Q5G_CACHE
+    out = {"t": now, "sinr": None, "rsrq": None, "src": None, "ttl": 60}
+
+    # ① 固件自带的信号接口：部分版本会带 SINR/RSRQ 字段
+    try:
+        rc, o = sh("mipc_wan_cli --nw_get_signal 2>/dev/null", t=6)
+    except Exception:
+        o = ""
+    ms = re.search(r"SINR\s*[=:]\s*(-?\d+(?:\.\d+)?)", o or "", re.I)
+    if ms:
+        out["sinr"] = float(ms.group(1)); out["src"] = "nw_get_signal"
+    mr = re.search(r"RSRQ\s*[=:]\s*(-?\d+(?:\.\d+)?)", o or "", re.I)
+    if mr:
+        out["rsrq"] = float(mr.group(1)); out["src"] = out["src"] or "nw_get_signal"
+
+    # ② 退路：AT+CESQ（LTE 口径索引，需换算）
+    if out["sinr"] is None and out["rsrq"] is None:
+        try:
+            rc, o2 = sh("mipc_wan_cli --at_cmd 'AT+CESQ' 2>/dev/null", t=8)
+        except Exception:
+            o2 = ""
+        m2 = re.search(r"\+CESQ:\s*(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)", o2 or "")
+        if m2:
+            _r = _cesq_to_db(m2.group(5), "rsrq")
+            if _r is not None:
+                out["rsrq"] = _r; out["src"] = "AT+CESQ"
+    # 全都拿不到 → 退避到 5 分钟再试，别每轮都去撞 8s 超时
+    if out["sinr"] is None and out["rsrq"] is None:
+        out["ttl"] = 300
+    _Q5G_CACHE.update(out)
+    return _Q5G_CACHE
+
+
+def _wifi_noise(ifc):
+    """取该网卡「当前使用信道」的噪声底（dBm）。驱动不上报则返回 None。"""
+    try:
+        rc, o = sh("iw dev %s survey dump 2>/dev/null" % ifc, t=5)
+    except Exception:
+        return None
+    for blk in (o or "").split("Survey data from"):
+        if "[in use]" not in blk:
+            continue
+        m = re.search(r"noise:\s*(-?\d+)\s*dBm", blk)
+        if m:
+            v = int(m.group(1))
+            # 0 或正值 = 驱动未测量，不能当噪声底
+            if v < 0:
+                return v
+    return None
+
 
 def cpe_info():
     """CPE 基本信息（5G 信号/接入终端/WiFi 信号/温度等），12s 缓存供看板轮询。"""
     now = time.time()
     if now - _CPE_CACHE["t"] < 12 and _CPE_CACHE["d"]:
         return _CPE_CACHE["d"]
-    d = {"model": CPE_MODEL, "platform": CPE_PLATFORM}
+    d: dict = {"model": CPE_MODEL, "platform": CPE_PLATFORM}
     try:
         import llm_gateway as _llm
         d["llm"] = _llm.describe()
@@ -247,6 +335,11 @@ def cpe_info():
     m = re.search(r"RAT\s+([0-9A-Za-z+/]+)\s*,\s*RSRP=(-?\d+)", o)
     if m:
         d["rat"] = m.group(1); d["rsrp"] = int(m.group(2))
+    # 5G 质量（SINR 优先，RSRQ 退路）；拿不到就是 None，页面显示 N/A
+    _q = probe_5g_quality()
+    d["sinr"] = _q.get("sinr")
+    d["rsrq"] = _q.get("rsrq")
+    d["q_src"] = _q.get("src")
     st = []
     for ifc in ("ra0", "ra1", "rai0"):
         rc, o2 = sh("iw dev %s station dump 2>/dev/null" % ifc, t=5)
@@ -300,6 +393,20 @@ def cpe_info():
     _named_valid = [s for s in _valid if (leases.get(s["mac"]) or "*") not in ("", "*")]
     _best_pool = _named_valid or _valid
     d["rssi_best"] = max([s["rssi"] for s in _best_pool]) if _best_pool else None
+    # WiFi 质量：SNR = 最强 RSSI − 该网卡当前信道的噪声底（强度 ≠ 质量）
+    d["wifi_noise"] = None
+    d["snr_wifi"] = None
+    _rb = d.get("rssi_best")
+    if _rb is not None:
+        _ifcs = ["ra0", "ra1", "rai0"]
+        if _best_pool and _best_pool[0].get("ifc"):
+            _ifcs = [_best_pool[0]["ifc"]] + [x for x in _ifcs if x != _best_pool[0]["ifc"]]
+        for _ifc in _ifcs:
+            _n = _wifi_noise(_ifc)
+            if _n is not None:
+                d["wifi_noise"] = _n
+                d["snr_wifi"] = int(_rb) - _n
+                break
     _all = _valid or st
     d["sta"] = [{"name": (leases.get(s["mac"]) or "").strip() or s["mac"][-8:],
                  "rssi": s.get("rssi")} for s in _all]
@@ -1976,9 +2083,36 @@ async function tick(){
         if(npu&&npu.ok&&npu.elapsed_ms){ _npuTxt+=" · 最近一次 <b style='color:#31d17a'>"+(npu.elapsed_ms/1000).toFixed(1)+" s</b>"; }
         chips+=_npuTxt+"</span>";
       }
-      if(c.rsrp!==undefined) chips+="<span class='chip' style='border-color:#31d17a'><b>当前信号（"+(c.rat||"5G")+"）</b> RSRP <b style='color:#31d17a'>"+c.rsrp+" dBm</b></span>";
+      // ── 信号：强度 + 质量（三段配色 绿#31d17a / 黄#ffd479 / 红#ff7f7f）──
+      var _G="#31d17a", _Y="#ffd479", _R="#ff7f7f";
+      var _sigCol=function(v,hi,lo){ if(v===null||v===undefined) return _Y;
+        return v>=hi?_G:(v>=lo?_Y:_R); };
+      if(c.rsrp!==undefined&&c.rsrp!==null){
+        var _rc=_sigCol(c.rsrp,-85,-105);
+        chips+="<span class='chip' style='border-color:"+_rc+"' title='5G 强度（越高越好；绿≥-85 / 黄-105~-85 / 红<-105 dBm）'><b>5G 强度（"+(c.rat||"5G")+"）</b> RSRP <b style='color:"+_rc+"'>"+c.rsrp+" dBm</b></span>";
+      }
+      var _q5=null,_q5n="",_q5hi=0,_q5lo=0,_q5tip="";
+      if(c.sinr!==undefined&&c.sinr!==null){ _q5=c.sinr; _q5n="5G SINR"; _q5hi=13; _q5lo=0;
+        _q5tip="5G 链路质量（信干噪比）；绿≥13 / 黄0~13 / 红<0 dB"; }
+      else if(c.rsrq!==undefined&&c.rsrq!==null){ _q5=c.rsrq; _q5n="5G RSRQ"; _q5hi=-10; _q5lo=-15;
+        _q5tip="5G 参考信号质量（SINR 不可用时的退路，含小区负载）；绿>-10 / 黄-15~-10 / 红<-15 dB"; }
+      if(_q5!==null){
+        var _qc=_sigCol(_q5,_q5hi,_q5lo);
+        chips+="<span class='chip' style='border-color:"+_qc+"' title='"+_q5tip+"（来源："+(c.q_src||"?")+"）'><b>"+_q5n+"</b> <b style='color:"+_qc+"'>"+_q5+" dB</b></span>";
+      } else {
+        chips+="<span class='chip' title='平台未上报 SINR/RSRQ（mipc_wan_cli 与 AT+CESQ 均无应答）'><b>5G 质量</b> N/A</span>";
+      }
       if(s.now) chips+="<span class='chip'><b>数据更新</b> "+s.now+"</span>";
-      if(c.rssi_best!==undefined&&c.rssi_best!==null){ chips+="<span class='chip'><b>WiFi 信号</b> "+c.rssi_best+" dBm</span>"; }
+      if(c.rssi_best!==undefined&&c.rssi_best!==null){
+        var _rs=_sigCol(c.rssi_best,-60,-70);
+        chips+="<span class='chip' style='border-color:"+_rs+"' title='WiFi 强度（接入终端中最强 RSSI）；绿≥-60 / 黄-70~-60 / 红<-70 dBm'><b>WiFi 强度</b> <b style='color:"+_rs+"'>"+c.rssi_best+" dBm</b></span>";
+        if(c.snr_wifi!==undefined&&c.snr_wifi!==null){
+          var _ws=_sigCol(c.snr_wifi,25,10);
+          chips+="<span class='chip' style='border-color:"+_ws+"' title='WiFi 质量：SNR = RSSI − 噪声底("+(c.wifi_noise!==undefined&&c.wifi_noise!==null?c.wifi_noise:"?")+" dBm)；绿≥25 / 黄10~25 / 红<10 dB'><b>WiFi SNR</b> <b style='color:"+_ws+"'>"+c.snr_wifi+" dB</b></span>";
+        } else {
+          chips+="<span class='chip' title='驱动未上报噪声底（iw survey dump 无 noise 字段）'><b>WiFi SNR</b> N/A</span>";
+        }
+      }
       else { chips+="<span class='chip'><b>WiFi</b> 无接入终端</span>"; }
       if(c.ssid) chips+="<span class='chip'><b>SSID</b> "+c.ssid+"</span>";
       var _cnm=(c.sta_names||[]).filter(function(x){return x&&x!=="*";});
