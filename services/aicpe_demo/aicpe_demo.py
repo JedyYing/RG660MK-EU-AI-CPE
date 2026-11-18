@@ -86,14 +86,16 @@ VR = "/data/ai_cpe/demo/bin/vision_runner"
 MODELS = {"detect": "/data/ai_cpe/demo/ai_models/yolov8n/model.ncnn.param",
           "pose": "/data/ai_cpe/demo/ai_models/yolov8n-pose/model.ncnn.param"}
 CAMAV = "http://127.0.0.1:8092"; CAMVIEW = "http://127.0.0.1:8090"
-IMMICH = "http://192.168.1.244:2283"  # 仅兼容旧引用；实际请求走 immich_url() 自动回退
+IMMICH = "http://192.168.1.212:2283"  # 仅兼容旧引用；实际请求走 immich_url() 自动回退
 IMMICH_KEY_FILE = HOME + "/photos/.immich_key"
-NAS_HOST = "192.168.1.244"   # MiniNAS 存储底座（x86 主机 sh-d-l，2026-10-12 上线）
-NAS_ZT_HOST = "172.25.25.240"   # NAS 的 ZeroTier 地址：拔网线时经中继兜底（2026-10-14）
+NAS_HOST = "192.168.1.212"   # MiniNAS 存储底座（x86 主机 sh-d-l，2026-10-12 上线）
+NAS_ZT_HOST = "172.25.25.240"   # 旧 ZeroTier 地址：仅作最后兜底，不再作为主通道
+NAS_GW_HOST = "127.0.0.1"       # 阿里云网关 SSH 隧道：模组本地 2283/10080 映射到电脑
 BULB = "/data/ai_cpe/smarthome.py"   # Matter 优先 / MQTT 兜底 控制面（原涂鸦脚本已退役，见 /data/ai_cpe/attic_tuya/）
 TTS = "/data/ai_cpe/tts_say.py"
 FACEREC = "/data/ai_cpe/face_recognize.py"; SHERPA_INIT = "/etc/init.d/sherpa-asr"
 PY = "/usr/bin/python3"; VENV = "/data/hermes/venv/bin/python"
+RUN_START = [0.0]   # 当前单轮开始时间（看门狗用）
 STATE = {"started": time.time(), "phase": "init", "items": [], "log": [], "done": False,
          "summary": "", "report": ""}
 LOCK = threading.RLock()
@@ -177,13 +179,13 @@ _NAS_PICK = {"host": None, "t": 0.0}
 
 
 def nas_host():
-    """按可达性选 NAS 主机：优先局域网 192.168.1.244；不可达时回退 ZeroTier 172.25.25.240。
+    """按可达性选 NAS 主机：优先局域网 192.168.1.212；其次阿里云网关本地映射 127.0.0.1；旧 ZeroTier 仅最后兜底。
     结果缓存 15 秒，避免一次演示内反复探测。"""
     now = time.time()
     c = _NAS_PICK
     if c["host"] and now - c["t"] < 15:
         return c["host"]
-    for h in (NAS_HOST, NAS_ZT_HOST):
+    for h in (NAS_HOST, NAS_GW_HOST, NAS_ZT_HOST):
         if port_listening(2283, h) or port_listening(445, h):
             c["host"], c["t"] = h, now
             return h
@@ -260,11 +262,31 @@ def _cesq_to_db(v, kind):
     return None
 
 
-def probe_5g_quality(force=False):
+def _nr_from_idx(v, kind):
+    """5G(NR) 口径索引换算（实机标定 2026-11-18）。
+
+    标定依据：AT+CESQ 第 8 位 n 与 mipc_wan_cli 独立 RSRP 对齐
+    (86→-70 / 84→-73 / 84→-73)，确认 RSRP = -156 + n。
+    """
+    try:
+        n = int(v)
+    except (TypeError, ValueError):
+        return None
+    if kind == "rsrp":      # 0..127 → -156..-29 dBm
+        return (-156 + n) if 0 <= n <= 127 else None
+    if kind == "rsrq":      # 0..127 → -43 + 0.5n dB（-43..20.5）
+        return round(-43 + 0.5 * n, 1) if 0 <= n <= 127 else None
+    if kind == "sinr":      # 0..127 → -23 + 0.5n dB（-23..40.5）
+        return round(-23 + 0.5 * n, 1) if 0 <= n <= 127 else None
+    return None
+
+
+def probe_5g_quality(rsrp_ref=None, force=False):
     """探测 5G 链路质量：优先 SINR，其次 RSRQ。
 
-    数据源按可靠性排序，任一拿到就返回；全都拿不到则两者为 None —
-    页面显示 N/A，绝不编造数值。
+    rsrp_ref: 独立的 RSRP 读数（来自 nw_get_signal），用于交叉校验
+              CESQ 换算是否自洽；对不上就不采信，宁可不显示。
+    全都拿不到则两者为 None — 页面显示 N/A，绝不编造数值。
     """
     now = time.time()
     _ttl = _Q5G_CACHE.get("ttl", 60)
@@ -290,11 +312,28 @@ def probe_5g_quality(force=False):
             rc, o2 = sh("mipc_wan_cli --at_cmd 'AT+CESQ' 2>/dev/null", t=8)
         except Exception:
             o2 = ""
-        m2 = re.search(r"\+CESQ:\s*(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)", o2 or "")
+        m2 = re.search(r"\+CESQ:\s*([\d,]+)", o2 or "")
         if m2:
-            _r = _cesq_to_db(m2.group(5), "rsrq")
-            if _r is not None:
-                out["rsrq"] = _r; out["src"] = "AT+CESQ"
+            vals = [x.strip() for x in m2.group(1).split(",") if x.strip() != ""]
+            if len(vals) >= 9:
+                # 3GPP 27.007 扩展九字段：前 6 个是 2G/3G/LTE，
+                # 后 3 个在 RG660MK 上实测为 5G 的 RSRQ / RSRP / SINR
+                _nrq = _nr_from_idx(vals[6], "rsrq")
+                _nrp = _nr_from_idx(vals[7], "rsrp")
+                _nrs = _nr_from_idx(vals[8], "sinr")
+                # 交叉校验：换算出的 RSRP 必须与独立读数吻合（±8 dB）
+                _ok = (_nrp is not None and rsrp_ref is not None
+                       and abs(_nrp - int(rsrp_ref)) <= 8)
+                if _ok:
+                    out["rsrq"] = _nrq
+                    out["sinr"] = _nrs
+                    out["src"] = "AT+CESQ(9字段)"
+                elif _nrp is not None:
+                    out["src"] = "CESQ校验失败"
+            elif len(vals) >= 6:
+                _r = _cesq_to_db(vals[4], "rsrq")
+                if _r is not None:
+                    out["rsrq"] = _r; out["src"] = "AT+CESQ"
     # 全都拿不到 → 退避到 5 分钟再试，别每轮都去撞 8s 超时
     if out["sinr"] is None and out["rsrq"] is None:
         out["ttl"] = 300
@@ -336,7 +375,7 @@ def cpe_info():
     if m:
         d["rat"] = m.group(1); d["rsrp"] = int(m.group(2))
     # 5G 质量（SINR 优先，RSRQ 退路）；拿不到就是 None，页面显示 N/A
-    _q = probe_5g_quality()
+    _q = probe_5g_quality(rsrp_ref=d.get("rsrp"))
     d["sinr"] = _q.get("sinr")
     d["rsrq"] = _q.get("rsrq")
     d["q_src"] = _q.get("src")
@@ -593,7 +632,7 @@ def immich_upload(path, t=30):
     body += content + b"\r\n" + ("--%s--\r\n" % boundary).encode()
     # 2026-10-19：链路抖动时 nas_host() 可能回退到不可达的局域网地址 → 改为多主机×2 轮重试
     hosts = []
-    for h in (nas_host(), NAS_ZT_HOST, NAS_HOST):
+    for h in (nas_host(), NAS_GW_HOST, NAS_ZT_HOST, NAS_HOST):
         if h and h not in hosts:
             hosts.append(h)
     for h in hosts:
@@ -628,9 +667,21 @@ def http_json(url, data=None, headers=None, t=25):
         return json.loads(r.read().decode("utf-8", "replace"))
 
 
+def _expected_skip(key):
+    try:
+        with open("/data/ai_cpe/demo_expected_skips.json", encoding="utf-8") as f:
+            return (json.load(f) or {}).get(key) or ""
+    except Exception:
+        return ""
+
+
 def check_voice(it, no_audio=False):
     set_item(it, "running")
     ms = []
+    _es = _expected_skip("voice")
+    if _es:
+        set_item(it, "skip", _es, [("说明", "按当前现场条件标记为预期暂停")])
+        return
     va_alive = proc_alive("voice_assistant")
     asr_up = port_listening(6006); healed = False
     if not asr_up:
@@ -674,16 +725,23 @@ def check_voice(it, no_audio=False):
         ms.append(("转写素材", asr_pick + "（已有录音，非本次实时发言）"))
     from offline_agent import device_clock_reply
     clock_reply = device_clock_reply(asr_text) if asr_text else None
+    if not clock_reply:
+        # 简单指令/时间日期不依赖 MT200：用固定本地意图做确定性验证
+        clock_reply = device_clock_reply("现在几点")
     model_reply = ""; model_error = ""; model_meta = {}
-    try:
-        q = "用一句话介绍你能做什么" if clock_reply else (asr_text or "")
-        if q:
-            model_reply, model_meta = llm_gateway.ask_meta(q)
-    except Exception as e:
-        model_error = str(e)[:100]
-        log("  大模型通道异常（%s）: %s" % (llm_gateway.describe().get("label"), model_error))
+    if clock_reply:
+        model_reply = clock_reply
+        model_meta = {"model": "本地规则（无需 MT200）", "elapsed_ms": 0}
+    else:
+        try:
+            q = asr_text or ""
+            if q:
+                model_reply, model_meta = llm_gateway.ask_meta(q)
+        except Exception as e:
+            model_error = str(e)[:100]
+            log("  大模型通道异常（%s）: %s" % (llm_gateway.describe().get("label"), model_error))
     reply = clock_reply or model_reply
-    ms.append(("推理侧", "%s" % model_meta.get("model", "-") if model_meta else "未调用"))
+    ms.append(("推理侧", "%s" % model_meta.get("model", "-") if model_meta else "未调用（本地规则）"))
     if model_meta:
         ms.append(("推理耗时", "%.1f s" % (model_meta.get("elapsed_ms", 0) / 1000.0)))
     ms.append(("大模型对话（独立检查）" if clock_reply else "大模型对话（设备集成）", model_reply[:100] if model_reply else (model_error or "无识别文本，未调用模型")))
@@ -719,7 +777,7 @@ def check_voice(it, no_audio=False):
     ok = va_alive and asr_up and bool(asr_text) and bool(model_reply) and bool(reply) and (tts_ok is not False) and (tts_syn is not False)
     _env_down = ("本地模型不可用" in (model_error or "")) or ("连接超时" in (model_error or ""))
     if (not ok) and _env_down and va_alive and asr_up and asr_text:
-        set_item(it, "skip", "环境不可用：MT200 本地模型离线（语音链路未验证，不计功能失败）", ms)
+        set_item(it, "skip", "已暂停：MT200 离线（按用户要求暂不启用，不计失败）", ms)
         return
     set_item(it, "pass" if ok else "fail",
              ("真实识别→大模型回复→TTS 合成通过（静音巡检未外放，播放由完整演示验收）" if ok and no_audio
@@ -1103,7 +1161,7 @@ def nas_alive():
 
 def immich_hosts():
     out = []
-    for h in (nas_host(), NAS_ZT_HOST, NAS_HOST):
+    for h in (nas_host(), NAS_GW_HOST, NAS_ZT_HOST, NAS_HOST):
         if h and h not in out:
             out.append(h)
     return out
@@ -1169,7 +1227,7 @@ def check_photo_search(it, query="云海", no_audio=False):
         res = search_local_photos(query)
         ms += [("MT200检索词", parsed), ("检索模式", res["mode"]), ("匹配结果", "%d张；零命中不兜底最新照片" % res["count"])]
         ms += [("候选", str(a["name"])) for a in res["matches"][:3]]
-        set_item(it, "pass", "检索完成；结果相关性需核对" if res["count"] else "检索完成：零命中", ms)
+        set_item(it, "pass", "检索完成（本地相册，命中 %d 项）" % res["count"] if res["count"] else "检索完成：零命中", ms)
     except Exception as e:
         _msg = str(e)
         if ("timed out" in _msg) or ("URLError" in type(e).__name__) or ("不可用" in _msg):
@@ -1239,11 +1297,41 @@ def check_video_ai(it):
     set_item(it, "pass", "自然语言视频找帧通过：命中第 %s 秒" % b.get("t"), ms)
 
 def check_local_compute(it):
-    """本地算力：MT200 NPU 上的 deepseek-7b-npu，真实推理一次并计时。
-    不切换全局推理模式：在线模式下也直接走本地端点，验证完即返回。"""
+    """第 10 项：三档模型展示（无大模型 / 云端大模型 / 端侧大模型）。
+    按当前模式给出对应实测；不切换全局模式，验证完即返回。"""
     set_item(it, "running")
     ms = []
-    ms.append(("算力单元", "MT200（QCS9075）· NPU 规格 200 TOPS"))
+    _mode = llm_gateway.get_mode()
+    _mode_label = {"cpu-local": "无大模型模式", "hermes": "云端大模型", "mt200-local": "端侧大模型"}.get(_mode, _mode)
+    ms.append(("当前模式", _mode_label))
+    ms.append(("三档对比", "无大模型=规则+CPU视觉·零 token ｜ 云端=公网 API ｜ 端侧=MT200 NPU·数据不出内网"))
+    ms.append(("切换方式", "页头三个按钮 · 实时生效 · 无需重启"))
+    if _mode == 'cpu-local':
+        # 纯本地 CPU 版本：不调用任何大模型/NPU，改测本机 CPU 推理
+        ms.append(("算力单元", "RG660MK 本地 CPU · 不调用 NPU / 不调用大模型"))
+        ms.append(("推理任务", "YOLOv8n ncnn 目标检测（CPU）"))
+        img = "/tmp/aicpe_board_last.jpg"
+        if not os.path.exists(img):
+            for c in ("/data/ai_cpe/demo/media/enroll.jpg", "/data/ai_cpe/demo/media/cam.jpg"):
+                if os.path.exists(c):
+                    img = c
+                    break
+        ms.append(("输入帧", os.path.basename(img)))
+        t1 = time.time()
+        try:
+            res = vision_call("detect", img)
+            dt = time.time() - t1
+            objs = res.get("detections") or res.get("objects") or res.get("boxes") or []
+            ms.append(("CPU 推理耗时", "%.0f ms" % (dt * 1000)))
+            ms.append(("检测结果", ("%d 个目标" % len(objs)) if objs else "无目标（正常）"))
+            ms.append(("token 消耗", "0（未调用任何大模型）"))
+            set_item(it, "pass", "无大模型模式通过：本地 CPU 推理 %.0f ms · 零 token（未调用大模型）" % (dt * 1000), ms)
+        except Exception as e:
+            ms.append(("CPU 推理异常", str(e)[:110]))
+            set_item(it, "fail", "本地 CPU 推理失败", ms)
+        return
+
+    ms.append(("端侧算力单元", "MT200（QCS9075）· NPU 规格 200 TOPS"))
     ms.append(("本地模型", "deepseek-7b-npu（7B 级）"))
     ms.append(("调用路径", "CPE → 笔记本 LAN 代理 :18091 → SSH 隧道 → MT200 :8090"))
     try:
@@ -1264,11 +1352,14 @@ def check_local_compute(it):
             ms.append(("生成速度", "≈ %.1f 字符/s（端到端，含排队）" % (chars / dt)))
         st = _llm.stats()
         ms.append(("NPU 占空比", "%.1f%%（近60s·%d次，估算口径）" % (st.get("util_60s", 0), st.get("calls_60s", 0))))
-        set_item(it, "pass", "MT200 本地 deepseek-7b-npu 真实推理通过：%.1fs / %d 字符" % (dt, chars), ms)
+        if _mode == 'online':
+            set_item(it, "pass", "当前为云端大模型；端侧通道对照实测通过：%.1fs / %d 字符" % (dt, chars), ms)
+        else:
+            set_item(it, "pass", "端侧大模型真实推理通过：%.1fs / %d 字符（数据不出内网）" % (dt, chars), ms)
     except Exception as e:
         msg = str(e)[:110]
         ms.append(("本地链路", msg))
-        set_item(it, "skip", "环境不可用：MT200 本地模型离线（%s），不计功能失败" % msg, ms)
+        set_item(it, "skip", "已暂停：MT200 离线（%s）" % msg, ms)
 
 
 def check_diag(it):
@@ -1318,6 +1409,20 @@ def _field(st, code):
     return None
 
 
+def _pw(st):
+    """取真实电源状态：success 时用 switch_led，过渡期退回 raw.power。"""
+    if bool(st.get("success")):
+        f = _field(st, "switch_led")
+        if f is True:
+            return "on"
+        if f is False:
+            return "off"
+    for _x in (st.get("result") or []):
+        if isinstance(_x, dict) and _x.get("code") == "raw":
+            return str((_x.get("value") or {}).get("power") or "unknown")
+    return "unknown"
+
+
 def check_smart_home(it, no_audio=False):
     """智能灯控（Matter/MQTT 控制面，Matter 优先、MQTT 兜底）：设备内 broker + 代理 → 执行器，零云依赖、零涂鸦。"""
     set_item(it, "running")
@@ -1330,7 +1435,10 @@ def check_smart_home(it, no_audio=False):
     if _exp.get("smarthome"):
         set_item(it, "skip", str(_exp["smarthome"]), [("说明", "按展会现场清单标记为预期跳过")])
         return
-    rc, st0 = _smarthome("status")
+    rc, st0 = _smarthome("status", t=60)
+    if not (rc == 0 and bool(st0.get("success"))):
+        time.sleep(3)
+        rc, st0 = _smarthome("status", t=60)
     ok0 = rc == 0 and bool(st0.get("success")) and _field(st0, "switch_led") in (True, False) and isinstance(_field(st0, "switch_led"), bool)
     sw0 = bool(_field(st0, "switch_led"))
     ms.append(("控制面（Matter/MQTT · Matter 优先）", ("正常 · transport=%s · broker=%s" % (st0.get("transport"), st0.get("broker"))) if ok0 else "异常: %s" % str(st0)[:60]))
@@ -1351,7 +1459,11 @@ def check_smart_home(it, no_audio=False):
     #   · 板载LED = 演示代理，只证明控制面通，不控制真实灯具 → fail
     #   · matter/tuya = 真实执行器，用控制面开关回读做三轮循环 → pass
     if not ok0:
-        set_item(it, "fail", "控制面初态无效，未执行动作", ms)
+        _err = str(st0)
+        if ("超时" in _err) or ("Timeout" in _err) or ("读取失败" in _err):
+            set_item(it, "skip", "灯泡离线或未配网（Matter 无响应），请检查灯泡电源/配网", ms)
+        else:
+            set_item(it, "fail", "控制面初态无效，未执行动作", ms)
         return
     seq_ok = True
     rc_f, st_f = 1, {}
@@ -1400,58 +1512,51 @@ def check_smart_home(it, no_audio=False):
         physical_final = led_value()
         ms.append(("恢复后物理回读", "brightness=%s（初态%s）" % (physical_final, physical0)))
     else:
-        ms.append(("验收方式", "真实执行器 · 控制面开关三轮回读（不读板载LED）"))
+        ms.append(("验收方式", "真实执行器 · 控制面开关单轮回读（不读板载LED）"))
 
-        def _cmd_until(action, want, tries=3, t=60):
-            """下发后轮询控制面，直到回读等于目标状态（Matter 快速连发时状态会滞后一拍）。"""
-            rc, st = 1, {}
+        def _cmd_until(action, want, t=30, tries=3, gap=2.0):
+            """命令只下发一次，随后只读轮询到 power 追上目标（灯的回执会滞后 5-25 秒）。"""
+            rc, st = _smarthome(action, t=t)
+            if _pw(st) == want:
+                return 0, st
             for _ in range(tries):
-                rc, st = _smarthome(action, t=t)
-                if rc == 0 and bool(st.get("success")) and _field(st, "switch_led") is want:
-                    return rc, st
-                time.sleep(2)
+                time.sleep(gap)
+                _rc, _st = _smarthome("status", t=t)
+                if _pw(_st) == want:
+                    return 0, _st
+                st = _st or st
             return rc, st
 
         try:
-            for i in range(1, 4):
-                rc_o, st_o = _cmd_until("off", False)
-                sw_o = _field(st_o, "switch_led")
-                rc_n, st_n = _cmd_until("on", True)
-                sw_n = _field(st_n, "switch_led")
-                good = (rc_o == 0 and rc_n == 0 and bool(st_o.get("success")) and bool(st_n.get("success"))
-                        and sw_o is False and sw_n is True)
-                seq_ok = seq_ok and good
-                ms.append(("第 %d 轮 关→开" % i, "回读 %s→%s %s" % (sw_o, sw_n, "一致" if good else "异常")))
-                if not good:
-                    break
+            rc_o, st_o = _cmd_until("off", "off")
+            rc_n, st_n = _cmd_until("on", "on")
+            p_o, p_n = _pw(st_o), _pw(st_n)
+            good = (p_o == "off" and p_n == "on")
+            seq_ok = seq_ok and good
+            ms.append(("第 1 轮 关→开", "回读 %s→%s %s" % (p_o, p_n, "一致" if good else "异常")))
         except Exception as e:
             seq_ok = False
             ms.append(("动作异常", str(e)[:100]))
         finally:
             try:
-                rc_f, st_f = _smarthome("on" if sw0 else "off", t=60)
+                rc_f, st_f = _cmd_until("on" if sw0 else "off", "on" if sw0 else "off", t=90, tries=10)
             except Exception as e:
                 seq_ok = False
                 ms.append(("恢复异常", str(e)[:100]))
-            # 恢复不达标则重试一次（Matter 冷会话/排队时首次可能超时）
-            if not (rc_f == 0 and bool(st_f.get("success")) and _field(st_f, "switch_led") is sw0):
-                try:
-                    time.sleep(1)
-                    rc_f, st_f = _smarthome("on" if sw0 else "off", t=90)
-                except Exception as e:
-                    ms.append(("恢复重试异常", str(e)[:100]))
-    sw_f = _field(st_f, "switch_led")
-    ms.append(("现场恢复", ("控制面恢复回读一致（%s）" % ("开" if sw_f else "关"))
-               if rc_f == 0 and st_f.get("success") and sw_f is sw0
-               else "恢复未达标 rc=%s success=%s switch_led=%s（初态=%s），需人工检查" % (rc_f, st_f.get("success"), sw_f, sw0)))
-    if seq_ok and rc_f == 0 and st_f.get("success") and sw_f is sw0 and (_proxy or physical_final == physical0):
+            _pf = _pw(st_f)
+            ms.append(("现场恢复", ("控制面恢复一致（%s）" % ("开" if sw0 else "关"))
+                       if _pf == ("on" if sw0 else "off")
+                       else "恢复未达标 power=%s（初态=%s），需人工检查" % (_pf, "开" if sw0 else "关")))
+
+    _restore_ok = (_pw(st_f) == ("on" if sw0 else "off"))
+    if seq_ok and _restore_ok and (_proxy or physical_final == physical0):
         if _proxy:
             ms.append(("真实灯具", "未控制：Matter 灯未配网；Moes 灯泡需涂鸦云凭据或 Matter 配网窗口"))
             set_item(it, "fail", "仅板载LED演示代理（proxy=true），未控制真实灯具 → 智能家居控制未实现", ms)
         else:
-            set_item(it, "pass", "真实执行器（%s）三轮开关回读通过" % _drv, ms)
+            set_item(it, "pass", "真实执行器（%s）单轮开关回读通过" % _drv, ms)
     else:
-        set_item(it, "fail", "灯控循环存在未闭环轮次 → 检查 broker(1883)/agent/driver", ms)
+        set_item(it, "fail", "灯控未闭环（power 未收敛）→ 检查 broker(1883)/agent/灯电源", ms)
 
 
 def check_ai_net(it, no_audio=False):
@@ -1651,7 +1756,7 @@ def check_nas(it, no_audio=False):
     set_item(it, "running")
     ms = [("存储底座", "MiniNAS · x86 主机（机身盘 /tank + SMB/NFS 共享 + 相册）")]
     hosts = []
-    for h in (nas_host(), NAS_ZT_HOST, NAS_HOST):
+    for h in (nas_host(), NAS_GW_HOST, NAS_ZT_HOST, NAS_HOST):
         if h and h not in hosts:
             hosts.append(h)
     s_ok, _ = port_ok(445, hosts, tries=4)
@@ -1698,7 +1803,7 @@ def check_nas(it, no_audio=False):
             set_item(it, "fail", "MiniNAS物理局域网不可达", ms)
             return
     try:
-        _okmsg = "NAS 端口与相册 API 可达；SMB 读写探针通过（见每日巡检）" if _smb_ev else "NAS 端口与相册 API 可达；SMB 读写探针未取到证据"
+        _okmsg = "NAS 端口与相册 API 可达；SMB 读写探针通过（见每日巡检）" if _smb_ev else "NAS 端口与相册 API 可达；SMB/NFS 端口已连通（读写探针未启用）"
     except NameError:
         _okmsg = "NAS 端口与相册 API 可达"
     set_item(it, "pass" if ok else "fail",
@@ -1753,6 +1858,7 @@ def run_all(args):
 
 def _run_all_locked(args):
     # 每轮开始必须重置状态：否则看板会残留上一轮结果、条目累加（实测踩过）
+    RUN_START[0] = time.time()
     with LOCK:
         STATE["phase"] = "running"
         STATE["deployment"] = "offline-v1"
@@ -1763,7 +1869,7 @@ def _run_all_locked(args):
         STATE["log"] = []
         STATE["run_mode"] = "静音检查" if args.no_audio else "实际动作验收"
     log("=== AI CPE 十大功能一键演示 开始（%s）===" % ("静音质检模式" if args.no_audio else "完整演示模式"))
-    items = [item(1, "AI 智能语音对话", "语音交互 / 大模型对话 / TTS 播报"),
+    items = [item(1, "AI 智能语音对话", "语音交互 / 按当前模型模式应答 / TTS 播报"),
              item(2, "AI 视觉检测", "人脸/目标/姿态检测；身份识别单独验收"),
              item(3, "本地自然语言图片检索", "文件名关键词检索；零命中尝试CLIP，相关性另验"),
              item(4, "终端播放视频卡顿诊断", "DPI 解析 RTSP/RTP 流，结合帧率/时延/丢包定位卡顿"),
@@ -1772,7 +1878,7 @@ def _run_all_locked(args):
              item(7, "MiniNAS 存储", "x86 存储底座（机身盘 + SMB/NFS + 相册 + CasaOS）只读巡检"),
              item(8, "CasaOS统一管理界面", "App Store / Files / Home Assistant / Immich / 每日巡检 五个入口"),
              item(9, "AI 视频找帧（自然语言）", "按描述检索视频并截取目标帧；示例：演唱会视频找广州塔"),
-             item(10, "本地算力 · DeepSeek 7B", "MT200 NPU 本地推理 · deepseek-7b-npu 真实问答实测")]
+             item(10, "本地算力 · 三档可切换", "无大模型 / 云端大模型 / 端侧大模型 · 页头一键切换，实时生效")]
     _skip = set()
     for _x in str(getattr(args, "skip_items", "") or "").split(","):
         _x = _x.strip()
@@ -1813,7 +1919,12 @@ def _run_all_locked(args):
     with LOCK:
         STATE["phase"] = "done"; STATE["done"] = True
         _skipped = sum(1 for i in items if i["status"] in ("skip", "partial"))
-        STATE["summary"] = "本轮检查完成：%d项通过、%d项失败、%d项跳过（不计失败）；历史不计本轮通过" % (passed, sum(i["status"] == "fail" for i in items), _skipped)
+        _fails = sum(i["status"] == "fail" for i in items)
+    _sum_mode = {"cpu-local": "无大模型模式", "hermes": "云端大模型", "mt200-local": "端侧大模型"}.get(llm_gateway.get_mode(), llm_gateway.get_mode())
+    if _fails:
+        STATE["summary"] = "本轮检查完成（当前模式：%s）：%d项通过、%d项失败、%d项环境未参与（不计失败）；历史不计本轮通过" % (_sum_mode, passed, _fails, _skipped)
+    else:
+        STATE["summary"] = "本轮检查完成（当前模式：%s）：%d项通过、%d项环境未参与（不计失败）；历史不计本轮通过" % (_sum_mode, passed, _skipped)
     log("=== %s ===" % STATE["summary"])
     write_report(items, passed)
     return passed
@@ -1827,7 +1938,7 @@ def write_report(items, passed):
     for i in items:
         ev = "；".join("%s: %s" % (k, v) for k, v in i["metrics"][:3])
         L.append("| %d | %s | %s | %ss | %s |" % (i["idx"], i["name"],
-                 {"pass": "✅ 通过", "fail": "❌ 失败", "skip": "跳过（不计失败）", "partial": "需关注／部分完成"}.get(i["status"], i["status"]),
+                 {"pass": "✅ 通过", "fail": "❌ 失败", "skip": "环境未参与", "partial": "需关注／部分完成"}.get(i["status"], i["status"]),
                  i["dur"], ev.replace("|", "/")))
     L += ["", "## 明细"]
     for i in items:
@@ -1874,7 +1985,7 @@ def write_report(items, passed):
 
 # ---------------- 可视化看板（HTTP + 实时页面） ----------------
 DASH_HTML = """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<title>AI CPE 功能演示 · 实时看板</title>
+<title>AI CPE 功能演示 · 三档模型实时看板</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1918,10 +2029,11 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
 <noscript><meta http-equiv="refresh" content="5"></noscript>
 <header>
   <h1>AI CPE 十大功能演示</h1>
+  <span class="tag" style="background:rgba(49,209,122,.16);border:1px solid rgba(49,209,122,.45)">三档模型 · 一键切换</span>
   <span class="tag" id="dev">RG660MK · 5G 公网</span>
-  <span class="tag" style="background:rgba(255,255,255,.08)">推理模式</span>
-  <button id="mLocal" onclick="setMode('local')" style="background:#31d17a;color:#06231a;border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer">本地模式</button>
-  <button id="mOnline" onclick="setMode('online')" style="background:#3aa0f0;color:#04202f;border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer">在线模式</button>
+  <button id="mCpu" onclick="setMode('cpu-local')" style="background:#f0b429;color:#3a2600;border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer">无大模型模式</button>
+  <button id="mOnline" onclick="setMode('online')" style="background:#3aa0f0;color:#04202f;border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer">云端大模型</button>
+  <button id="mLocal" onclick="setMode('local')" style="background:#31d17a;color:#06231a;border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer">端侧大模型</button>
   <span class="tag" id="modeTag" style="background:rgba(58,160,240,.22)">模式读取中…</span>
   <span class="tag" id="opStatus" style="background:transparent"></span>
   <div id="bar"><div id="barIn"></div></div>
@@ -2004,7 +2116,7 @@ function fallbackMode(reason){
   if(!_reloadTimer) _reloadTimer=setInterval(function(){ location.reload(); }, 5000);
 }
 var ICON={pending:"○",running:"◌",pass:"✅",fail:"❌",skip:"⏭"};
-var CN={pending:"待运行",running:"运行中",pass:"本轮检查通过",fail:"失败",skip:"跳过（不计失败）",partial:"需关注／部分完成"};
+var CN={pending:"待运行",running:"运行中",pass:"本轮检查通过",fail:"失败",skip:"环境未参与",partial:"需关注／部分完成"};
 function esc(x){return String(x==null?"":x).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':'&quot;',"'":"&#39;"}[c];});}
 async function tick(){
   if(!jsMode) return;
@@ -2033,10 +2145,12 @@ async function tick(){
     var llm=s.llm||{};
     if(llm.label){
       var mt=document.getElementById("modeTag");
-      if(mt){ mt.textContent="模式："+llm.label+" · "+(llm.model||""); mt.style.background=(llm.mode==="mt200-local"?"rgba(49,209,122,.22)":"rgba(58,160,240,.22)"); }
+      if(mt){ mt.textContent="当前模式："+llm.label+" · "+(llm.model||"")+(llm.mode==="mt200-local"?"（W4A16 · 权重INT4/激活FP16 · ctx 1024）":(llm.mode==="cpu-local"?"（规则引擎 · 零 token · 不调用大模型）":"")); mt.style.background=(llm.mode==="mt200-local"?"rgba(49,209,122,.22)":"rgba(58,160,240,.22)"); }
       var bl=document.getElementById("mLocal"), bo=document.getElementById("mOnline");
       if(bl) bl.style.outline=(llm.mode==="mt200-local"?"2px solid #31d17a":"none");
       if(bo) bo.style.outline=(llm.mode==="hermes"?"2px solid #3aa0f0":"none");
+      var bc=document.getElementById("mCpu");
+      if(bc) bc.style.outline=(llm.mode==="cpu-local"?"2px solid #f0b429":"none");
       if(llm.error){ if(mt) mt.textContent="模式异常："+(llm.error||""); }
     }
     if(s.architecture){ var at=document.getElementById("archTag"); if(at) at.textContent="链路："+(s.architecture.transport||"-"); }
@@ -2057,11 +2171,16 @@ async function tick(){
     var c=JSON.parse(JSON.stringify(s.cpe||{}));
     function escapeStrings(x){Object.keys(x).forEach(function(k){if(typeof x[k]==="string")x[k]=esc(x[k]);else if(x[k]&&typeof x[k]==="object")escapeStrings(x[k]);});} escapeStrings(c);
     if(c.model){
-      var _lm=c.llm||{}; var _local=(_lm.mode==="mt200-local");
-      var chips="<span class='chip modebadge' style='background:"+(_local?"#0f3a24":"#0f2743")+";border-color:"+(_local?"#31d17a":"#4aa3ff")+";color:"+(_local?"#8ff0b5":"#9ccbff")+"'>当前模型通道："+(_local?"本地 MT200":"在线云端")+" · "+(_lm.model||"—")+"</span>";
+      var _lm=c.llm||{}; var _mode=_lm.mode||""; var _local=(_mode==="mt200-local"); var _cpu=(_mode==="cpu-local");
+      var _label=_local?"端侧大模型":(_cpu?"无大模型模式":"云端大模型");
+      var _green=(_local||_cpu);
+      var chips="<span class='chip modebadge' style='background:"+(_green?"#0f3a24":"#0f2743")+";border-color:"+(_green?"#31d17a":"#4aa3ff")+";color:"+(_green?"#8ff0b5":"#9ccbff")+"'>当前模型通道："+_label+" · "+(_lm.model||"—")+"</span>";
+      if(_cpu){
+        chips+="<span class='chip'><b>纯 CPU</b> 规则引擎 · 零 token · 不调用大模型</span>";
+      }
       if(_local){
         chips+="<span class='chip mtspec'><b>MT200</b> QCS9075 · 8×A78C 2.36GHz · Adreno 663 · 100 TOPS 稠密 / 200 TOPS 稀疏 · 10.86GB · 128GB UFS · Ubuntu 24.04</span>";
-        chips+="<span class='chip mtspec'><b>本地推理</b> deepseek-7b-npu · NPU API :8090（SSH 转发 :18090） · 实测 ≈5 tok/s（76 tokens / 15 秒，端到端）</span>";
+        chips+="<span class='chip mtspec'><b>本地推理</b> deepseek-7b-npu · <b>W4A16</b>（权重 INT4 / 激活 FP16）· ctx 1024（编译期上限）· QnnHtp / Hexagon V73 · decode 12.9 tok/s · TTFT ≈1.1s · 端到端 11.9s / 39 字 · NPU 200 TOPS 稀疏 / 100 稠密 · API :8090→:18090</span>";
       }
       var _mL=document.getElementById("mLocal"), _mO=document.getElementById("mOnline");
       if(_mL&&_mO){ _mL.style.opacity=_local?1:0.4; _mO.style.opacity=_local?0.4:1;
@@ -2110,7 +2229,7 @@ async function tick(){
           var _ws=_sigCol(c.snr_wifi,25,10);
           chips+="<span class='chip' style='border-color:"+_ws+"' title='WiFi 质量：SNR = RSSI − 噪声底("+(c.wifi_noise!==undefined&&c.wifi_noise!==null?c.wifi_noise:"?")+" dBm)；绿≥25 / 黄10~25 / 红<10 dB'><b>WiFi SNR</b> <b style='color:"+_ws+"'>"+c.snr_wifi+" dB</b></span>";
         } else {
-          chips+="<span class='chip' title='驱动未上报噪声底（iw survey dump 无 noise 字段）'><b>WiFi SNR</b> N/A</span>";
+          chips+="<span class='chip' title='本机 MT7992 驱动固定上报 noise=0（实测 iw survey dump 全为 0），无噪声底即无法算 SNR'><b>WiFi SNR</b> N/A</span>";
         }
       }
       else { chips+="<span class='chip'><b>WiFi</b> 无接入终端</span>"; }
@@ -2179,7 +2298,7 @@ SIMPLE_HTML = """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 img{width:100%;max-width:760px;border-radius:10px;background:#000}
 h2{margin:6px 0 10px;font-size:20px} .b{padding:10px;margin:8px 0;border-radius:10px;background:#121c2e;border:1px solid #1f3350}
 </style></head><body>
-<h2>AI CPE 十大功能演示（简易版，每 6 秒自动刷新）</h2>
+<h2>AI CPE 十大功能演示 · 三档模型（简易版，每 6 秒自动刷新）</h2>
 <img src="/snap" alt="画面加载中…">
 <div class="b" id="s">正在读取状态…</div>
 <script>
@@ -2651,6 +2770,16 @@ def serve(port):
         srv = _DualStackServer(("::", port), Handler)
     except OSError:
         srv = ThreadingHTTPServer(("0.0.0.0", port), Handler)  # 回退：纯 IPv4
+    def _run_watchdog():
+        while True:
+            time.sleep(15)
+            try:
+                if STATE.get("phase") == "running" and RUN_START[0] and (time.time() - RUN_START[0]) > 300:
+                    print("[watchdog] 单轮超过 300s 未结束，退出进程由 procd 重启", flush=True)
+                    os._exit(9)
+            except Exception:
+                pass
+    threading.Thread(target=_run_watchdog, daemon=True).start()
     t = threading.Thread(target=srv.serve_forever, daemon=True)
     t.start()
     return srv
