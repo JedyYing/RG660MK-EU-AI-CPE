@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>智能灯泡反复失联专题报告</title>
+<style>
+  @page { size: A4; margin: 15mm 13mm; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
+         font-size: 9.6pt; line-height: 1.56; color: #1a2332; margin: 0; }
+  h1 { font-size: 21pt; margin: 0 0 2mm; letter-spacing: .5px; }
+  h2 { font-size: 13.2pt; margin: 6.5mm 0 2.6mm; padding-left: 3mm;
+       border-left: 4px solid #1f6fd0; color: #0d2440; page-break-after: avoid; }
+  h3 { font-size: 10.6pt; margin: 4mm 0 1.6mm; color: #17456f; page-break-after: avoid; }
+  p { margin: 0 0 2.2mm; }
+  .head { background: linear-gradient(135deg,#0d2440 0%,#1b4b7d 60%,#1f6fd0 100%);
+          color: #fff; padding: 8mm 9mm 7mm; border-radius: 2mm; margin-bottom: 5mm; }
+  .head .sub { font-size: 10.2pt; opacity: .93; margin-top: 1.5mm; }
+  .head .meta { margin-top: 4mm; font-size: 8.4pt; opacity: .88; line-height: 1.7; }
+  .kpis { display: flex; gap: 3mm; margin: 4mm 0 5mm; }
+  .kpi { flex: 1 1 0; min-width: 0; background: #f2f7fd; border: 1px solid #d5e4f5;
+         border-top: 3px solid #1f6fd0; border-radius: 1.6mm; padding: 3.2mm 3mm; text-align: center; }
+  .kpi b { display: block; font-size: 19pt; color: #0d3c68; line-height: 1.1;
+           font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 8.1pt; color: #4a6b8a; }
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 3.5mm; font-size: 8.7pt; }
+  th { background: #e8f2fe; color: #0d3c68; text-align: left; padding: 1.9mm 2mm;
+       border-bottom: 1.2px solid #b9d3ee; font-weight: 600; }
+  td { padding: 1.75mm 2mm; border-bottom: .7px solid #e2ebf5; vertical-align: top; }
+  tr { page-break-inside: avoid; }
+  li { page-break-inside: avoid; }
+  .callout { border-radius: 1.6mm; padding: 3mm 3.6mm; margin: 2.6mm 0; font-size: 9.1pt; }
+  .ok { background: #eefaf2; border-left: 4px solid #1f9d55; }
+  .warn { background: #fff7e8; border-left: 4px solid #e0a021; }
+  .bad { background: #fdeeee; border-left: 4px solid #cc3d3d; }
+  .info { background: #eef4fd; border-left: 4px solid #1f6fd0; }
+  .callout b { color: #0d2440; }
+  .tag { display: inline-block; font-size: 7.6pt; padding: .5mm 1.6mm; border-radius: 1mm;
+         color: #fff; margin-right: 1.4mm; vertical-align: 1px; }
+  .t-ok { background: #1f9d55; } .t-warn { background: #e0a021; }
+  .t-bad { background: #cc3d3d; } .t-info { background: #1f6fd0; }
+  pre { background: #0f1e2e; color: #d6e6f5; padding: 2.6mm 3mm; border-radius: 1.4mm;
+        font-family: "DejaVu Sans Mono", monospace; font-size: 7.9pt; line-height: 1.5;
+        white-space: pre-wrap; overflow-wrap: anywhere; margin: 2mm 0 3mm; }
+  .small { font-size: 8pt; color: #5a7a99; }
+  .page { page-break-before: always; }
+  .first { page-break-before: avoid; }
+  ul { margin: 0 0 2.4mm; padding-left: 5mm; }
+  ul li { margin-bottom: 1.1mm; }
+  .num { color: #b0322c; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="head first">
+  <h1>智能灯泡"必须断电重启"专题分析报告</h1>
+  <div class="sub">从 3 次有据可查的失联，到「灯侧 mDNS 失活 + CPE 侧逐命令重建会话」的双层根因</div>
+  <div class="meta">
+    对象：Matter 智能灯泡 d8:fc:92:b8:b1:41 · node_id 22　　承载设备：RG660MK-EU（OpenWrt，MT7992 WiFi）<br>
+    执行者：应金栋（Jedy Ying）　　证据窗口：2026-11-16 至 2026-11-19　　数据来源：板端日志、chip-tool 回显、压测 CSV
+  </div>
+</div>
+
+<h2>结论摘要</h2>
+
+<div class="callout bad">
+  <b>结论 1（已证实）｜灯没有"死机"，是在 Matter 的地址解析层失联。</b>
+  故障时灯仍 ping 通（3.39 ms）、WiFi 仍关联（−69 dBm）、mDNS 组播路由与组播成员均正常；
+  唯独 <code>chip-tool</code> 报 <code>CHIP Error 0x32: Timeout @ AddressResolve_DefaultImpl.cpp:124</code>——
+  即"问不到灯的 mDNS 地址"。所以断电重启之所以有效，是因为它重启的是灯里的 Matter 协议栈，不是网络。
+</div>
+
+<div class="callout warn">
+  <b>结论 2（已证实）｜CPE 侧的控制链路把所有鸡蛋放在一个篮子里。</b>
+  <span class="small">agent.py 的注释自述「每次约 4–5 秒」——每条开关命令都新起一个 chip-tool 进程，
+  等于每条命令都重新做一次 CASE 握手 + 一次 mDNS 解析。正常态因此要 18.8 秒/项；
+  一旦 mDNS 应答失效，每条命令都失败，且失败得很慢（37–44 秒）。</span>
+</div>
+
+<div class="callout ok">
+  <b>结论 3（已证实，已修复）｜演示验收代码有 3 个真 bug，曾把"慢"判成"坏"。</b>
+  观察窗只有 6 秒（而灯的回执自述滞后 5–25 秒）、恢复路径无预算上限（最坏 17 分钟）、
+  探针被自己掐断时误判为 <code>fail</code> 而非 <code>skip</code>。三处已按板上最新版重建并上机验证。
+</div>
+
+<div class="callout info">
+  <b>结论 4（待验证假设）｜灯固件内部的 mDNS 应答器"用久了不再应答"。</b>
+  观测到的两次有效存活窗口都在 <b>1 天</b>量级（本次 11-18 07:50 断电 → 11-19 07:00 失联，约 23 小时，
+  其间完成 300+ 次开关）。这更像时间累积的资源泄漏，而不是单纯的操作计数。
+  <b>无法直接证实的原因</b>：灯不可登录、无灯侧日志，只能从外部行为反推。
+</div>
+
+<div class="kpis">
+  <div class="kpi"><b>3</b><span>有证据的失联事件<br>（11-16 / 11-18 / 11-19）</span></div>
+  <div class="kpi"><b>23 h</b><span>断电后稳定运行<br>（11-18 07:50 → 11-19 07:00）</span></div>
+  <div class="kpi"><b>300+</b><span>稳定期内开关次数<br>（100 轮压测 × 3 条命令）</span></div>
+  <div class="kpi"><b>0x32</b><span>CHIP 错误码<br>（Timeout = mDNS 无应答）</span></div>
+</div>
+
+<h2>一、现象时间线</h2>
+
+<table>
+  <thead><tr><th style="width:17%">时间</th><th style="width:34%">现象</th><th style="width:30%">当时的实测事实</th><th style="width:19%">证据来源</th></tr></thead>
+  <tbody>
+  <tr><td>11-16 08:33</td><td>两盏灯（.134 / .224）无法控制，演示第 5 项跳过</td>
+      <td>ping 两盏灯 100% 丢包；hostapd 记录灯 MAC 三次 disassociated</td><td>phase0 现场快照</td></tr>
+  <tr><td>11-17 全天</td><td>第 5 项 10/10 轮全部跳过，每轮空等 92.8 秒</td>
+      <td>设备刚重启，灯仍未回连；第 5 项走超时分支</td><td>rounds CSV</td></tr>
+  <tr><td>11-18 07:50</td><td><b>人工给灯断电重启 → 立即恢复</b></td><td>恢复后首轮 10/10 通过，第 5 项 18.5 秒</td><td>现场操作 + CSV</td></tr>
+  <tr><td>11-18 09:34–11:05</td><td>100 轮完整验收压测</td><td>1000 条检查 999 通过；第 5 项 99/100，中位 18.8 秒</td><td>stress CSV</td></tr>
+  <tr><td>11-18 19:22–19:33</td><td>晚间 7 轮复跑</td><td>第 5 项 6 次 pass（22.9–27.1 秒），1 次 18.8 秒</td><td>demo_items.log</td></tr>
+  <tr><td>11-19 07:00</td><td><b>再次失联</b>，第 5 项 fail（45.0 秒）</td><td>距上次断电约 23 小时</td><td>demo_items.log</td></tr>
+  <tr><td>11-19 08:07 / 08:09</td><td>复现并取证</td><td>ping 通 3.39 ms、WiFi 关联 −69 dBm、mDNS 解析 0x32 Timeout</td><td>本报告现场取证</td></tr>
+  </tbody>
+</table>
+
+<div class="callout bad">
+  <b>现象的共同点：每一次都不是"灯掉线"，而是"灯还在，控制面不通"。</b>
+  11-16 那次两盏灯 ping 都不通，是真正掉线；而 11-18、11-19 两次都是
+  <b>网络层正常、Matter 层失联</b>。这两类现象在演示页上都表现为"智能家居控制 跳过/失败"，
+  但处置完全不同——后者断电即好，前者要查供电与配网。这解释了为什么"重启"总像是万能解。
+</div>
+
+<h2>二、故障现场取证（11-19 08:07–08:12）</h2>
+
+<table>
+  <thead><tr><th style="width:22%">检查项</th><th style="width:36%">实测值</th><th style="width:42%">判读</th></tr></thead>
+  <tbody>
+  <tr><td>ICMP（IPv4）</td><td>2 包全通，RTT 2.76 / 3.39 / 4.03 ms</td><td>灯在网络层活着，供电正常</td></tr>
+  <tr><td>WiFi 关联</td><td>d8:fc:92:b8:b1:41 在 ra0 关联，signal −69 dBm</td><td>没有掉线，也没有漫游</td></tr>
+  <tr><td>四链 RSSI</td><td>−83 / −67 / −41 / −83 dBm</td><td><b>严重不平衡</b>：两链在 −83 边缘</td></tr>
+  <tr><td>四链 SNR</td><td>4 / 25 / 28 / 0 dB</td><td>两条链 SNR 4 与 0，等于没信号</td></tr>
+  <tr><td>协商速率</td><td>52 Mbps，MCS 5，20 MHz</td><td>灯支持 HE，却只跑在 MCS 5</td></tr>
+  <tr><td>上行失败率</td><td>tx failed 2617 / tx packets 36792 = <b>7.1%</b></td><td>组播（mDNS）对丢包更敏感，偏高</td></tr>
+  <tr><td>IPv4 邻居表</td><td>192.168.1.134 → STALE</td><td>需重新 ARP，偶发首包丢失</td></tr>
+  <tr><td>IPv6 邻居表</td><td>fe80::dafc:92ff:feb8:b141 → REACHABLE</td><td>链路本地可达，Matter 通道本体在</td></tr>
+  <tr><td>mDNS 组播路由</td><td>224.0.0.251 dev br-lan scope link</td><td>正常（这条缺失时全部 Matter 设备都会挂）</td></tr>
+  <tr><td>mDNS 组播成员</td><td>br-lan 已加入 224.0.0.251</td><td>正常</td></tr>
+  <tr><td>LAN IPv6 前缀</td><td>仅 link-local（ra=disabled / dhcpv6=disabled）</td><td>设计如此，Matter 走链路本地，不是本次原因</td></tr>
+  <tr><td>Matter 地址解析</td><td><b>CHIP Error 0x00000032: Timeout</b><br>AddressResolve_DefaultImpl.cpp:124</td><td><b>唯一失败点</b>：mDNS 查询无应答</td></tr>
+  <tr><td>status 响应延迟</td><td>正常态 8 秒；卡死态 37.2 / 39.0 / 44.3 秒（n=4）</td><td>卡死态慢约 5 倍，可作判据</td></tr>
+  </tbody>
+</table>
+
+<div class="callout ok">
+  <b>取证结论：把范围收敛到了"mDNS 这一层"。</b>
+  路由、组播、IPv6 邻居、WiFi 关联、ICMP 全部正常，唯一异常是"灯的 mDNS 不应答"。
+  这就排除了掉电、掉线、配网丢失、CPE 网络栈损坏等一整类假设（见第四节）。
+</div>
+
+<h2>三、根因分析（分层）</h2>
+
+<h3>3.1 主因层：灯侧 Matter/mDNS 应答器失活　<span class="tag t-warn">待验证假设</span></h3>
+<p>故障时灯"能 ping、能关联、不应答 mDNS"。能 ping 说明 IP 栈正常；不应答 mDNS 说明
+<b>Matter 协议栈里的服务发现模块已经不再工作</b>。这一层在灯内部，我们无法登录、也没有灯侧日志，
+因此只能给出行为级结论与可证伪的假设：</p>
+<ul>
+  <li><b>假设 A（最可能）</b>：mDNS 应答器长期运行后 socket / 定时器资源未释放，达到上限后不再响应查询。特征是与运行时长相关，与操作次数弱相关——与本次"约 23 小时后失效"吻合。</li>
+  <li><b>假设 B</b>：灯固件在长时间高频开关后进入某种降级状态（例如 CASE 会话表项泄漏）。11-18 当天 300+ 次开关后仍正常，到次日清晨才失效，支持"泄漏缓慢累积"而非"当场崩溃"。</li>
+  <li><b>假设 C（较弱）</b>：路由器侧组播抑制导致灯"忘记"向组播组注册。但本次 br-lan 的组播路由与成员都在，且同一网段另一台设备（14:90:7a）工作正常，可以基本排除。</li>
+</ul>
+
+<h3>3.2 放大层：CPE 逐命令重建 chip-tool 会话　<span class="tag t-ok">已证实</span></h3>
+<p>控制链路是：演示页 → MQTT（本机 1883）→ <code>services/smarthome/agent.py</code> → 每次调用 <code>chip-tool</code>。
+agent 源码注释明确写着「<i>每次约 4–5 秒</i>」，且每次命令都是新进程，意味着每条命令都要
+<b>重新做一次 CASE 握手和一次 mDNS 解析</b>。</p>
+<pre>实测：一次"关→开→恢复"共 3 条命令 → 正常态 18.8 秒（约 6 秒/条）
+      卡死态 37–44 秒 → 每条命令都在等 mDNS 解析超时</pre>
+<p>后果有两条：<b>①</b> 正常情况下第 5 项就要吃掉 18.8 秒，是整轮演示里最慢的一项；
+<b>②</b> 一旦 mDNS 失效，<b>每条命令都要独立失败一次</b>，故障被放大 3 倍（这就是"感觉等了半天没反应"的直接来源）。</p>
+
+<h3>3.3 诱因层：无线链路质量不均衡　<span class="tag t-warn">待验证假设</span></h3>
+<p>灯的四条链 RSSI 为 −83 / −67 / −41 / −83，两条链 SNR 只有 4 和 0；上行 7.1% 的包失败。
+mDNS 走的是<b>低速率组播</b>，对丢包和空口占用比单播敏感得多。我们无法证明这是触发因素，
+但它会显著放大"偶发解析不到"的概率，属于应当消除的风险项。</p>
+
+<h3>3.4 观测层：验收代码 3 个 bug 把"慢"判成"坏"　<span class="tag t-ok">已证实，已修复</span></h3>
+<table>
+  <thead><tr><th style="width:26%">Bug</th><th style="width:37%">后果</th><th style="width:37%">修法（已上机）</th></tr></thead>
+  <tbody>
+  <tr><td>观察窗只有 6 秒（tries=3 × gap=2s）</td><td>灯回执自述滞后 5–25 秒，慢灯被误判"power 未收敛"——11-18 压测第 36 轮那次失败即此因</td><td>观察窗改为 28 秒，且受单项总预算约束</td></tr>
+  <tr><td>恢复路径 t=90 / tries=10 无上限</td><td>最坏情况下单这一项可拖约 17 分钟，足以拖垮整场演示</td><td>改为 t=30，等待时间受剩余预算约束</td></tr>
+  <tr><td>探针被自己掐断时错误文本里没有"超时"字样</td><td>灯明明无响应，却被报成"控制面初态无效"的 <code>fail</code></td><td>rc≠0 直接判为 Matter 无响应，归入 <code>skip</code> 并给出准确结论</td></tr>
+  </tbody>
+</table>
+
+<h2>四、已排除的假设</h2>
+<table>
+  <thead><tr><th style="width:26%">假设</th><th style="width:44%">排除依据（可复核）</th><th style="width:30%">结论</th></tr></thead>
+  <tbody>
+  <tr><td>灯没电 / 没开机</td><td>ping 2 包全通，RTT 3.39 ms</td><td>排除</td></tr>
+  <tr><td>灯掉 WiFi / 未配网</td><td>station dump 显示关联中，signal −69 dBm；node_id 22 仍在配置中</td><td>排除</td></tr>
+  <tr><td>CPE 的 mDNS 基础设施坏了</td><td>224.0.0.251 路由存在、br-lan 已加入组播组、组播计数正常</td><td>排除</td></tr>
+  <tr><td>IP 冲突 / DHCP 租约丢失</td><td>ARP 表中 .134 与灯 MAC 一一对应，未见冲突记录</td><td>排除</td></tr>
+  <tr><td>LAN 缺 IPv6 前缀导致 Matter 不可用</td><td>ra/dhcpv6 为设计性关闭，Matter 走链路本地；同一配置下 11-18 全天正常</td><td>排除</td></tr>
+  <tr><td>5G / WAN 侧问题</td><td>控制链路全程在本机 MQTT 与 br-lan 内，不经过 WAN</td><td>排除</td></tr>
+  <tr><td>MQTT broker 挂了</td><td>broker 187.2 KB 日志正常滚动，agent 心跳与 retained 状态均在更新</td><td>排除</td></tr>
+  </tbody>
+</table>
+
+<h2>五、解决方案</h2>
+
+<h3>5.1 立即措施（演示保障，今天就能做）</h3>
+<table>
+  <thead><tr><th style="width:6%">#</th><th style="width:30%">动作</th><th style="width:40%">说明</th><th style="width:24%">效果</th></tr></thead>
+  <tbody>
+  <tr><td>A1</td><td>灯断电 10 秒再上电</td><td>已验证有效；恢复的是灯内 Matter 协议栈</td><td>立即恢复，但只保约 23 小时</td></tr>
+  <tr><td>A2</td><td>演示当天早上做一次断电</td><td>把"剩余寿命"重置到最大，覆盖当天演示窗口</td><td>可把风险压到最低</td></tr>
+  <tr><td>A3</td><td>演示顺序把第 5 项放最后</td><td>若真出问题，不阻塞前面 9 项</td><td>降低观感损失</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 工程加固（本周，可自动化，推荐）</h3>
+<table>
+  <thead><tr><th style="width:6%">#</th><th style="width:28%">措施</th><th style="width:42%">做法</th><th style="width:24%">收益</th></tr></thead>
+  <tbody>
+  <tr><td>B1</td><td><b>看门狗自动复位</b></td><td>连续 2 次 mDNS 解析超时 → 通过可编程插座给灯断电 5 秒再上电；不依赖人工</td><td>把"人工重启"变成"自愈"，故障窗口从小时级降到分钟级</td></tr>
+  <tr><td>B2</td><td><b>chip-tool 会话复用</b></td><td>改用 chip-tool 交互模式常驻，命令走同一条 CASE 会话，不再每条命令重连</td><td>单条命令从 4–5 秒降到 1 秒内，第 5 项整体可进 10 秒</td></tr>
+  <tr><td>B3</td><td>mDNS 解析结果缓存</td><td>解析成功后缓存 60 秒，减少解析次数</td><td>减少对灯 mDNS 的依赖频率</td></tr>
+  <tr><td>B4</td><td>灯固定 IP + 静态 ARP 绑定</td><td>消除 ARP STALE 带来的首包丢失</td><td>去掉一类偶发抖动</td></tr>
+  <tr><td>B5</td><td>改善灯的无线位置</td><td>当前两链 −83 dBm、SNR 0–4，属明显偏弱；调整位置或加一个 AP</td><td>降低组播丢包率</td></tr>
+  </tbody>
+</table>
+
+<div class="callout info">
+  <b>B1 + B2 是性价比最高的组合。</b>B1 解决"灯会失效"这个事实，B2 解决"失效后反应太慢"这个体验；
+  两者都不需要动灯固件，也不需要换硬件。做完之后，即使灯每天仍会失效一次，
+  演示页也只会在某一轮出现一次 <code>skip</code>，而不会出现 40 秒的等待。
+</div>
+
+<h3>5.3 根治（需厂商或换型）</h3>
+<table>
+  <thead><tr><th style="width:26%">路径</th><th style="width:44%">说明</th><th style="width:30%">代价</th></tr></thead>
+  <tbody>
+  <tr><td>固件升级</td><td>把上述行为（mDNS 运行约 24h 后不应答）反馈给灯的厂商，索取固件修复</td><td>取决于厂商响应</td></tr>
+  <tr><td>换灯</td><td>选 Matter 实现稳定、社区口碑好的型号；同价位可先小批量验证 72 小时</td><td>采购成本</td></tr>
+  <tr><td>换协议</td><td>改用 Zigbee 或本地 MQTT 直连灯带，绕开 mDNS 依赖</td><td>需要网关/重新配网</td></tr>
+  </tbody>
+</table>
+
+<h2>六、验收口径与验证方法</h2>
+<table>
+  <thead><tr><th style="width:30%">指标</th><th style="width:40%">判据</th><th style="width:30%">取数方式</th></tr></thead>
+  <tbody>
+  <tr><td>功能通过率</td><td>连续 100 轮，第 5 项 pass ≥ 99%</td><td><code>demo_stress.py</code> 逐轮 CSV</td></tr>
+  <tr><td>单轮耗时</td><td>中位 ≤ 50 秒，P95 ≤ 60 秒</td><td>同 CSV，各项 dur 求和</td></tr>
+  <tr><td>失效响应速度</td><td>灯失效时该单项 ≤ 30 秒内给出 <code>skip</code> 与准确结论</td><td>本轮已实现：53 秒 → 27.1 秒</td></tr>
+  <tr><td>自愈能力（B1 落地后）</td><td>连续 7 天无人干预，第 5 项不出现连续 2 轮失败</td><td>demo_items.log 按日统计</td></tr>
+  </tbody>
+</table>
+
+<h2>七、未验证事项（为什么无法确认）</h2>
+<table>
+  <thead><tr><th style="width:34%">项目</th><th style="width:66%">为什么无法确认</th></tr></thead>
+  <tbody>
+  <tr><td>灯固件内部状态</td><td>灯不提供登录/日志接口，只能从外部行为（mDNS 是否应答）反推</td></tr>
+  <tr><td>mDNS 无应答的确切机制</td><td>需要在灯侧抓包或读固件日志；当前只能证明"查询发出、无应答"</td></tr>
+  <tr><td>24 小时是否为固定周期</td><td>目前只有 1 次完整观测（11-18 07:50 → 11-19 07:00），样本不足以确认周期性</td></tr>
+  <tr><td>无线链路是否为诱因</td><td>未做对照实验（把灯移到强信号位置后连续观察），只有相关性没有因果</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warn">
+  <b>结论的可靠性分级（供追问时引用）：</b>
+  <b>已证实</b>——故障点在 mDNS 解析、CPE 逐命令重建会话、验收代码 3 个 bug；
+  <b>待验证假设</b>——灯固件 mDNS 资源泄漏、无线链路为诱因、周期为 24 小时；
+  <b>恢复措施</b>——断电重启（已验证有效）、看门狗自动复位与会话复用（待实施验证）。
+</div>
+
+<h2>附录 A｜证据清单</h2>
+<table>
+  <thead><tr><th style="width:34%">证据</th><th style="width:66%">内容</th></tr></thead>
+  <tbody>
+  <tr><td><code>/data/ai_cpe/logs/demo_items.log</code></td><td>逐项状态流水（11-18 19:22 起），含第 5 项 17 次 pass / 2 次 fail / 1 次 skip</td></tr>
+  <tr><td><code>~/diag_rg660mk/stress_*.csv</code></td><td>100 轮 × 10 项逐条记录（999 pass / 1 fail）</td></tr>
+  <tr><td><code>~/diag_rg660mk/stress_100rounds_report.md</code></td><td>上一份 100 轮压测报告（含耗时趋势图）</td></tr>
+  <tr><td>chip-tool 回显</td><td><code>CHIP Error 0x00000032: Timeout @ AddressResolve_DefaultImpl.cpp:124</code></td></tr>
+  <tr><td><code>services/smarthome/agent.py</code></td><td>控制链路实现；注释「每次约 4–5 秒」</td></tr>
+  </tbody>
+</table>
+
+<h2>附录 B｜数据口径</h2>
+<table>
+  <thead><tr><th style="width:26%">数字</th><th style="width:44%">取数方式</th><th style="width:30%">说明</th></tr></thead>
+  <tbody>
+  <tr><td>3.39 ms</td><td><code>ping -c2 192.168.1.134</code></td><td>2 包平均，含 min 2.76 / max 4.03</td></tr>
+  <tr><td>−83/−67/−41/−83 dBm、SNR 4/25/28/0</td><td><code>iwpriv ra0 show stainfo</code> → dmesg 四链表</td><td>取 d8:fc:92 该行；分链原始值</td></tr>
+  <tr><td>7.1% 上行失败</td><td>station dump：tx failed 2617 / tx packets 36792</td><td>累计值，非本小时</td></tr>
+  <tr><td>8 秒 vs 37.2/39.0/44.3 秒</td><td><code>smarthome.py status</code> 计时（正常 1 次 / 卡死 3 次）</td><td>含进程启动与 chip-tool 握手</td></tr>
+  <tr><td>300+ 次开关</td><td>100 轮 × (关 + 开 + 恢复) 估算</td><td>估算值，非逐条计数</td></tr>
+  <tr><td>23 小时</td><td>11-18 07:50 断电 → 11-19 07:00 首次失败</td><td>按 demo_items.log 时间戳</td></tr>
+  </tbody>
+</table>
+
+<h2>附录 C｜现场 60 秒定位表</h2>
+<p class="small">演示现场出问题时的第一反应顺序。每条只查一个证据，避免在台上做长时间排查。</p>
+<table>
+  <thead><tr><th style="width:30%">屏幕上的症状</th><th style="width:34%">第一条要看的证据</th><th style="width:36%">结论方向与动作</th></tr></thead>
+  <tbody>
+  <tr><td>第 5 项 <code>skip</code>：提示"不在线（ping 不通）"</td><td><code>ping 192.168.1.134</code></td><td>灯真掉线 → 查灯电源与配网，不是软件问题</td></tr>
+  <tr><td>第 5 项 <code>skip</code>：提示"在线但 Matter 无响应"</td><td><code>smarthome.py status</code> 耗时</td><td>卡死态（&gt;30 秒）→ <b>给灯断电重启</b>，约 20 秒恢复</td></tr>
+  <tr><td>第 5 项 <code>pass</code> 但耗时 &gt; 40 秒</td><td><code>demo_items.log</code> 中该项 dur</td><td>无线偏弱或重传偏高 → 检查灯位置与四链 RSSI</td></tr>
+  <tr><td>第 5 项 <code>fail</code>，detail 含"预算"或"未闭环"</td><td>同轮其他项是否也慢</td><td>灯连续失联 → 触发自动复位（方案 B1）</td></tr>
+  <tr><td>页面信号芯片里 WiFi 强度突然变红</td><td><code>iwpriv ra0 show stainfo</code></td><td>整机无线环境恶化 → 先看是否有人改了信道/加了干扰源</td></tr>
+  </tbody>
+</table>
+
+<p class="small" style="margin-top:5mm">
+  本报告由 <code>docs/report_lamp_matter_loss.html</code> 渲染生成，可改后重出。
+  所有数字均来自板端实测日志与命令回显，未做估算的项已在附录 B 标注。
+</p>
+
+</body>
+</html>
