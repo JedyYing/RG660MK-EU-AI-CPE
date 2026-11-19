@@ -91,7 +91,8 @@ IMMICH_KEY_FILE = HOME + "/photos/.immich_key"
 NAS_HOST = "192.168.1.212"   # MiniNAS 存储底座（x86 主机 sh-d-l，2026-10-12 上线）
 NAS_ZT_HOST = "172.25.25.240"   # 旧 ZeroTier 地址：仅作最后兜底，不再作为主通道
 NAS_GW_HOST = "127.0.0.1"       # 阿里云网关 SSH 隧道：模组本地 2283/10080 映射到电脑
-BULB = "/data/ai_cpe/smarthome.py"   # Matter 优先 / MQTT 兜底 控制面（原涂鸦脚本已退役，见 /data/ai_cpe/attic_tuya/）
+BULB = "/data/ai_cpe/smarthome.py"
+BULB_IPS = ("192.168.1.134", "192.168.1.224")   # 灯的历史地址，用于快速判在线   # Matter 优先 / MQTT 兜底 控制面（原涂鸦脚本已退役，见 /data/ai_cpe/attic_tuya/）
 TTS = "/data/ai_cpe/tts_say.py"
 FACEREC = "/data/ai_cpe/face_recognize.py"; SHERPA_INIT = "/etc/init.d/sherpa-asr"
 PY = "/usr/bin/python3"; VENV = "/data/hermes/venv/bin/python"
@@ -216,6 +217,14 @@ def set_item(it, status, detail="", metrics=None):
         it["dur"] = max(0.0, round(time.time() - it["t0"], 2)) if it["t0"] else None
         it["checked_at"] = time.time()
     log("  [%s] %s %s" % (status.upper(), it["name"], ("- " + detail) if detail else ""))
+    try:
+        with open("/data/ai_cpe/logs/demo_items.log", "a", encoding="utf-8") as _f:
+            _f.write("%s\t%s\t%s\t%s\t%s\n" % (
+                time.strftime("%H:%M:%S"), it.get("idx"), status,
+                round(time.time() - it["t0"], 1) if it.get("t0") else "",
+                it["name"]))
+    except Exception:
+        pass
     with LOCK:
         tracked = any(x is it for x in STATE.get("items", []))
         snapshot = json.loads(json.dumps(STATE, ensure_ascii=False)) if tracked else None
@@ -1497,6 +1506,8 @@ def check_smart_home(it, no_audio=False):
     """智能灯控（Matter/MQTT 控制面，Matter 优先、MQTT 兜底）：设备内 broker + 代理 → 执行器，零云依赖、零涂鸦。"""
     set_item(it, "running")
     ms = []
+    _t0 = time.time()
+    _budget = 90.0   # 单项总预算：Matter CASE 会话耗尽时避免拖死整轮（2026-11-18）
     try:
         with open("/data/ai_cpe/demo_expected_skips.json", encoding="utf-8") as _f:
             _exp = json.load(_f) or {}
@@ -1505,10 +1516,23 @@ def check_smart_home(it, no_audio=False):
     if _exp.get("smarthome"):
         set_item(it, "skip", str(_exp["smarthome"]), [("说明", "按展会现场清单标记为预期跳过")])
         return
-    rc, st0 = _smarthome("status", t=60)
+    # 先 ping 判在线：灯离线时 1 秒内收工，别拿 50 秒等 Matter 超时
+    _alive_ip = None
+    for _ip in BULB_IPS:
+        _prc, _ = sh("ping -c1 -W1 %s >/dev/null 2>&1" % _ip, t=3)
+        if _prc == 0:
+            _alive_ip = _ip
+            break
+    if _alive_ip is None:
+        ms.append(("灯在线探测", "ping %s 均不通" % "/".join(BULB_IPS)))
+        set_item(it, "skip", "灯泡不在线（ping 不通）→ 检查灯电源与 WiFi 配网", ms)
+        return
+    ms.append(("灯在线探测", "ping %s 通（%.1fs）" % (_alive_ip, time.time() - _t0)))
+    # 实机标定：正常态 status ≈8s；CASE 卡死态 37–44s → 15s/10s 可干净区分
+    rc, st0 = _smarthome("status", t=15)
     if not (rc == 0 and bool(st0.get("success"))):
-        time.sleep(3)
-        rc, st0 = _smarthome("status", t=60)
+        time.sleep(2)
+        rc, st0 = _smarthome("status", t=10)
     ok0 = rc == 0 and bool(st0.get("success")) and _field(st0, "switch_led") in (True, False) and isinstance(_field(st0, "switch_led"), bool)
     sw0 = bool(_field(st0, "switch_led"))
     ms.append(("控制面（Matter/MQTT · Matter 优先）", ("正常 · transport=%s · broker=%s" % (st0.get("transport"), st0.get("broker"))) if ok0 else "异常: %s" % str(st0)[:60]))
@@ -1530,8 +1554,12 @@ def check_smart_home(it, no_audio=False):
     #   · matter/tuya = 真实执行器，用控制面开关回读做三轮循环 → pass
     if not ok0:
         _err = str(st0)
-        if ("超时" in _err) or ("Timeout" in _err) or ("读取失败" in _err):
-            set_item(it, "skip", "灯泡离线或未配网（Matter 无响应），请检查灯泡电源/配网", ms)
+        # rc!=0 表示我们自己把探针掐断了（进程被杀，没有 JSON）——
+        # 这本身就是 Matter 无响应的铁证，不能因为错误文本里没有「超时」就判 fail
+        if (rc != 0) or ("超时" in _err) or ("Timeout" in _err) or ("读取失败" in _err):
+            set_item(it, "skip",
+                     "灯在线（ping 通）但 Matter 无响应（mDNS 地址解析超时）"
+                     "→ 给灯断电重启即可恢复", ms)
         else:
             set_item(it, "fail", "控制面初态无效，未执行动作", ms)
         return
@@ -1554,11 +1582,15 @@ def check_smart_home(it, no_audio=False):
         ms.append(("物理初态", "内核brightness=%s" % physical0))
         try:
             for i in range(1, 4):
-                rc_o, st_o = _smarthome("off", t=45)
+                if time.time() - _t0 > _budget:
+                    ms.append(("预算", "超过 %.0fs，提前结束（灯泡可能 CASE 会话耗尽）" % _budget))
+                    seq_ok = False
+                    break
+                rc_o, st_o = _smarthome("off", t=20)
                 sw_o = _field(st_o, "switch_led")
                 physical_off = led_value()
                 time.sleep(0.8)
-                rc_n, st_n = _smarthome("on", t=45)
+                rc_n, st_n = _smarthome("on", t=20)
                 sw_n = _field(st_n, "switch_led")
                 physical_on = led_value()
                 time.sleep(0.8)
@@ -1575,7 +1607,7 @@ def check_smart_home(it, no_audio=False):
             ms.append(("动作异常", str(e)[:100]))
         finally:
             try:
-                rc_f, st_f = _smarthome("on" if sw0 else "off", t=45)
+                rc_f, st_f = _smarthome("on" if sw0 else "off", t=20)
             except Exception as e:
                 seq_ok = False
                 ms.append(("恢复异常", str(e)[:100]))
@@ -1584,14 +1616,26 @@ def check_smart_home(it, no_audio=False):
     else:
         ms.append(("验收方式", "真实执行器 · 控制面开关单轮回读（不读板载LED）"))
 
-        def _cmd_until(action, want, t=30, tries=3, gap=2.0):
-            """命令只下发一次，随后只读轮询到 power 追上目标（灯的回执会滞后 5-25 秒）。"""
-            rc, st = _smarthome(action, t=t)
+        def _left():
+            """单项剩余预算（秒）。"""
+            return _budget - (time.time() - _t0)
+
+        def _cmd_until(action, want, t=None, max_wait=28.0, gap=2.0):
+            """命令只下发一次，随后只读轮询到 power 追上目标。
+
+            原实现 tries=3/gap=2 只有 6 秒观察窗，比驱动自述的「回执滞后
+            5-25 秒」还短，慢灯会被误判未收敛（2026-11-18 压测第 36 轮即此因）。
+            改为：观察窗默认 28 秒，且每次调用都受单项总预算约束。
+            """
+            _t = max(3.0, min(20.0 if t is None else t, max(2.0, _left())))
+            rc, st = _smarthome(action, t=_t)
             if _pw(st) == want:
                 return 0, st
-            for _ in range(tries):
+            _deadline = time.time() + min(max_wait, max(0.0, _left()))
+            while time.time() < _deadline:
                 time.sleep(gap)
-                _rc, _st = _smarthome("status", t=t)
+                _t2 = max(3.0, min(15.0, max(2.0, _left())))
+                _rc, _st = _smarthome("status", t=_t2)
                 if _pw(_st) == want:
                     return 0, _st
                 st = _st or st
@@ -1609,7 +1653,8 @@ def check_smart_home(it, no_audio=False):
             ms.append(("动作异常", str(e)[:100]))
         finally:
             try:
-                rc_f, st_f = _cmd_until("on" if sw0 else "off", "on" if sw0 else "off", t=90, tries=10)
+                rc_f, st_f = _cmd_until("on" if sw0 else "off", "on" if sw0 else "off",
+                                        t=30, max_wait=max(6.0, min(30.0, _left())))
             except Exception as e:
                 seq_ok = False
                 ms.append(("恢复异常", str(e)[:100]))
@@ -2844,7 +2889,7 @@ def serve(port):
         while True:
             time.sleep(15)
             try:
-                if STATE.get("phase") == "running" and RUN_START[0] and (time.time() - RUN_START[0]) > 300:
+                if STATE.get("phase") == "running" and RUN_START[0] and (time.time() - RUN_START[0]) > 120:
                     print("[watchdog] 单轮超过 300s 未结束，退出进程由 procd 重启", flush=True)
                     os._exit(9)
             except Exception:
