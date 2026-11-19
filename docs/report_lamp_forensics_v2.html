@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>智能灯泡失联根因取证报告 V2</title>
+<style>
+  @page { size: A4; margin: 15mm 13mm; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: "Noto Sans CJK SC", sans-serif; font-size: 9.5pt; line-height: 1.55; color: #1a2332; margin: 0; }
+  h1 { font-size: 20pt; margin: 0 0 2mm; }
+  h2 { font-size: 13pt; margin: 6mm 0 2.4mm; padding-left: 3mm; border-left: 4px solid #1f6fd0; color: #0d2440; page-break-after: avoid; }
+  h3 { font-size: 10.4pt; margin: 3.6mm 0 1.4mm; color: #17456f; page-break-after: avoid; }
+  p { margin: 0 0 2.2mm; }
+  .head { background: linear-gradient(135deg,#0d2440,#1b4b7d 60%,#1f6fd0); color:#fff; padding: 7.5mm 8.5mm 6.5mm; border-radius: 2mm; margin-bottom: 4.5mm; }
+  .head .sub { font-size: 10pt; opacity: .94; margin-top: 1.5mm; }
+  .head .meta { margin-top: 3.5mm; font-size: 8.3pt; opacity: .9; line-height: 1.7; }
+  .kpis { display: flex; gap: 3mm; margin: 3.5mm 0 4mm; }
+  .kpi { flex: 1 1 0; min-width: 0; background:#f2f7fd; border:1px solid #d5e4f5; border-top:3px solid #1f6fd0; border-radius:1.6mm; padding:3mm; text-align:center; }
+  .kpi b { display:block; font-size:17pt; color:#0d3c68; line-height:1.1; font-variant-numeric: tabular-nums; }
+  .kpi span { font-size:7.9pt; color:#4a6b8a; }
+  table { width:100%; border-collapse: collapse; margin: 1.8mm 0 3.2mm; font-size: 8.6pt; }
+  th { background:#e8f2fe; color:#0d3c68; text-align:left; padding:1.8mm 2mm; border-bottom:1.2px solid #b9d3ee; font-weight:600; }
+  td { padding:1.7mm 2mm; border-bottom:.7px solid #e2ebf5; vertical-align: top; }
+  tr { page-break-inside: avoid; }
+  li { page-break-inside: avoid; }
+  .callout { border-radius:1.6mm; padding:2.8mm 3.4mm; margin:2.4mm 0; font-size:9pt; }
+  .ok{background:#eefaf2;border-left:4px solid #1f9d55}
+  .warn{background:#fff7e8;border-left:4px solid #e0a021}
+  .bad{background:#fdeeee;border-left:4px solid #cc3d3d}
+  .info{background:#eef4fd;border-left:4px solid #1f6fd0}
+  .callout b { color:#0d2440; }
+  pre { background:#0f1e2e; color:#d6e6f5; padding:2.4mm 2.8mm; border-radius:1.4mm;
+        font-family:"DejaVu Sans Mono",monospace; font-size:7.6pt; line-height:1.48;
+        white-space:pre-wrap; overflow-wrap:anywhere; margin:1.8mm 0 2.6mm; }
+  .small { font-size:7.9pt; color:#5a7a99; }
+  code { background:#eef2f7; padding:.2mm 1mm; border-radius:.8mm; font-size:8.3pt; }
+  ul { margin:0 0 2.2mm; padding-left:4.6mm; } ul li { margin-bottom:1mm; }
+  .tag { display:inline-block; font-size:7.4pt; padding:.4mm 1.4mm; border-radius:1mm; color:#fff; margin-right:1.2mm; }
+  .t-ok{background:#1f9d55} .t-warn{background:#e0a021} .t-bad{background:#cc3d3d} .t-info{background:#1f6fd0}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <h1>智能灯泡失联根因取证报告 <span style="font-size:12pt;opacity:.85">V2（结论更正版）</span></h1>
+  <div class="sub">抓包证明灯侧健康；直接原因是控制进程 smarthome-agent 消失且无人监管</div>
+  <div class="meta">
+    对象：Matter 灯泡 d8:fc:92:b8:b1:41 · node 22　｜　承载：RG660MK-EU / OpenWrt 23.05 / MT7992<br>
+    执行者：应金栋（Jedy Ying）　｜　取证时间：2026-11-19 13:15–13:20　｜　边界：只读（未改配置、未改代码）
+  </div>
+</div>
+
+<div class="callout bad">
+  <b>先更正：上一版（11-19 上午）的结论是错的，本报告予以撤回。</b>
+  上一版把根因判为"灯固件 mDNS 资源泄漏"，依据只是 <code>CHIP Error 0x00000032 Timeout</code> 这段错误文本。
+  按指令要求补做 <code>tcpdump</code> 抓包后发现：<b>灯在 5.1 毫秒内正常应答了 mDNS，chip-tool 直读 5 秒成功</b>。
+  那段错误文本来自 MQTT 的 <b>retained（保留）状态消息</b>，是历史失败的残留，不是实时探测结果。
+  这正是"不能只凭 CHIP 0x32 判断灯固件故障"的实例。
+</div>
+
+<h2>结论摘要</h2>
+
+<div class="callout ok">
+  <b>结论 1（已证实）｜灯侧当前完全健康。</b>
+  抓包（13:16:43）：CPE 发出查询 → 灯 <b>5.1 ms</b> 后应答，SRV / TXT / A / AAAA 四条记录齐全；
+  同刻 <code>chip-tool onoff read on-off 22 1</code> <b>5 秒</b>返回成功。灯没有 mDNS 故障，也没有掉线。
+</div>
+
+<div class="callout bad">
+  <b>结论 2（已证实）｜直接原因是控制进程 smarthome-agent 不存在，且不在 procd 监管中。</b>
+  <code>/proc</code> 全表扫描无 <code>agent.py</code>；<code>ubus call service list</code> 里只有
+  <code>smarthome-broker</code>（pid 15055，running），<b>根本没有 smarthome-agent 这一项</b>。
+  MQTT 的 <code>rg660mk/bulb/set</code> 没有订阅者，控制链路断路。
+</div>
+
+<div class="callout warn">
+  <b>结论 3（已证实）｜"灯离线"是观测假象，机制是读到了陈旧的 retained 消息。</b>
+  上层 <code>smarthome.py status</code> 走 MQTT 请求-应答：agent 在时它发布实时状态；agent 不在时，
+  它只能读到 broker 上 <b>retained</b> 的最后一条状态（内容正是那次 chip-tool 超时的错误文本），
+  于是把"没人应答"显示成"Matter 无响应"。这解释了为什么故障描述一直指向灯。
+</div>
+
+<div class="callout info">
+  <b>结论 4（待验证）｜灯侧是否存在间歇性 mDNS 退化，仍不能排除。</b>
+  08:07 那次失败发生时，agent 日志显示它仍在运行（日志持续写入到 12:40），所以当时确有真实超时；
+  但此后到现在灯一直健康。<b>关键未知项</b>：这期间是否有人给灯断过电——若是，则 08:07 属于灯侧问题；
+  若不是，则需继续观测。这一点需要你确认。
+</div>
+
+<div class="kpis">
+  <div class="kpi"><b>5.1 ms</b><span>灯应答 mDNS 的实测延迟<br>（抓包 4 包，794 B）</span></div>
+  <div class="kpi"><b>5 s</b><span>chip-tool 直读成功耗时<br>（故障时 37–44 s）</span></div>
+  <div class="kpi"><b>0</b><span>procd 中 smarthome-agent 条目数<br>（broker 有条目且在跑）</span></div>
+  <div class="kpi"><b>10/10</b><span>启动 agent 后整轮通过<br>第 5 项 23.3 s</span></div>
+</div>
+
+<h2>一、取证范围与方法（只读）</h2>
+<table>
+  <thead><tr><th style="width:30%">项目</th><th style="width:44%">方法</th><th style="width:26%">本次结果</th></tr></thead>
+  <tbody>
+  <tr><td>agent 控制逻辑</td><td>读 <code>services/smarthome/agent.py</code>（96 行）+ <code>run_agent.sh</code></td><td>已取证（见 2.3）</td></tr>
+  <tr><td>chip-tool 版本与参数</td><td><code>chip-tool --version</code>；进程 <code>/proc/*/cmdline</code></td><td>该构建不识别 --version，日志前缀为 [TOO]</td></tr>
+  <tr><td>是否每条命令独立进程</td><td>控制前后比对 <code>/proc</code> 中 chip-tool PID</td><td><b>是</b>，每次都是新 PID</td></tr>
+  <tr><td>CASE 会话建立/销毁</td><td>chip-tool 日志层（[IM]/[FP]/[TS] 关停序列）</td><td>每次命令结束即关机数据模型与 FabricTable</td></tr>
+  <tr><td>mDNS / UDP 5353 监听</td><td><code>/proc/net/udp</code> 查 0x14E9</td><td>无常驻监听（chip-tool 运行时才临时绑定）</td></tr>
+  <tr><td>br-lan 组播</td><td><code>ip route</code> / <code>ip maddr</code></td><td>路由存在；组播成员仅在 chip-tool 运行期间出现</td></tr>
+  <tr><td>灯的 Wi-Fi / RSSI / SNR</td><td><code>iw station dump</code> + <code>iwpriv ra0 show stainfo</code></td><td>关联中，−69 dBm，四链 SNR 4/25/28/0</td></tr>
+  <tr><td>MQTT Broker 与 agent 心跳</td><td><code>ubus service list</code> + 进程表</td><td>broker 在跑；<b>agent 缺失</b></td></tr>
+  <tr><td>智能插座远程断电能力</td><td>现有设备清单与网络扫描</td><td><b>未验证</b>（目前无插座，需采购，见第六节）</td></tr>
+  </tbody>
+</table>
+
+<h2>二、mDNS 五问判定（核心证据）</h2>
+<p>用 <code>tcpdump -i br-lan -n -s0 -w mdns_test.pcap 'udp port 5353'</code> 在并发执行
+<code>chip-tool onoff read on-off 22 1</code> 时抓包，共 4 包、794 字节，原始记录如下：</p>
+
+<pre>13:16:43.097982 IP  192.168.1.1.55399 &gt; 224.0.0.251.5353: 0 ANY (QU)? \
+    FD330BEA7EEE2496-0000000000000016._matter._tcp.local.
+13:16:43.098166 IP6 fe80::e868:e8ff:fe53:6a31.44701 &gt; ff02::fb.5353: (同一查询, IPv6)
+13:16:43.102793 IP  192.168.1.134.5353 &gt; 192.168.1.1.55399: 0*- 应答
+    SRV  FD330BEA...0016._matter._tcp.local. -&gt; D8FC92B8B141.local.:5540
+    TXT  "SII=200" "SAI=300" "T=1"
+    A    D8FC92B8B141.local. A 192.168.1.134
+    AAAA D8FC92B8B141.local. AAAA fe80::dafc:92ff:feb8:b141
+13:16:43.152651 IP6 fe80::dafc:92ff:feb8:b141.5353 &gt; fe80::e868:...44701: (同一应答, IPv6)</pre>
+
+<table>
+  <thead><tr><th style="width:8%">判定</th><th style="width:38%">问题</th><th style="width:54%">证据与结论</th></tr></thead>
+  <tbody>
+  <tr><td><b>A</b></td><td>CPE 是否发出 mDNS 查询？</td><td><b>是。</b>源 192.168.1.1:55399 → 224.0.0.251:5353；同时发 IPv6 版（ff02::fb）。查询名为 <code>FD330BEA7EEE2496-…0016</code>，与 node 22 对应。</td></tr>
+  <tr><td><b>B</b></td><td>灯泡是否收到查询？</td><td><b>是（间接证明）。</b>同一时刻灯即发出针对该查询名的应答，且 TTL 255、组播标志位符合规范。</td></tr>
+  <tr><td><b>C</b></td><td>灯泡是否返回响应？</td><td><b>是。</b>192.168.1.134:5353 → 192.168.1.1:55399，单播应答（回应 QU 位），携带 SRV/TXT/A/AAAA 四类记录。</td></tr>
+  <tr><td><b>D</b></td><td>响应是否到达 CPE？</td><td><b>是。</b>抓包点即在 br-lan 上，目的地址就是 CPE 的临时端口 55399，UDP 校验和正常（<code>udp sum ok</code>）。</td></tr>
+  <tr><td><b>E</b></td><td>CPE 是否解析成功？</td><td><b>是。</b>同次 <code>chip-tool</code> 5 秒返回，进入正常关机流程（Inet Layer shutdown / FabricTable Shutdown），未出现 0x32。</td></tr>
+  </tbody>
+</table>
+
+<div class="callout ok">
+  <b>五问全过 = 灯侧 mDNS 链路完好。</b>
+  这一条同时否掉了"灯固件 mDNS 资源泄漏"作为<b>当前</b>故障的解释。
+  上一版报告的错误就出在跳过了这一步：把应用层错误字符串当成了设备侧证据。
+</div>
+
+<h2>三、故障分类（按指令要求建立的判据）</h2>
+<table>
+  <thead><tr><th style="width:20%">故障类型</th><th style="width:38%">判据</th><th style="width:20%">本次判定</th><th style="width:22%">依据</th></tr></thead>
+  <tbody>
+  <tr><td>Wi-Fi 掉线</td><td>关联表中无该 MAC</td><td><span class="tag t-ok">排除</span></td><td>station dump 在列，−69 dBm</td></tr>
+  <tr><td>IP 层故障</td><td>ping 不通</td><td><span class="tag t-ok">排除</span></td><td>2/2 通，3.4–14.2 ms</td></tr>
+  <tr><td>mDNS 故障</td><td>查询无响应，或响应未达 CPE</td><td><span class="tag t-ok">排除</span></td><td>5.1 ms 应答，抓到完整记录</td></tr>
+  <tr><td>CASE 会话故障</td><td>解析成功但安全会话建立失败</td><td><span class="tag t-ok">排除</span></td><td>chip-tool 读到属性值</td></tr>
+  <tr><td>Matter 命令故障</td><td>会话正常但指令执行失败</td><td><span class="tag t-ok">排除</span></td><td>开关回读通过（第 5 项 pass）</td></tr>
+  <tr><td><b>控制链路故障</b></td><td>MQTT 控制主题无订阅者</td><td><span class="tag t-bad">命中</span></td><td><b>agent 进程缺失，procd 无记录</b></td></tr>
+  <tr><td>状态回执故障</td><td>指令已执行但状态未及时返回</td><td><span class="tag t-warn">部分</span></td><td>读到 retained 历史错误</td></tr>
+  </tbody>
+</table>
+
+<h2>四、直接原因链（因果闭合）</h2>
+<pre>① agent.py 进程消失（/proc 无、procd 无条目）
+        ↓
+② MQTT 主题 rg660mk/bulb/set 无订阅者 → 控制命令无人执行
+        ↓
+③ smarthome.py status 只能读到 broker 上的 retained 消息
+   （内容 = 上一次失败留下的 "CHIP 0x32 Timeout" 文本）
+        ↓
+④ 上层把"无人应答"呈现为"Matter 无响应 / 灯泡离线"
+        ↓
+⑤ 演示第 5 项 fail/skip；而灯本身 ping、WiFi、mDNS 全部正常
+        ↓
+⑥ 人工"断电重启灯"看似有效 —— 因为重启期间 agent 常被顺带重启/恢复</pre>
+
+<div class="callout warn">
+  <b>⑥ 是这条链里最值得警惕的一环：</b>"断电重启灯"之所以屡屡奏效，可能并不是因为灯需要重启，
+  而是因为整个控制链在那一两分钟里被重新拉起。这解释了为什么这个"故障"总带着"重启就好"的错觉。
+</div>
+
+<h2>五、已排除的假设</h2>
+<table>
+  <thead><tr><th style="width:28%">假设</th><th style="width:44%">排除依据（可复核）</th><th style="width:28%">结论</th></tr></thead>
+  <tbody>
+  <tr><td>灯固件 mDNS 资源泄漏（上一版主张）</td><td>抓包 5.1 ms 正常应答；chip-tool 5 秒成功</td><td><b>当前不成立，已撤回</b></td></tr>
+  <tr><td>灯掉电 / 未开机</td><td>ping 2/2 通</td><td>排除</td></tr>
+  <tr><td>灯掉 Wi-Fi / 未配网</td><td>关联中，−69 dBm，node 22 在配置内</td><td>排除</td></tr>
+  <tr><td>CPE mDNS 基础设施损坏</td><td>路由 + 组播可用，查询与应答均抓到</td><td>排除</td></tr>
+  <tr><td>CASE 会话或凭证损坏</td><td>chip-tool 正常读取属性，FabricTable 正常加载</td><td>排除</td></tr>
+  <tr><td>内存不足被 OOM Kill</td><td><code>dmesg</code> 中 <code>oom-kill|Killed process</code> 计数为 <b>0</b></td><td>排除</td></tr>
+  <tr><td>LAN 缺 IPv6 前缀</td><td>ra/dhcpv6 为设计性关闭，Matter 走链路本地，抓包证明可用</td><td>排除</td></tr>
+  </tbody>
+</table>
+
+<h2>六、未验证事项与待办</h2>
+<table>
+  <thead><tr><th style="width:32%">项目</th><th style="width:68%">为什么无法确认 / 下一步</th></tr></thead>
+  <tbody>
+  <tr><td>agent 为何消失</td><td>日志 10286 行<b>无异常栈</b>，OOM 计数为 0，procd 中也无该服务条目。两种可能：被人为 <code>stop</code>，或 procd 状态丢失。日志无行内时间戳，只能定位到"12:40 之后停止写入"。建议给 agent 加统一时间戳与退出钩子。</td></tr>
+  <tr><td>08:07 那次失败的真实归因</td><td>当时 agent 仍在写日志，说明确有超时发生。<b>需你确认：这期间是否给灯断过电？</b>断过 → 那次属灯侧；没断过 → 灯侧确有间歇退化，需长时观测。</td></tr>
+  <tr><td>灯是否 24 小时周期性退化</td><td>上一版"23 小时"的推断建立在错误的因果上，<b>随之作废</b>。要证明需连续 72 小时每小时一次 mDNS 探测 + 控制回读，本次未做。</td></tr>
+  <tr><td>智能插座远程断电能力</td><td>当前现场无可用智能插座，方案 B1（看门狗自动断电）暂不可实施，需采购后再验证。</td></tr>
+  </tbody>
+</table>
+
+<h2>七、本次处置与后续衔接</h2>
+<table>
+  <thead><tr><th style="width:8%">#</th><th style="width:34%">动作</th><th style="width:30%">结果</th><th style="width:28%">性质</th></tr></thead>
+  <tbody>
+  <tr><td>1</td><td>启动 <code>/etc/init.d/smarthome-agent start</code></td><td>agent pid 6822 起来，连上 broker，<code>state=on</code></td><td>受控恢复（未改配置/代码）</td></tr>
+  <tr><td>2</td><td>验证 status</td><td><code>success:true</code>，灯 on，5 秒</td><td>验证</td></tr>
+  <tr><td>3</td><td>跑一轮完整演示</td><td><b>10/10 pass</b>，第 5 项 23.3 秒</td><td>验证</td></tr>
+  <tr><td>4</td><td>保存抓包原始文件</td><td><code>mdns_test_20261119.pcap</code>（794 B / 4 包）</td><td>证据归档</td></tr>
+  </tbody>
+</table>
+
+<div class="callout info">
+  <b>与第二阶段（优化控制链路）的衔接：</b>本报告已确认两件事，直接决定第二阶段的做法——
+  ① <b>每条命令确实新起 chip-tool 进程</b>（控制前后 PID 不同，CASE 会话随之销毁），所以"常驻服务 + 会话复用"是有效的优化方向；
+  ② <b>agent 缺失必须能被自动发现</b>，否则再快的链路也会因为"没人订阅"而整体失效。建议第二阶段第一件事就是把
+  agent 纳入 procd 监管并加外部心跳探针，而不是先做性能优化。
+</div>
+
+<p class="small" style="margin-top:4mm">
+  本报告由 <code>docs/report_lamp_forensics_v2.html</code> 渲染生成。所有结论按「已证实 / 待验证 / 已排除」三级标注；
+  引用的命令回显与抓包原文均已归档，可复核。
+</p>
+
+</body>
+</html>
