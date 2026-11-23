@@ -1,0 +1,13 @@
+[Unit]
+Description=RG660MK demo local URL 18099 -> board 8099 (LAN)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/socat TCP-LISTEN:18099,bind=127.0.0.1,fork,reuseaddr TCP:192.168.1.1:8099
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

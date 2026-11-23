@@ -22,7 +22,7 @@ wan_iface: ccmni2
 storage:
   dir: /data/ai_cpe/ai_net/data
   rotate_mb: 20
-api: {host: 0.0.0.0, port: 8123}
+api: {host: 127.0.0.1, port: 8123, auth_token_file: /data/ai_cpe/secrets/ops_token}
 executor:
   enabled: false              # 设计 §7.3: 默认关闭
 thresholds:

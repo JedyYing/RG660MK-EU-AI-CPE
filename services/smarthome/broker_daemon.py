@@ -7,7 +7,7 @@ from mqtt_lib import Broker      # noqa: E402
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--host", default="0.0.0.0"); ap.add_argument("--port", type=int, default=1883)
+    ap = argparse.ArgumentParser(); ap.add_argument("--host", default="127.0.0.1"); ap.add_argument("--port", type=int, default=1883)
     a = ap.parse_args()
     b = Broker(a.host, a.port, log=lambda m: print("[broker] %s" % m, flush=True))
     b.start()

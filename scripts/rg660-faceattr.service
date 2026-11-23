@@ -1,0 +1,13 @@
+[Unit]
+Description=Face attribute preview (loopback only) 127.0.0.1:8094
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/jedyying/Documents/RG660MK人脸属性
+ExecStart=/usr/bin/python3 -u attr_live.py --port 8094
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

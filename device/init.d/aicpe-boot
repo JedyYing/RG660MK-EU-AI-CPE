@@ -38,12 +38,12 @@ start() {
   if ! pgrep -f 'at_bridge.py' >/dev/null 2>&1; then
     nohup /usr/bin/python3 /data/ai_cpe/tools/at_bridge.py > /data/ai_cpe/logs/at_bridge.out 2>&1 &
   fi
-  if ! pgrep -f 'cloudflared tunnel --url http://127.0.0.1:8099' >/dev/null 2>&1; then
-    nohup /data/cloudflared/cloudflared tunnel --url http://127.0.0.1:8099 --no-autoupdate >> /data/cloudflared/tun8099.log 2>&1 &
-  fi
-  if ! pgrep -f 'cloudflared tunnel --url http://127.0.0.1:8080' >/dev/null 2>&1; then
-    nohup /data/cloudflared/cloudflared tunnel --url http://127.0.0.1:8080 --no-autoupdate >> /data/cloudflared/tun8080.log 2>&1 &
-  fi
+# CF_DISABLED_SEC:   if ! pgrep -f 'cloudflared tunnel --url http://127.0.0.1:8099' >/dev/null 2>&1; then
+# CF_DISABLED_SEC:     nohup /data/cloudflared/cloudflared tunnel --url http://127.0.0.1:8099 --no-autoupdate >> /data/cloudflared/tun8099.log 2>&1 &
+# CF_DISABLED_SEC:   fi
+# CF_DISABLED_SEC:   if ! pgrep -f 'cloudflared tunnel --url http://127.0.0.1:8080' >/dev/null 2>&1; then
+# CF_DISABLED_SEC:     nohup /data/cloudflared/cloudflared tunnel --url http://127.0.0.1:8080 --no-autoupdate >> /data/cloudflared/tun8080.log 2>&1 &
+# CF_DISABLED_SEC:   fi
 }
 
 stop() {
