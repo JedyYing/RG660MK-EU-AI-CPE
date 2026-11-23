@@ -12,10 +12,11 @@
                           └─ 返回 {img: base64 jpg, faces: [...], ms}
   浏览器把 base64 图放进 <img>，用 canvas 叠画人脸框 —— 图和框严格同帧，不会错位
 
-用法: python3 attr_live.py [--port 8094] [--device http://192.168.1.1:8090]
-访问: http://192.168.1.212:8094/
+用法: python3 attr_live.py [--port 8094] [--host 127.0.0.1] [--device http://192.168.1.1:8090]
+访问: http://127.0.0.1:8094/   （首次访问浏览器会弹出登录框：用户名任意，密码为笔记本服务令牌）
+安全: 默认仅绑定回环；页面与 /frame 均需令牌（见 attr_service_pc.init_tokens）；/healthz 不含数据。
 """
-import argparse, base64, json, os, threading, time
+import argparse, base64, json, os, sys, threading, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import cv2
@@ -179,11 +180,29 @@ class H(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def _deny(self):
+        self.close_connection = True
+        body = json.dumps({"ok": False, "error": "unauthorized"}).encode()
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="rg660mk-attr-live"')
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
-        if self.path in ("/", "/index.html"):
+        path = self.path.split("?", 1)[0]
+        if path == "/healthz":                    # 存活探测：只返回 ok，不含任何画面或属性数据
+            self._send(200, json.dumps({"ok": True}))
+            return
+        if not core.auth_ok(self.headers.get("Authorization"), core.LOCAL_TOKEN):
+            self._deny()
+            return
+        if path in ("/", "/index.html"):
             self._send(200, PAGE, "text/html; charset=utf-8")
             return
-        if self.path == "/frame":
+        if path == "/frame":
             try:
                 with _fetch_lock:
                     img = core.grab(DEVICE, timeout=5)
@@ -208,10 +227,15 @@ class H(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8094)
-    ap.add_argument("--host", default="0.0.0.0")
+    ap.add_argument("--host", default="127.0.0.1",
+                    help="监听地址，默认仅回环；确需局域网访问时显式指定")
     ap.add_argument("--device", default="http://192.168.1.1:8090")
     a = ap.parse_args()
+    err = core.init_tokens(need_device=True)
+    if err:
+        print("启动失败: " + err, file=sys.stderr)
+        sys.exit(2)
     DEVICE = a.device
     print(f"models: {core.load_models()}", flush=True)
-    print(f"attr_live on http://{a.host}:{a.port}  device={DEVICE}", flush=True)
+    print(f"attr_live on http://{a.host}:{a.port}  device={DEVICE}  (token required)", flush=True)
     ThreadingHTTPServer((a.host, a.port), H).serve_forever()

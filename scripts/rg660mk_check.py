@@ -20,6 +20,8 @@ SSH 登录设备(默认 192.168.1.1:22)采集只读状态并巡检设备上"实�
   python3 rg660mk_check.py --host 192.168.1.1
 
 依赖：python3 + paramiko。缺失时：sudo apt install python3-paramiko
+SSH 认证：默认密钥（RG660MK_SSH_KEY 或 ~/.ssh/config 的 IdentityFile，或 ssh-agent）；
+          口令仅可由环境变量 RG660MK_SSH_PASSWORD 提供；主机密钥须已在 ~/.ssh/known_hosts 中。
 """
 
 import json
@@ -39,10 +41,15 @@ except ImportError:
     sys.exit(1)
 
 # ---------------- 设备连接参数 ----------------
+# 安全约定：源码不含任何口令（认证顺序与 rg660mk_token_cost.py 相同）：
+#   1) 私钥：RG660MK_SSH_KEY 指定路径；否则取 ~/.ssh/config 中该主机的 IdentityFile；
+#      再否则由 ssh-agent 与 paramiko 默认私钥名提供
+#   2) 口令：仅读取环境变量 RG660MK_SSH_PASSWORD
+# 主机密钥必须已在 ~/.ssh/known_hosts 中，未知主机直接拒绝。
 HOST = "192.168.1.1"
 PORT = 22
-USER = "root"
-PASS = "[REDACTED-SSH-PASSWORD]"
+USER = os.environ.get("RG660MK_SSH_USER", "root")
+PASS = os.environ.get("RG660MK_SSH_PASSWORD") or None
 
 # HA / MQTT 宿主机（不在 CPE 上，另一台）
 HA_HOST = "192.168.1.244"
@@ -119,14 +126,30 @@ def local_port_open(host, port, timeout=3):
     finally:
         s.close()
 
-def local_http_get(host, port, path="/", timeout=6):
+def _device_token():
+    """设备运维令牌（camview 等设备服务需要）。来源：环境变量 RG660MK_DEVICE_TOKEN，
+    否则 ~/.config/rg660mk/device_ops_token（权限须 0600）。缺失或权限过宽返回 None，不回落默认值。"""
+    v = os.environ.get("RG660MK_DEVICE_TOKEN", "").strip()
+    if v:
+        return v
+    p = os.path.expanduser("~/.config/rg660mk/device_ops_token")
+    if not os.path.isfile(p):
+        return None
+    if os.stat(p).st_mode & 0o077:
+        print(red("  ✗ 设备令牌文件权限过宽（须 chmod 600）: %s" % p))
+        return None
+    with open(p, encoding="utf-8") as f:
+        return f.read().strip() or None
+
+
+def local_http_get(host, port, path="/", timeout=6, headers=None):
     """本机发起一次 HTTP GET，返回 (状态码 or None, 错误说明)。
-    只用标准库,不依赖 curl/requests。状态码非 None 即视为服务可达。"""
+    只用标准库,不依赖 curl/requests。headers 可携带 Authorization（设备令牌）。"""
     import http.client
     conn = None
     try:
         conn = http.client.HTTPConnection(host, port, timeout=timeout)
-        conn.request("GET", path)
+        conn.request("GET", path, headers=headers or {})
         resp = conn.getresponse()
         resp.read(2048)
         return resp.status, ""
@@ -141,15 +164,32 @@ def local_http_get(host, port, path="/", timeout=6):
 def section(title): print("\n" + bold("▍ " + title))
 def kv(k, v):       print("   %-14s %s" % (k, v))
 
+def _ssh_key_files(host):
+    """登录用私钥路径列表；返回 None 表示交给 paramiko 默认查找（ssh-agent / ~/.ssh 默认私钥名）。"""
+    env_key = os.environ.get("RG660MK_SSH_KEY")
+    if env_key:
+        return [os.path.expanduser(env_key)]
+    cfg_path = os.path.expanduser("~/.ssh/config")
+    if os.path.exists(cfg_path):
+        sc = paramiko.SSHConfig()
+        with open(cfg_path, encoding="utf-8", errors="replace") as f:
+            sc.parse(f)
+        paths = [os.path.expanduser(p) for p in (sc.lookup(host).get("identityfile") or [])]
+        if paths:
+            return paths
+    return None
+
+
 def connect():
     c = paramiko.SSHClient()
-    c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    c.load_system_host_keys()                         # 主机密钥只认 ~/.ssh/known_hosts
+    c.set_missing_host_key_policy(paramiko.RejectPolicy())
     try:
-        c.connect(HOST, port=PORT, username=USER, password=PASS, timeout=10,
-                  allow_agent=False, look_for_keys=False, banner_timeout=15)
+        c.connect(HOST, port=PORT, username=USER, password=PASS,
+                  key_filename=_ssh_key_files(HOST), timeout=10, banner_timeout=15)
         return c
     except Exception as e:
-        print(red("  ✗ SSH 登录失败: %s" % e))
+        print(red("  ✗ SSH 登录失败: %s（需要密钥登录，或设置 RG660MK_SSH_PASSWORD；主机须已在 known_hosts 中）" % e))
         return None
 
 
@@ -332,6 +372,9 @@ def main():
 
     # ============ 6. 视觉 AI / 姿态检测定时任务 ============
     section("6. 视觉 AI 与姿态检测")
+    # camview 已要求运维令牌（报告 2.2）：未配置令牌时只报告，不做重启或直采，避免干扰摄像头
+    dtok = _device_token()
+    auth = {"Authorization": "Bearer " + dtok} if dtok else {}
     # 摄像头判据（按本机真实架构，而非 V4L2 惯例）：
     #   本机视觉链路(姿态/人脸)不依赖内核 /dev/video 节点，而是用户态 MJPEG 抓帧工具
     #   (rg660mk_c270_snapshot) 直读 USB。因此判摄像头死活要看“能不能抓到帧”，
@@ -351,13 +394,13 @@ def main():
         # 是否出帧,又不会去直开 USB 跟 camview 抢占(直开会触发重枚举、把 camview 弄卡死,
         # 还会让本检查项瞬时误报"抓帧失败")。仅当 camview 不可用时,才回退到直开 USB 抓帧。
         snap_bytes = 0
-        s2, e2 = local_http_get(HOST, CAM_PREVIEW_PORT, "/snapshot")
+        s2, e2 = local_http_get(HOST, CAM_PREVIEW_PORT, "/snapshot", headers=auth)
         if s2 == 200:
             # 再取一次拿字节数(local_http_get 只读前 2KB,这里单独量一下有效性)
             try:
                 import http.client
                 conn = http.client.HTTPConnection(HOST, CAM_PREVIEW_PORT, timeout=8)
-                conn.request("GET", "/snapshot")
+                conn.request("GET", "/snapshot", headers=auth)
                 r = conn.getresponse()
                 snap_bytes = len(r.read())
                 conn.close()
@@ -367,6 +410,9 @@ def main():
             kv("摄像头", "camview /snapshot 出帧 %d 字节(用户态 MJPEG,不抢占)" % snap_bytes)
             add("ok", "摄像头", "C270 经 camview 取帧正常(/snapshot 返回 %d 字节 JPEG);本机视觉链路走用户态 MJPEG,属正常" % snap_bytes)
             print(green("  ✓ 摄像头取帧正常(camview /snapshot %d 字节,不与预览抢 USB)" % snap_bytes))
+        elif dtok is None:
+            add("fail", "摄像头", "未配置设备令牌(device_ops_token)，无法经 camview 取帧；为避免与 camview 抢占 USB，未做直采复核")
+            print(red("  ✗ 未配置设备令牌，摄像头无法复核（不做直采，以免抢占 USB）"))
         else:
             # camview 取不到帧,回退到独立抓帧工具复核(此时 camview 多半也异常,不构成抢占)
             snap, _ = sh(ssh, "[ -x %s ] && %s 2>&1 | tail -5 || echo NOSNAP" % (C270_SNAPSHOT, C270_SNAPSHOT), timeout=90)
@@ -400,8 +446,8 @@ def main():
     url = "http://%s:%d/" % (HOST, CAM_PREVIEW_PORT)
 
     def _probe_preview():
-        st, er = local_http_get(HOST, CAM_PREVIEW_PORT, "/")
-        ok_http = st is not None and 200 <= st < 500
+        st, er = local_http_get(HOST, CAM_PREVIEW_PORT, "/", headers=auth)
+        ok_http = st == 200            # 401=令牌缺失或错误，不算可达（不能再把 4xx 当作正常）
         fd, _ = sh(ssh, "p=$(pgrep -f '/data/camview/camview' | head -1); "
                         "[ -n \"$p\" ] && ls -l /proc/$p/fd 2>/dev/null | grep -i usb || echo NOPROC")
         return ok_http, ("NOPROC" not in fd), ("(deleted)" not in fd), st, er
@@ -428,7 +474,12 @@ def main():
         if not ok_fd:
             why.append("USB 句柄失效(摄像头重枚举后未重连,视频流会卡死)")
         reason = ";".join(why)
-        if do_fix:
+        if dtok is None or status == 401:
+            # 令牌问题不是摄像头故障：不重启 camview，只报告需要配置/核对令牌
+            kv("预览页", "%s → 令牌缺失或不正确(HTTP %s)" % (url, status))
+            add("fail", "摄像头预览页", "camview 需要设备令牌：本机未配置或令牌不正确(HTTP %s)，未执行重启" % status)
+            print(red("  ✗ 摄像头预览页：令牌缺失或不正确，未执行重启（核对 ~/.config/rg660mk/device_ops_token）"))
+        elif do_fix:
             # 复查 3 次仍异常 → 触发一次兜底重启(看门狗 5 分钟才跑一次,巡检立即救一把)
             sh(ssh, "/etc/init.d/camview enabled 2>/dev/null || /etc/init.d/camview enable")
             sh(ssh, "/etc/init.d/camview restart 2>&1", timeout=40)

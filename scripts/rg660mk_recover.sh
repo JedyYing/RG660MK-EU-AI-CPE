@@ -40,8 +40,8 @@ all)
   $SSH 'mkdir -p /data/ai_cpe/v14'
   scp -q -i $K $OPTS $V14/three_stream_test_20261006/rtg3_probe.py $V14/scripts/camav6.py $V14/scripts/rtg_player.html "$SCPT:/data/ai_cpe/v14/" && echo "✓ 接收端已上传"
   scp -q -i $K $OPTS /home/jedyying/rg660mk_start_receivers.sh "$SCPT:/data/ai_cpe/v14/start_receivers.sh" && echo "✓ 启动器已上传"
-  echo "== [3/8] 防火墙（8094/8092/8095 TCP 放行） =="
-  $SSH 'for P in 8094 8092 8095; do
+  echo "== [3/8] 防火墙（8094/8095 TCP 放行；8092 不对 WAN 开放） =="
+  $SSH 'for sec in $(uci show firewall 2>/dev/null | grep "rtg3-8092" | sed "s/\.name=.*//"); do uci delete "$sec"; done; for P in 8094 8095; do
           if ! uci show firewall 2>/dev/null | grep -qE "dest_port=.?$P"; then
             uci add firewall rule >/dev/null
             uci set firewall.@rule[-1].name="rtg3-$P"
@@ -50,7 +50,7 @@ all)
             uci set firewall.@rule[-1].dest_port="$P"
             uci set firewall.@rule[-1].target="ACCEPT"
           fi
-        done; uci commit firewall; /etc/init.d/firewall reload >/dev/null 2>&1; echo fw4_reloaded; nft list chain inet fw4 input_wan 2>/dev/null | grep -E "dport (8094|8092|8095)"'
+        done; uci commit firewall; /etc/init.d/firewall reload >/dev/null 2>&1; echo fw4_reloaded; nft list chain inet fw4 input_wan 2>/dev/null | grep -E "dport (8094|8095)"; nft list chain inet fw4 input_wan 2>/dev/null | grep -c "dport 8092" | sed "s/^/8092 WAN rules (expect 0): /"'
   echo "== [4/8] 启动接收端 =="
   $SSH 'sh /data/ai_cpe/v14/start_receivers.sh'
   sleep 4

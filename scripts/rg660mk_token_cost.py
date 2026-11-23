@@ -26,10 +26,15 @@ warnings.filterwarnings("ignore")  # 屏蔽 paramiko 的 Blowfish 弃用警告�
 from datetime import datetime, timezone
 
 # ---- 设备连接参数(与 rg660mk_check.py 一致) ----
+# 安全约定：源码不含任何口令。认证顺序：
+#   1) 私钥：RG660MK_SSH_KEY 指定路径；否则取 ~/.ssh/config 中该主机的 IdentityFile；
+#      再否则由 ssh-agent 与 paramiko 默认私钥名提供
+#   2) 口令：仅读取环境变量 RG660MK_SSH_PASSWORD，未设置则不做口令登录
+# 主机密钥必须已在 ~/.ssh/known_hosts 中（RejectPolicy），未知主机直接拒绝。
 HOST = "192.168.1.1"
 PORT = 22
-USER = "root"
-PASS = "[REDACTED-SSH-PASSWORD]"
+USER = os.environ.get("RG660MK_SSH_USER", "root")
+PASS = os.environ.get("RG660MK_SSH_PASSWORD") or None
 STATE_DB = "/data/hermes/.hermes/state.db"
 
 # ---- DeepSeek deepseek-flash 计价(每百万 token 的美元单价,峰价) ----
@@ -88,6 +93,23 @@ print("SUMMARY " + json.dumps({"rows":rows,"api_calls":calls,
 ''' % STATE_DB
 
 
+def _ssh_key_files(host):
+    """登录用私钥路径列表；返回 None 表示交给 paramiko 默认查找（ssh-agent / ~/.ssh 默认私钥名）。"""
+    env_key = os.environ.get("RG660MK_SSH_KEY")
+    if env_key:
+        return [os.path.expanduser(env_key)]
+    cfg_path = os.path.expanduser("~/.ssh/config")
+    if os.path.exists(cfg_path):
+        import paramiko
+        sc = paramiko.SSHConfig()
+        with open(cfg_path, encoding="utf-8", errors="replace") as f:
+            sc.parse(f)
+        paths = [os.path.expanduser(p) for p in (sc.lookup(host).get("identityfile") or [])]
+        if paths:
+            return paths
+    return None
+
+
 def fetch_from_device(host, minutes):
     """SSH 到设备跑取数脚本,返回 dict 或 None(连不上/无数据)。"""
     try:
@@ -98,12 +120,13 @@ def fetch_from_device(host, minutes):
         return None
     win = minutes * 60
     cli = paramiko.SSHClient()
-    cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    cli.load_system_host_keys()                       # 主机密钥只认 ~/.ssh/known_hosts
+    cli.set_missing_host_key_policy(paramiko.RejectPolicy())
     try:
-        cli.connect(host, port=PORT, username=USER, password=PASS, timeout=10,
-                    allow_agent=False, look_for_keys=False, banner_timeout=15)
+        cli.connect(host, port=PORT, username=USER, password=PASS,
+                    key_filename=_ssh_key_files(host), timeout=10, banner_timeout=15)
     except Exception as e:
-        print("SSH 连接设备失败: %s" % e)
+        print("SSH 连接设备失败: %s（需要密钥登录，或设置 RG660MK_SSH_PASSWORD；主机须已在 known_hosts 中）" % e)
         return None
     try:
         # 用 python3 -c 传入远程脚本;窗口秒数作为 argv[1]

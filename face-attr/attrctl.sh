@@ -8,6 +8,9 @@ LOG=/tmp/attr_service.log
 PIDF=/tmp/attr_service.pid
 PIDF_LIVE=/tmp/attr_live.pid
 DIRLIVE="$DIR"
+# 令牌从环境变量或 ~/.config/rg660mk（权限须 600）读取，脚本内不写任何口令
+LTOK="${RG660MK_LOCAL_TOKEN:-$(cat "$HOME/.config/rg660mk/local_ops_token" 2>/dev/null)}"
+DTOK="${RG660MK_DEVICE_TOKEN:-$(cat "$HOME/.config/rg660mk/device_ops_token" 2>/dev/null)}"
 
 running() {
     [ -f "$PIDF" ] && kill -0 "$(cat $PIDF)" 2>/dev/null
@@ -20,18 +23,18 @@ case "${1:-status}" in
     nohup nice -n 10 $PY -u attr_service_pc.py --port 8093 > "$LOG" 2>&1 &
     echo $! > "$PIDF"
     sleep 3
-    if curl -s -m 3 http://127.0.0.1:8093/health > /dev/null 2>&1; then
+    if curl -s -m 3 http://127.0.0.1:8093/healthz > /dev/null 2>&1; then
         echo "✓ API 已启动 (PID $(cat $PIDF))  http://127.0.0.1:8093"
     else
         echo "✗ API 启动失败，看日志: $LOG"; tail -5 "$LOG"; exit 1
     fi
     # 实时预览页（8094）
-    if ! (curl -s -m 2 -o /dev/null http://127.0.0.1:8094/ 2>/dev/null); then
+    if ! (curl -s -m 2 -o /dev/null http://127.0.0.1:8094/healthz 2>/dev/null); then
         cd "$DIR"
         nohup nice -n 10 $PY -u attr_live.py --port 8094 > /tmp/attr_live.log 2>&1 &
         echo $! > "$PIDF_LIVE"
         sleep 3
-        if curl -s -m 3 -o /dev/null http://127.0.0.1:8094/ 2>/dev/null; then
+        if curl -s -m 3 -o /dev/null http://127.0.0.1:8094/healthz 2>/dev/null; then
             echo "✓ 预览页已启动 (PID $(cat $PIDF_LIVE))  http://127.0.0.1:8094"
         else
             echo "✗ 预览页启动失败，看 /tmp/attr_live.log"; tail -5 /tmp/attr_live.log
@@ -50,13 +53,13 @@ case "${1:-status}" in
   status)
     if running; then
         echo "● 运行中 (PID $(cat $PIDF))"
-        curl -s -m 3 http://127.0.0.1:8093/health | $PY -m json.tool 2>/dev/null || true
+        curl -s -m 3 -H "Authorization: Bearer $LTOK" http://127.0.0.1:8093/health | $PY -m json.tool 2>/dev/null || true
     else
         echo "○ 未运行"
     fi
     ;;
   health)
-    curl -s -m 3 http://127.0.0.1:8093/health; echo
+    curl -s -m 3 -H "Authorization: Bearer $LTOK" http://127.0.0.1:8093/health; echo
     ;;
   bench)
     cd "$DIR"; $PY -u attr_service_pc.py --bench "${2:-40}"
@@ -79,24 +82,24 @@ case "${1:-status}" in
     if [ "$c" = "200" ]; then echo "  ✓ 8099 演示页正常"; ok=$((ok+1));
     else echo "  ✗ 8099 返回 $c"; fail=$((fail+1)); fi
     # 3 摄像头
-    c=$(curl -s -m 6 -o /dev/null -w '%{http_code}' http://192.168.1.1:8090/snapshot 2>/dev/null)
+    c=$(curl -s -m 6 -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $DTOK" http://192.168.1.1:8090/snapshot 2>/dev/null)
     if [ "$c" = "200" ]; then echo "  ✓ 摄像头 8090 出帧正常"; ok=$((ok+1));
     else echo "  ✗ 摄像头 8090 返回 $c"; fail=$((fail+1)); fi
     # 4 属性服务
-    if curl -s -m 5 http://127.0.0.1:8093/health >/dev/null 2>&1; then
+    if curl -s -m 5 http://127.0.0.1:8093/healthz >/dev/null 2>&1; then
         echo "  ✓ 属性服务在跑"; ok=$((ok+1))
     else
         echo "  ✗ 属性服务不通 —— 跑 ~/attrctl start"; fail=$((fail+1))
     fi
     # 4.5 预览页
-    if curl -s -m 4 -o /dev/null http://127.0.0.1:8094/ 2>/dev/null; then
+    if curl -s -m 4 -o /dev/null http://127.0.0.1:8094/healthz 2>/dev/null; then
         echo "  ✓ 实时预览页在跑 (http://192.168.1.212:8094/)"; ok=$((ok+1))
     else
         echo "  ✗ 预览页不通 —— 跑 ~/attrctl start"; fail=$((fail+1))
     fi
     # 5 端到端识别
     r=$(curl -s -m 20 -X POST http://127.0.0.1:8093/vision/attribute \
-        -H "Content-Type: application/json" -d '{"snapshot":true}' 2>/dev/null)
+        -H "Authorization: Bearer $LTOK" -H "Content-Type: application/json" -d '{"snapshot":true}' 2>/dev/null)
     n=$(echo "$r" | sed -n 's/.*"face_count": *\([0-9]*\).*/\1/p')
     if [ -n "$n" ] && [ "$n" -gt 0 ]; then
         g=$(echo "$r" | sed -n 's/.*"gender": *"\([a-z]*\)".*/\1/p')

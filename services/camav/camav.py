@@ -12,7 +12,7 @@
 #   /status               状态
 # 关键点：视频【只发最新帧】——慢客户端只会丢帧，不会积压出秒级延时。
 import http.server, socketserver, subprocess, socket, sys, os, time, threading, io, array
-import base64, hashlib, struct, queue, math, urllib.parse
+import base64, hashlib, hmac, struct, queue, math, urllib.parse
 from PIL import Image
 
 CAM   = ("127.0.0.1", 8090)
@@ -27,6 +27,16 @@ VID_W = int(os.environ.get("VID_W", "288"))
 VID_Q = int(os.environ.get("VID_Q", "38"))
 VID_F   = float(os.environ.get("VID_FPS", "2"))
 PORT  = int(sys.argv[1]) if len(sys.argv) > 1 else 8092
+
+# --- 访问控制：本机回环免鉴权；其它来源必须带 token（?token= / X-Auth-Token / Cookie）---
+TOKEN_FILE = os.environ.get("CAMAV_TOKEN_FILE", "/data/ai_cpe/.secrets/stream_token")
+
+def _load_token():
+    try:
+        with open(TOKEN_FILE, "r") as f:
+            return f.read().strip()
+    except Exception:
+        return ""
 
 BUF_MAX = RATE * 2 * 4
 BUF = bytearray(); POS = 0
@@ -105,7 +115,7 @@ def _video_reader():
                 if not ln or ln in (b"\r\n", b"\n"): break
             buf = bytearray()
             while True:
-                d = f.read(65536)
+                d = f.read1(65536)  # 及时交付已到达数据，不等凑满64KB造成成批丢帧
                 if not d: break
                 buf.extend(d)
                 while True:
@@ -516,10 +526,44 @@ class H(http.server.BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def handle_error(self, *a): pass          # 客户端断流/重置不再刷 traceback
 
+    def _authorized(self, qs):
+        """回环(本机脚本)放行；其它来源校验 token。"""
+        ip = (self.client_address[0] or "")
+        if ip in ("127.0.0.1", "::1", "::ffff:127.0.0.1"):
+            return True
+        tok = _load_token()
+        if not tok:
+            return False
+        cand = list(qs.get("token") or [])
+        hv = self.headers.get("X-Auth-Token")
+        if hv:
+            cand.append(hv.strip())
+        ck = self.headers.get("Cookie") or ""
+        for part in ck.split(";"):
+            k, _, v = part.strip().partition("=")
+            if k == "cpe_token":
+                cand.append(v)
+        return any(hmac.compare_digest(c, tok) for c in cand)
+
+    def log_message(self, fmt, *args):
+        try:
+            line = "%s %s %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), self.client_address[0], fmt % args)
+            with open("/data/ai_cpe/logs/camav_access.log", "a") as f:
+                f.write(line)
+        except Exception:
+            pass
+
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
         p = u.path
         qs = urllib.parse.parse_qs(u.query)
+        if not self._authorized(qs):
+            body = "401 unauthorized: 请用 http://<设备IP>:8092/?token=<令牌> 打开\n".encode()
+            self.send_response(401)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("WWW-Authenticate", 'Bearer realm="camav"')
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers(); self.wfile.write(body); return
         try:
             self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         except Exception:
@@ -529,6 +573,8 @@ class H(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Cache-Control", "no-store, must-revalidate")
+            if qs.get("token"):
+                self.send_header("Set-Cookie", "cpe_token=%s; Path=/; HttpOnly; SameSite=Lax" % qs["token"][0])
             self.send_header("Content-Length", str(len(body)))
             self.end_headers(); self.wfile.write(body); return
         if p == "/stream":
@@ -588,7 +634,13 @@ class H(http.server.BaseHTTPRequestHandler):
                 last_seq = seq
                 now = time.time()
                 if now - last_t < interval:
-                    continue                      # 不够快就丢帧：永远发最新的一帧
+                    time.sleep(interval - (now - last_t))
+                    with VFLOCK:
+                        seq = VF["seq"]; fr = VF["data"]
+                    if fr is None:
+                        continue
+                    last_seq = seq  # 等待后取最新帧，避免离散到帧节奏把10fps削成约6fps
+                now = time.time()  # 以实际开始发送时刻计时，不把转码耗时重复加到间隔
                 jpg = transcode(seq, fr, w, q)
                 part = (b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n" % len(jpg)) + jpg
                 self.wfile.write(b"%x\r\n" % len(part) + part + b"\r\n")
@@ -898,6 +950,12 @@ class H(http.server.BaseHTTPRequestHandler):
         stop.set()
 
     def tone(self, dev):
+        allow = [x.strip() for x in os.environ.get("CAMAV_SPK_ALLOW", "plughw:2,0").split(";") if x.strip()]
+        if dev not in allow:
+            b = ("tone rejected: dev not in allowlist").encode()
+            self.send_response(403); self.send_header("Content-Type","text/plain")
+            self.send_header("Content-Length", str(len(b))); self.end_headers(); self.wfile.write(b)
+            return
         try:
             p = subprocess.Popen(["aplay","-D",dev,"-f","S16_LE","-r",str(RATE),"-c","1","-t","raw","-q"],
                                  stdin=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -920,7 +978,11 @@ class TS(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
+    def handle_error(self, request, client_address):
+        # 客户端主动断流（浏览器关页/弱网）不刷 traceback
+        pass
+
 if __name__ == "__main__":
     sys.stderr.write("camav v3: port=%d spk=%s mic=%s (%d->%dHz) video=%dpx/q%d/%gfps\n"
                      % (PORT, SPK, MICS, CAPR, RATE, VID_W, VID_Q, VID_F)); sys.stderr.flush()
-    TS(("0.0.0.0", PORT), H).serve_forever()
+    TS((os.environ.get("CAMAV_BIND", "127.0.0.1"), PORT), H).serve_forever()

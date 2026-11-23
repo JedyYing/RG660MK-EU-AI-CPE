@@ -24,7 +24,7 @@
   python3 attr_service_pc.py --port 8093                 # 起服务
   python3 attr_service_pc.py --bench 30                  # 压测：连续推理并记录 8099 响应
 """
-import argparse, json, os, threading, time, urllib.request
+import argparse, base64, hmac, json, os, sys, threading, time, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import cv2
@@ -124,8 +124,68 @@ def analyse(bgr):
             "elapsed_ms": int((time.time() - t0) * 1000), "capability": "gender"}
 
 
+# ---- 令牌（源码不含任何口令）----
+# 笔记本服务令牌 LOCAL_TOKEN：环境变量 RG660MK_LOCAL_TOKEN 或 ~/.config/rg660mk/local_ops_token
+#   用于保护本机的 8093 / 8094 接口（调用方：浏览器、attrctl、看门狗）
+# 设备令牌 DEVICE_TOKEN：环境变量 RG660MK_DEVICE_TOKEN 或 ~/.config/rg660mk/device_ops_token
+#   用于访问设备 camview:8090/snapshot 与看板 8099 探测
+# 令牌文件权限必须为 0600，否则拒绝启动。
+LOCAL_TOKEN = None
+DEVICE_TOKEN = None
+_TOKEN_DIR = os.path.expanduser("~/.config/rg660mk")
+
+
+def _read_token(env_name, filename):
+    v = os.environ.get(env_name, "").strip()
+    if v:
+        return v
+    p = os.path.join(_TOKEN_DIR, filename)
+    if not os.path.isfile(p):
+        return None
+    if os.stat(p).st_mode & 0o077:
+        raise RuntimeError("令牌文件权限过宽（须 chmod 600）: %s" % p)
+    with open(p, encoding="utf-8") as f:
+        return f.read().strip() or None
+
+
+def init_tokens(need_device=True):
+    """启动时读取令牌。返回错误信息字符串（调用方应退出），成功返回 None。"""
+    global LOCAL_TOKEN, DEVICE_TOKEN
+    try:
+        LOCAL_TOKEN = _read_token("RG660MK_LOCAL_TOKEN", "local_ops_token")
+        DEVICE_TOKEN = _read_token("RG660MK_DEVICE_TOKEN", "device_ops_token")
+    except RuntimeError as e:
+        return str(e)
+    if not LOCAL_TOKEN:
+        return "未配置笔记本服务令牌：设置 RG660MK_LOCAL_TOKEN，或写入 ~/.config/rg660mk/local_ops_token（0600）"
+    if need_device and not DEVICE_TOKEN:
+        return "未配置设备令牌：设置 RG660MK_DEVICE_TOKEN，或写入 ~/.config/rg660mk/device_ops_token（0600）"
+    return None
+
+
+def auth_ok(authz_header, token):
+    """校验 Authorization: Bearer <token> 或 Basic（密码即令牌，用户名任意）。常量时间比较。"""
+    if not token or not authz_header:
+        return False
+    if authz_header.startswith("Bearer "):
+        got = authz_header[7:].strip()
+    elif authz_header.startswith("Basic "):
+        try:
+            raw = base64.b64decode(authz_header[6:].strip()).decode("utf-8", "replace")
+        except Exception:
+            return False
+        got = raw.partition(":")[2]
+    else:
+        return False
+    return hmac.compare_digest(got.encode("utf-8"), token.encode("utf-8"))
+
+
 def grab(device, timeout=6):
-    with urllib.request.urlopen(device.rstrip("/") + "/snapshot", timeout=timeout) as r:
+    if not DEVICE_TOKEN:
+        raise RuntimeError("未配置设备令牌（RG660MK_DEVICE_TOKEN）")
+    req = urllib.request.Request(device.rstrip("/") + "/snapshot",
+                                 headers={"Authorization": "Bearer " + DEVICE_TOKEN})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
         data = r.read()
     if len(data) < 1024:
         raise RuntimeError("snapshot too small")
@@ -144,25 +204,47 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
+
+    def _deny(self):
+        self.close_connection = True          # 未读取的请求体不复用连接
+        body = json.dumps({"ok": False, "error": "unauthorized"}).encode()
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="rg660mk-attr"')
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _authorized(self):
+        return auth_ok(self.headers.get("Authorization"), LOCAL_TOKEN)
 
     def log_message(self, *a):
         pass
 
     def do_GET(self):
-        if self.path == "/health":
+        path = self.path.split("?", 1)[0]
+        if path == "/healthz":                # 存活探测：只返回 ok，不含任何数据
+            self._send(200, {"ok": True})
+            return
+        if not self._authorized():
+            self._deny()
+            return
+        if path == "/health":
             self._send(200, {"ok": True, "service": "attr-pc", "version": 5,
                              "capability": ["gender"], "port": PORT,
                              "models": {k: v is not None for k, v in _sess.items()},
                              "yunet": _yunet is not None, "device": self.device, "stats": _state})
-        elif self.path == "/metrics":
+        elif path == "/metrics":
             self._send(200, dict(_state))
         else:
             self._send(404, {"ok": False, "error": "not found"})
 
     def do_POST(self):
+        if not self._authorized():
+            self._deny()
+            return
         if self.path != "/vision/attribute":
             self._send(404, {"ok": False, "error": "not found"}); return
         n = int(self.headers.get("Content-Length") or 0)
@@ -197,7 +279,8 @@ def bench(n, device):
     def probe():
         t0 = time.time()
         try:
-            with urllib.request.urlopen(http8099, timeout=5) as r:
+            req = urllib.request.Request(http8099, headers={"Authorization": "Bearer " + (DEVICE_TOKEN or "")})
+            with urllib.request.urlopen(req, timeout=5) as r:
                 r.read()
             return (time.time() - t0) * 1000
         except Exception:
@@ -233,16 +316,20 @@ def bench(n, device):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8093)
-    ap.add_argument("--host", default="0.0.0.0")
+    ap.add_argument("--host", default="127.0.0.1",
+                    help="监听地址，默认仅回环；确需局域网访问时显式指定")
     ap.add_argument("--device", default="http://192.168.1.1:8090")
     ap.add_argument("--bench", type=int, default=0, help="压测模式：连续 N 次推理并记录 8099 响应")
     a = ap.parse_args()
+    err = init_tokens(need_device=True)
+    if err:
+        print("启动失败: " + err, file=sys.stderr)
+        sys.exit(2)
     PORT = a.port
     Handler.device = a.device
     print(f"models: {load_models()}", flush=True)
     if a.bench:
         bench(a.bench, a.device)
     else:
-        Handler.device = a.device
-        print(f"attr_service_pc v5 on {a.host}:{PORT} (gender only)", flush=True)
+        print(f"attr_service_pc v5 on {a.host}:{PORT} (gender only, token required)", flush=True)
         ThreadingHTTPServer((a.host, PORT), Handler).serve_forever()

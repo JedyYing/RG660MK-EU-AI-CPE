@@ -71,26 +71,47 @@ pip3 install opencv-python onnxruntime numpy
 ~/attrctl start      # 同时起 API(8093) 和 预览页(8094)
 ```
 
-浏览器打开 **http://192.168.1.212:8094/** —— 摄像头画面 + 人脸框 + 性别/年龄段叠加，
+浏览器打开 **http://127.0.0.1:8094/**（仅本机；首次访问弹出登录框，用户名任意，密码为笔记本服务令牌，见下节「令牌」）—— 摄像头画面 + 人脸框 + 性别/年龄段叠加，
 多人时逐条列出，右上角显示实时状态。5–10 fps（受 snapshot 轮询限制，非推理瓶颈，单帧推理仅 12–32 ms）。
 
 **为什么不直接改 8099**：8099 的页面内嵌在 `aicpe_demo.py` 的 `DASH_HTML` 字符串里，
 改它必须重启 aicpe-board（2–5 秒中断且有起不来的风险）。演示主线不能赌，所以做独立页面。
 8099 一个字节都没动。
 
+## 令牌（必须配置，源码不含任何口令）
+
+| 令牌 | 用途 | 读取顺序 |
+|---|---|---|
+| 笔记本服务令牌 | 保护本机 8093 / 8094 | 环境变量 `RG660MK_LOCAL_TOKEN`，否则 `~/.config/rg660mk/local_ops_token` |
+| 设备令牌 | 访问设备 camview:8090、看板 8099 | 环境变量 `RG660MK_DEVICE_TOKEN`，否则 `~/.config/rg660mk/device_ops_token` |
+
+```bash
+mkdir -p ~/.config/rg660mk && umask 077
+openssl rand -hex 24 > ~/.config/rg660mk/local_ops_token    # 笔记本服务令牌
+# 设备令牌须与设备端 /data/ai_cpe/secrets/ops_token 一致（部署时由设备侧生成后拷入）
+```
+
+- 文件权限必须为 0600，否则启动失败。
+- 默认监听 `127.0.0.1`，不再对局域网开放。
+- `/healthz` 为公开存活探测，只返回 `{"ok": true}`，不含画面或属性数据。
+- 其余接口需要 `Authorization: Bearer <令牌>`，或 Basic 认证（密码为令牌，用户名任意）。
+
 ## 接口
 
 ```bash
+LTOK=$(cat ~/.config/rg660mk/local_ops_token)
+
 # 抓设备当前画面并识别
 curl -s -X POST http://127.0.0.1:8093/vision/attribute \
-  -H "Content-Type: application/json" -d '{"snapshot":true}'
+  -H "Authorization: Bearer $LTOK" -H "Content-Type: application/json" -d '{"snapshot":true}'
 
-# 识别本地图片
+# 识别本地图片（只允许令牌持有者调用）
 curl -s -X POST http://127.0.0.1:8093/vision/attribute \
-  -H "Content-Type: application/json" -d '{"image":"/path/to.jpg"}'
+  -H "Authorization: Bearer $LTOK" -H "Content-Type: application/json" -d '{"image":"/path/to.jpg"}'
 
-# 健康检查
-curl -s http://127.0.0.1:8093/health
+# 存活探测（无需令牌）/ 详细状态（需要令牌）
+curl -s http://127.0.0.1:8093/healthz
+curl -s -H "Authorization: Bearer $LTOK" http://127.0.0.1:8093/health
 ```
 
 响应：

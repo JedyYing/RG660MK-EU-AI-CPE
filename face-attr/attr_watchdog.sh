@@ -5,8 +5,8 @@
 LOG=/tmp/attr_watchdog.log
 
 api_ok=0; live_ok=0
-curl -s -m 5 http://127.0.0.1:8093/health > /dev/null 2>&1 && api_ok=1
-curl -s -m 5 -o /dev/null http://127.0.0.1:8094/ 2>/dev/null && live_ok=1
+curl -s -m 5 http://127.0.0.1:8093/healthz > /dev/null 2>&1 && api_ok=1
+curl -s -m 5 -o /dev/null http://127.0.0.1:8094/healthz 2>/dev/null && live_ok=1
 [ "$api_ok" = "1" ] && [ "$live_ok" = "1" ] && exit 0
 
 echo "[$(date '+%F %T')] health 不通，准备重启" >> "$LOG"
@@ -18,7 +18,7 @@ rm -f /tmp/attr_service.pid
 sleep 1
 "$HOME/attrctl" start >> "$LOG" 2>&1
 sleep 2
-if curl -s -m 5 http://127.0.0.1:8093/health > /dev/null 2>&1; then
+if curl -s -m 5 http://127.0.0.1:8093/healthz > /dev/null 2>&1; then
     echo "[$(date '+%F %T')] 重启成功" >> "$LOG"
 else
     echo "[$(date '+%F %T')] 重启失败，需人工介入" >> "$LOG"
