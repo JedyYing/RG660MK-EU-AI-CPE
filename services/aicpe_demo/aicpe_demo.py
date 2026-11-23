@@ -101,6 +101,29 @@ STATE = {"started": time.time(), "phase": "init", "items": [], "log": [], "done"
          "summary": "", "report": ""}
 LOCK = threading.RLock()
 RUN_LOCK = threading.Lock()
+
+# ---- 可选 Token 鉴权（安全扫描 2.4/2.5；默认关闭）----
+DEMO_TOKEN = (os.environ.get("DEMO_TOKEN") or "").strip()
+if not DEMO_TOKEN:
+    try:
+        DEMO_TOKEN = open("/data/ai_cpe/demo/data/demo-token").read().strip()
+    except Exception:
+        DEMO_TOKEN = ""
+
+
+def _demo_token_from(headers, path, cookies=None):
+    tok = headers.get("X-Demo-Token") or ""
+    if not tok and cookies:
+        for part in cookies.split(";"):
+            k, _, v = part.strip().partition("=")
+            if k == "demo_token":
+                tok = v
+                break
+    if not tok and "?" in path:
+        from urllib.parse import parse_qs
+        tok = (parse_qs(path.split("?", 1)[1]).get("token") or [""])[0]
+    return tok
+
 HISTORY_FILE = DEMO + "/history_offline.json"
 
 
@@ -1536,6 +1559,17 @@ def check_smart_home(it, no_audio=False):
     ok0 = rc == 0 and bool(st0.get("success")) and _field(st0, "switch_led") in (True, False) and isinstance(_field(st0, "switch_led"), bool)
     sw0 = bool(_field(st0, "switch_led"))
     ms.append(("控制面（Matter/MQTT · Matter 优先）", ("正常 · transport=%s · broker=%s" % (st0.get("transport"), st0.get("broker"))) if ok0 else "异常: %s" % str(st0)[:60]))
+    ms.append(("分层诊断", "agent=%s · mqtt=%s · wifi=%s · ip=%s · mdns=%s · case=%s · matter=%s" % (
+        st0.get("agent_status", "unknown"), st0.get("mqtt_status", "unknown"),
+        st0.get("wifi_status", "unknown"), st0.get("ip_status", "unknown"),
+        st0.get("mdns_status", "unknown"), st0.get("case_status", "unknown"),
+        st0.get("matter_status", "unknown"))))
+    ms.append(("Wi-Fi 状态", st0.get("wifi_status", "unknown")))
+    ms.append(("IP 状态", st0.get("ip_status", "unknown")))
+    ms.append(("mDNS 状态", st0.get("mdns_status", "unknown")))
+    ms.append(("CASE 状态", st0.get("case_status", "unknown")))
+    ms.append(("Matter 状态", st0.get("matter_status", "unknown")))
+    ms.append(("真实回读", "开" if _field(st0, "switch_led") is True else ("关" if _field(st0, "switch_led") is False else "unknown")))
     _drv = str(_field(st0, "driver") or "?")
     _proxy = bool(_field(st0, "proxy")) or _drv.startswith("board-led")
     if _drv and "matter" not in _drv.lower():
@@ -1554,12 +1588,29 @@ def check_smart_home(it, no_audio=False):
     #   · matter/tuya = 真实执行器，用控制面开关回读做三轮循环 → pass
     if not ok0:
         _err = str(st0)
-        # rc!=0 表示我们自己把探针掐断了（进程被杀，没有 JSON）——
-        # 这本身就是 Matter 无响应的铁证，不能因为错误文本里没有「超时」就判 fail
-        if (rc != 0) or ("超时" in _err) or ("Timeout" in _err) or ("读取失败" in _err):
-            set_item(it, "skip",
-                     "灯在线（ping 通）但 Matter 无响应（mDNS 地址解析超时）"
-                     "→ 给灯断电重启即可恢复", ms)
+        _agent = str(st0.get("agent_status") or "unknown")
+        _mqtt = str(st0.get("mqtt_status") or "unknown")
+        _wifi = str(st0.get("wifi_status") or "unknown")
+        _ip = str(st0.get("ip_status") or "unknown")
+        _mdns = str(st0.get("mdns_status") or "unknown")
+        _case = str(st0.get("case_status") or "unknown")
+        _matter = str(st0.get("matter_status") or "unknown")
+        if _agent != "running":
+            set_item(it, "fail", "CPE 控制进程异常（agent=%s），不是灯泡离线" % _agent, ms)
+        elif _mqtt == "disconnected":
+            set_item(it, "fail", "MQTT 控制面断开（agent 存活），不是灯泡离线", ms)
+        elif _wifi == "disconnected":
+            set_item(it, "skip", "灯泡 Wi-Fi 未关联（无线层）", ms)
+        elif _ip == "unreachable":
+            set_item(it, "skip", "灯泡 IP 不可达（网络层），不是 Matter 执行结果", ms)
+        elif _mdns == "failed":
+            set_item(it, "skip", "Matter mDNS 发现失败（灯端未应答）", ms)
+        elif _case == "failed":
+            set_item(it, "skip", "Matter CASE 建连失败（发现已通过）", ms)
+        elif _matter in ("timeout", "not_reached"):
+            set_item(it, "skip", "Matter 命令超时（执行状态未确认）", ms)
+        elif (rc != 0) or ("超时" in _err) or ("Timeout" in _err) or ("读取失败" in _err):
+            set_item(it, "skip", "控制面超时，未确认灯状态", ms)
         else:
             set_item(it, "fail", "控制面初态无效，未执行动作", ms)
         return
@@ -1652,9 +1703,16 @@ def check_smart_home(it, no_audio=False):
             seq_ok = False
             ms.append(("动作异常", str(e)[:100]))
         finally:
+            _target = "on" if sw0 else "off"
+            _cur = _pw(locals().get("st_n") or {})
             try:
-                rc_f, st_f = _cmd_until("on" if sw0 else "off", "on" if sw0 else "off",
-                                        t=30, max_wait=max(6.0, min(30.0, _left())))
+                if _cur == _target:
+                    # 关→开后已经在初始态，避免多跑一次 chip-tool（约 9s）
+                    st_f = locals().get("st_n") or {}
+                    ms.append(("现场恢复", "已在初始态（%s），未重复下发" % _target))
+                else:
+                    rc_f, st_f = _cmd_until(_target, _target,
+                                            t=30, max_wait=max(6.0, min(30.0, _left())))
             except Exception as e:
                 seq_ok = False
                 ms.append(("恢复异常", str(e)[:100]))
@@ -2502,11 +2560,14 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
-    def _send(self, code, ctype, body):
+    def _send(self, code, ctype, body, extra=None):
         body = body if isinstance(body, bytes) else body.encode("utf-8")
         self.send_response(code); self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store"); self.end_headers()
+        self.send_header("Cache-Control", "no-store")
+        for k, v in (extra or []):
+            self.send_header(k, v)
+        self.end_headers()
         try:
             self.wfile.write(body if isinstance(body, bytes) else body.encode("utf-8"))
         except Exception:
@@ -2521,6 +2582,13 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
         if self.headers.get("Sec-Fetch-Site") == "cross-site":
             self._send(403, "application/json", '{"error":"cross site denied"}')
             return
+        if DEMO_TOKEN:
+            import hmac as _hm
+            _tok = _demo_token_from(self.headers, self.path, self.headers.get("Cookie"))
+            if not _hm.compare_digest(_tok or "", DEMO_TOKEN):
+                log("=== 401 POST %s 无有效 token ===" % self.path.split("?")[0])
+                self._send(401, "application/json", '{"error":"unauthorized"}')
+                return
         if self.path == "/mode":
             try:
                 self.connection.settimeout(10)
@@ -2748,6 +2816,22 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         p = self.path.split("?")[0]
+        if p == "/auth":
+            import hmac as _hm
+            tok = _demo_token_from(self.headers, self.path, self.headers.get("Cookie"))
+            if DEMO_TOKEN and _hm.compare_digest(tok or "", DEMO_TOKEN):
+                self._send(302, "text/plain", "ok", [("Location", "/"),
+                          ("Set-Cookie", "demo_token=%s; Path=/; HttpOnly; SameSite=Strict" % tok)])
+            else:
+                self._send(401, "application/json", '{"error":"unauthorized"}')
+            return
+        if DEMO_TOKEN and p in ("/state", "/snap", "/cam/stream", "/report", "/faces",
+                                "/face/enroll", "/home/confirm", "/agent", "/run", "/reset", "/mode"):
+            import hmac as _hm
+            tok = _demo_token_from(self.headers, self.path, self.headers.get("Cookie"))
+            if not _hm.compare_digest(tok or "", DEMO_TOKEN):
+                self._send(401, "application/json", '{"error":"unauthorized"}')
+                return
         if p == "/":
             self._send(200, "text/html; charset=utf-8", DASH_HTML)
         elif p == "/simple":
