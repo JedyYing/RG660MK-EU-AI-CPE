@@ -949,10 +949,34 @@ def cam_notice_image(kind="obstructed", m=None):
         return ""
 
 
+_CAM_TOK = {"v": None, "ts": 0.0}
+
+
+def _cam_token():
+    now = time.time()
+    if _CAM_TOK["v"] is None or now - _CAM_TOK["ts"] > 300:
+        try:
+            _CAM_TOK["v"] = open("/data/ai_cpe/secrets/ops_token").read().strip()
+        except Exception:
+            _CAM_TOK["v"] = ""
+        _CAM_TOK["ts"] = now
+    return _CAM_TOK["v"]
+
+
+def _urlopen(url, timeout):
+    """camview 需运维令牌；camav 不需要。"""
+    req = urllib.request.Request(url)
+    if url.startswith(CAMVIEW):
+        _t = _cam_token()
+        if _t:
+            req.add_header("Authorization", "Bearer " + _t)
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
 def take_snapshot():
     for url in (CAMVIEW + "/snapshot", CAMAV + "/snapshot"):
         try:
-            with urllib.request.urlopen(url, timeout=12) as r:
+            with _urlopen(url, 12) as r:
                 d = r.read()
             if d[:2] == b"\xff\xd8" and len(d) > 5000:
                 open(SNAP, "wb").write(d)
@@ -1406,7 +1430,7 @@ def check_local_compute(it):
     _mode = llm_gateway.get_mode()
     _mode_label = {"cpu-local": "无大模型模式", "hermes": "云端大模型", "mt200-local": "端侧大模型"}.get(_mode, _mode)
     ms.append(("当前模式", _mode_label))
-    ms.append(("三档对比", "无大模型=规则+CPU视觉·零 token ｜ 云端=公网 API ｜ 端侧=MT200 NPU·数据不出内网"))
+    ms.append(("三档对比", "无大模型=规则+CPU视觉·零 token ｜ 云端=公网 API ｜ 端侧=SG885G NPU·数据不出内网"))
     ms.append(("切换方式", "页头三个按钮 · 实时生效 · 无需重启"))
     if _mode == 'cpu-local':
         # 纯本地 CPU 版本：不调用任何大模型/NPU，改测本机 CPU 推理
@@ -1433,16 +1457,16 @@ def check_local_compute(it):
             set_item(it, "fail", "本地 CPU 推理失败", ms)
         return
 
-    ms.append(("端侧算力单元", "MT200（QCS9075）· NPU 规格 200 TOPS"))
-    ms.append(("本地模型", "deepseek-7b-npu（7B 级）"))
-    ms.append(("调用路径", "CPE → 笔记本 LAN 代理 :18091 → SSH 隧道 → MT200 :8090"))
+    ms.append(("端侧算力单元", "SG885G-WF（QCS8550）· NPU 48 TOPS INT8"))
+    ms.append(("本地模型", "Qwen2-3B Q4_K_M（q3.gguf）"))
+    ms.append(("调用路径", "CPE → 笔记本 :18091 → socat :18090 → adb forward :28080 → SG885G :8080"))
     try:
         import llm_gateway as _llm
         ep = _llm.local_endpoint()
         ms.append(("本地端点", ep.replace("http://", "").split("/")[0]))
         t1 = time.time()
         text = _llm._local_chat([
-            {"role": "system", "content": "你是部署在 MT200 上的本地模型，只答一句简体中文。"},
+            {"role": "system", "content": "你是部署在 SG885G 上的本地模型，只答一句简体中文。"},
             {"role": "user", "content": "用一句话说明你在哪里运行"},
         ], 48, 90)
         dt = time.time() - t1
@@ -2765,7 +2789,7 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
                 data = None
                 for _u in (CAMAV + "/snapshot", CAMVIEW + "/snapshot"):
                     try:
-                        with urllib.request.urlopen(_u, timeout=3) as r:
+                        with _urlopen(_u, 3) as r:
                             b = r.read()
                         if b[:2] == b"\xff\xd8" and len(b) > 5000:
                             data = b
@@ -2891,7 +2915,7 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
             data = None
             for _u in (CAMAV + "/snapshot", CAMVIEW + "/snapshot"):
                 try:
-                    with urllib.request.urlopen(_u, timeout=8) as r:
+                    with _urlopen(_u, 8) as r:
                         _b = r.read()
                     if _b[:2] == b"\xff\xd8" and len(_b) > 5000:
                         data = _b; break

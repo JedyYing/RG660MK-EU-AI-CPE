@@ -104,11 +104,21 @@ def ensure_reader():
     threading.Thread(target=_reader, daemon=True).start()
 
 # ---------------- 视频：常驻读帧（最新帧胜出） ----------------
+def _cam_token():
+    try:
+        return open("/data/ai_cpe/secrets/ops_token").read().strip()
+    except Exception:
+        return ""
+
+
 def _video_reader():
     while True:
         try:
             up = socket.create_connection(CAM, timeout=10)
-            up.sendall(b"GET /stream HTTP/1.0\r\nHost: cam\r\nConnection: close\r\n\r\n")
+            _t = _cam_token()
+            _req = (b"GET /stream HTTP/1.0\r\nHost: cam\r\nConnection: close\r\n" +
+                    (("Authorization: Bearer %s\r\n" % _t).encode() if _t else b"") + b"\r\n")
+            up.sendall(_req)
             f = up.makefile("rb")
             while True:
                 ln = f.readline()

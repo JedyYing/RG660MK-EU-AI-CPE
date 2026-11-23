@@ -68,8 +68,8 @@ say "     内存 $MEM ｜ /data $DISK"
 
 # ---------- 4. 看板与相机 ----------
 say "4) 看板与相机"
-C8099=$($SSH 'curl -s -m 5 -o /dev/null -w "%{http_code}" http://127.0.0.1:8099/state' 2>/dev/null)
-C8090=$($SSH 'curl -s -m 5 -o /dev/null -w "%{http_code}" http://127.0.0.1:8090/snapshot' 2>/dev/null)
+C8099=$($SSH 'TOK=$(cat /data/ai_cpe/secrets/ops_token 2>/dev/null); curl -s -m 5 -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOK" http://127.0.0.1:8099/state' 2>/dev/null)
+C8090=$($SSH 'TOK=$(cat /data/ai_cpe/secrets/ops_token 2>/dev/null); curl -s -m 5 -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOK" http://127.0.0.1:8090/snapshot' 2>/dev/null)
 [ "$C8099" = 200 ] && ok "看板 8099 正常" || { bad "看板 8099 不通"; [ "$FIX" = 1 ] && { say "     → 重启 aicpe-board"; $SSH '/etc/init.d/aicpe-board restart' >/dev/null 2>&1; }; }
 [ "$C8090" = 200 ] && ok "相机 8090 正常" || { bad "相机 8090 不通"; [ "$FIX" = 1 ] && { say "     → 重启 cam-stack"; $SSH '/etc/init.d/cam-stack restart' >/dev/null 2>&1; }; }
 # 2026-11-06：语音助手进程曾被杀后没人拉起，现场"喊三次没反应"——体检必须查
@@ -96,7 +96,7 @@ else bad "读不到 /www/board_url.txt（隧道从未建立？）"; fi
 
 # ---------- 6. 演示状态 ----------
 say "6) 看板状态"
-$SSH 'curl -s -m 8 http://127.0.0.1:8099/state' 2>/dev/null | python3 -c '
+$SSH 'TOK=$(cat /data/ai_cpe/secrets/ops_token 2>/dev/null); curl -s -m 8 -H "Authorization: Bearer $TOK" http://127.0.0.1:8099/state' 2>/dev/null | python3 -c '
 import sys, json
 try: d = json.load(sys.stdin)
 except Exception: print("STATE_PARSE_FAIL"); raise SystemExit

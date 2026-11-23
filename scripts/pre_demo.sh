@@ -6,6 +6,12 @@ B=192.168.1.1
 ok(){ echo "  ✓ $1"; }
 bad(){ echo "  ✗ $1"; FAIL=1; }
 FAIL=0
+# 设备运维令牌（与设备 /data/ai_cpe/secrets/ops_token 一致，权限 0600）：/state、/mode、/run 需要它
+TOKF="${RG660MK_DEVICE_TOKEN_FILE:-$HOME/.config/rg660mk/device_ops_token}"
+TOK=$(cat "$TOKF" 2>/dev/null || true)
+[ -n "$TOK" ] || { echo "缺少设备令牌文件：$TOKF（权限 0600，内容同设备 /data/ai_cpe/secrets/ops_token）"; exit 2; }
+export RG660MK_DEVICE_TOKEN="$TOK"
+AUTH="Authorization: Bearer $TOK"
 
 echo "===== 1. 板子与 8099 ====="
 ping -c 3 -W1 $B >/dev/null 2>&1 && ok "板子 ping 通" || bad "板子 ping 不通"
@@ -17,13 +23,13 @@ ssh -o ConnectTimeout=6 root@$B 'ip -brief addr show ccmni2 2>/dev/null | awk "{
 if curl -s -m 10 -o /dev/null https://open.feishu.cn/; then ok "飞书通路可达"; else bad "飞书不可达（5G/WAN 异常）"; fi
 
 echo "===== 3. 模式 ====="
-M=$(curl -s -m 5 http://$B:8099/state | python3 -c "import json,sys;print((json.load(sys.stdin).get('llm') or {}).get('mode'))" 2>/dev/null)
+M=$(curl -s -m 5 -H "$AUTH" http://$B:8099/state | python3 -c "import json,sys;print((json.load(sys.stdin).get('llm') or {}).get('mode'))" 2>/dev/null)
 echo "  当前模式: $M"
 if [ "$M" != "cpu-local" ]; then
   echo "  → 切换到 无大模型(cpu-local) 以保证 10/10（在线模式第10项无 MT200 会 skip）"
-  curl -s -m 10 -X POST -H 'Content-Type: application/json' -d '{"mode":"cpu-local"}' http://$B:8099/mode >/dev/null
+  curl -s -m 10 -X POST -H "$AUTH" -H 'Content-Type: application/json' -d '{"mode":"cpu-local"}' http://$B:8099/mode >/dev/null
   sleep 2
-  echo "  切换后: $(curl -s -m 5 http://$B:8099/state | python3 -c "import json,sys;print((json.load(sys.stdin).get('llm') or {}).get('mode'))" 2>/dev/null)"
+  echo "  切换后: $(curl -s -m 5 -H "$AUTH" http://$B:8099/state | python3 -c "import json,sys;print((json.load(sys.stdin).get('llm') or {}).get('mode'))" 2>/dev/null)"
 fi
 
 echo "===== 4. 灯泡（冷启动后需 1–2 分钟重新关联 AP，最多等 180 秒）====="
@@ -64,11 +70,13 @@ if [ "${1:-}" = "--check-only" ]; then
 else
 echo "===== 6. 跑一轮验收 ====="
 python3 - <<'PY'
-import json,time,urllib.request
+import json,os,time,urllib.request
 B="http://192.168.1.1:8099"
+TOK=os.environ.get("RG660MK_DEVICE_TOKEN","")
 def http(p,d=None,t=15):
-    req=urllib.request.Request(B+p, data=json.dumps(d).encode() if d else None,
-                               headers={"Content-Type":"application/json"} if d else {})
+    h={"Authorization":"Bearer "+TOK}
+    if d: h["Content-Type"]="application/json"
+    req=urllib.request.Request(B+p, data=json.dumps(d).encode() if d else None, headers=h)
     with urllib.request.urlopen(req, timeout=t) as r: return json.loads(r.read() or b"{}")
 try:
     http("/run",{"full":False})
