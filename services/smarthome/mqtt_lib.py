@@ -33,6 +33,24 @@ def _read_len(sock):
 def _utf(s):
     b = s.encode(); return struct.pack(">H", len(b)) + b
 
+import os
+import hmac as _hmac
+
+MQTT_USER = (os.environ.get("MQTT_USER") or "").strip()
+MQTT_PASS = (os.environ.get("MQTT_PASS") or "")
+MQTT_ACL = [p.strip() for p in (os.environ.get("MQTT_ACL") or "").split(",") if p.strip()]
+
+
+def _ct(a, b):
+    return _hmac.compare_digest((a or "").encode(), (b or "").encode())
+
+
+def _acl_ok(topic):
+    if not MQTT_ACL:
+        return True
+    return any(topic.startswith(p) for p in MQTT_ACL)
+
+
 def _read_utf(buf, i):
     n = struct.unpack(">H", buf[i:i + 2])[0]
     return buf[i + 2:i + 2 + n].decode("utf-8", "replace"), i + 2 + n
@@ -105,8 +123,20 @@ class Broker:
                     body += chunk
                 if typ == 1:      # CONNECT
                     i = 0
-                    _, i = _read_utf(body, i); i += 1; i += 1; i += 2   # proto, level, flags, keepalive
+                    _, i = _read_utf(body, i)          # proto name
+                    i += 1                              # level
+                    flags = body[i]; i += 1             # connect flags
+                    i += 2                              # keepalive
                     cid, i = _read_utf(body, i)
+                    user = passwd = ""
+                    if flags & 0x80:
+                        user, i = _read_utf(body, i)
+                    if flags & 0x40:
+                        passwd, i = _read_utf(body, i)
+                    if MQTT_USER and not (_ct(user, MQTT_USER) and _ct(passwd, MQTT_PASS)):
+                        self._send(sock, b"\x20\x02\x00\x05")
+                        self.log("CONNECT DENIED %s user=%r" % (addr, user))
+                        return
                     c["id"] = cid or ("%s:%d" % addr)
                     self.stats["connect"] += 1
                     with self.lock:
@@ -117,6 +147,10 @@ class Broker:
                     mid = struct.unpack(">H", body[0:2])[0]; i = 2; granted = b""
                     while i < len(body):
                         f, i = _read_utf(body, i); q = body[i]; i += 1
+                        if not _acl_ok(f):
+                            granted += b"\x80"
+                            self.log("SUB DENIED %s <- %s" % (f, c["id"]))
+                            continue
                         c["subs"].append((f, q)); granted += bytes([min(q, 1)]); self.stats["subs"] += 1
                         self.log("SUB %s <- %s" % (f, c["id"]))
                     self._send(sock, b"\x90" + _enc_len(2 + len(granted)) + struct.pack(">H", mid) + granted)
@@ -130,6 +164,11 @@ class Broker:
                     if qos: mid = struct.unpack(">H", body[i:i + 2])[0]; i += 2
                     payload = body[i:]
                     self.stats["msg_in"] += 1
+                    if not _acl_ok(topic):
+                        self.log("PUB DENIED %s <- %s" % (topic, c["id"]))
+                        if qos == 1:
+                            self._send(sock, b"\x40\x02" + struct.pack(">H", mid))
+                        continue
                     self._publish(topic, payload, retain, origin=c)
                     self.log("PUB %s <- %s (%dB)" % (topic, c["id"], len(payload)))
                     if qos == 1:
@@ -151,21 +190,37 @@ class Broker:
 
 # ---------------------------------------------------------------- Client
 class Client:
-    def __init__(self, host="127.0.0.1", port=1883, client_id="aicpe", on_message=None, keepalive=30):
+    def __init__(self, host="127.0.0.1", port=1883, client_id="aicpe", on_message=None, keepalive=30,
+                 username=None, password=None):
         self.host, self.port, self.cid = host, port, client_id
+        self.username = username if username is not None else (os.environ.get("MQTT_USER") or "")
+        self.password = password if password is not None else (os.environ.get("MQTT_PASS") or "")
         self.sock = None; self.on_message = on_message
         self.keepalive = keepalive; self._mid = 0; self._stop = False
+        self._thread = None
+        self._connected = False
+
+    def is_alive(self):
+        return bool(self._connected and self._thread and self._thread.is_alive() and not self._stop)
 
     def connect(self, timeout=8):
         self.sock = socket.socket(); self.sock.settimeout(timeout)
         self.sock.connect((self.host, self.port))
-        payload = _utf("MQTT") + bytes([4, 0x02]) + struct.pack(">H", self.keepalive) + _utf(self.cid)
+        flags = 0x02
+        tail = b""
+        if self.username:
+            flags |= 0x80; tail += _utf(self.username)
+        if self.password:
+            flags |= 0x40; tail += _utf(self.password)
+        payload = _utf("MQTT") + bytes([4, flags]) + struct.pack(">H", self.keepalive) + _utf(self.cid) + tail
         self.sock.sendall(b"\x10" + _enc_len(len(payload)) + payload)
         resp = self.sock.recv(4)
         if not resp or resp[0] != 0x20 or resp[3] != 0:
             raise ConnectionError("CONNACK failed: %r" % resp)
         self.sock.settimeout(None)
-        threading.Thread(target=self._loop, daemon=True).start()
+        self._connected = True
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
         return self
 
     def _loop(self):
@@ -195,6 +250,7 @@ class Client:
                     last = time.time()
             except Exception:
                 break
+        self._connected = False
 
     def subscribe(self, topic, qos=0):
         self._mid += 1
@@ -211,6 +267,7 @@ class Client:
 
     def close(self):
         self._stop = True
+        self._connected = False
         try:
             self.sock.sendall(b"\xe0\x00"); self.sock.close()
         except OSError:
