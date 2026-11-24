@@ -36,19 +36,51 @@ def _utf(s):
 import os
 import hmac as _hmac
 
-MQTT_USER = (os.environ.get("MQTT_USER") or "").strip()
-MQTT_PASS = (os.environ.get("MQTT_PASS") or "")
-MQTT_ACL = [p.strip() for p in (os.environ.get("MQTT_ACL") or "").split(",") if p.strip()]
+def _read_secret_file(name):
+    p = os.path.join("/data/ai_cpe/secrets", name)
+    try:
+        if os.path.isfile(p):
+            return open(p, encoding="utf-8").read().strip()
+    except Exception:
+        pass
+    return ""
+
+
+# 凭据来源：环境变量优先，否则读 /data/ai_cpe/secrets/mqtt_user|mqtt_pass（0600）。
+# 未配置时 Broker 拒绝启动、Client 拒绝连接（fail-closed，不再静默匿名）。
+MQTT_USER = (os.environ.get("MQTT_USER") or "").strip() or _read_secret_file("mqtt_user")
+MQTT_PASS = (os.environ.get("MQTT_PASS") or "") or _read_secret_file("mqtt_pass")
+MQTT_ACL = [p.strip() for p in (os.environ.get("MQTT_ACL") or "rg660mk/").split(",") if p.strip()]
 
 
 def _ct(a, b):
     return _hmac.compare_digest((a or "").encode(), (b or "").encode())
 
 
+def client_credentials():
+    """Client(...) 用的凭据 dict；未配置时返回空 dict（Client 会拒绝连接）。"""
+    u = (os.environ.get("MQTT_USER") or "").strip() or MQTT_USER
+    p = (os.environ.get("MQTT_PASS") or "") or MQTT_PASS
+    return {"username": u, "password": p} if u else {}
+
+
 def _acl_ok(topic):
+    """空 ACL 一律拒绝（fail-closed）；命中显式前缀才放行；禁止通配符发布。"""
     if not MQTT_ACL:
-        return True
+        return False
+    if "#" in topic or "+" in topic:
+        return False
     return any(topic.startswith(p) for p in MQTT_ACL)
+
+
+def _sub_filter_ok(filt):
+    """订阅过滤器：必须命中 ACL 前缀，且禁止单纯 # / + 通配订阅。"""
+    if not MQTT_ACL:
+        return False
+    if filt.strip() in ("#", "+", "*/#", "+/#"):
+        return False
+    base = filt.split("#")[0].split("+")[0]
+    return any(base.startswith(p) for p in MQTT_ACL)
 
 
 def _read_utf(buf, i):
@@ -70,7 +102,11 @@ def topic_match(filt, topic):
 
 # ---------------------------------------------------------------- Broker
 class Broker:
-    def __init__(self, host="0.0.0.0", port=1883, log=None):
+    def __init__(self, host="127.0.0.1", port=1883, log=None):
+        if not MQTT_USER or not MQTT_PASS:
+            raise RuntimeError(
+                "MQTT 凭据未配置（MQTT_USER/MQTT_PASS 或 /data/ai_cpe/secrets/mqtt_*），"
+                "拒绝启动 broker（fail-closed）")
         self.host, self.port = host, port
         self.clients = []          # [{sock, subs:[], id}]
         self.retained = {}         # topic -> payload
@@ -107,7 +143,7 @@ class Broker:
             self._send(c["sock"], pkt)
 
     def _client(self, sock, addr):
-        c = {"sock": sock, "subs": [], "id": "?"}
+        c = {"sock": sock, "subs": [], "id": "?", "authed": False}
         try:
             while True:
                 hdr = sock.recv(1)
@@ -138,16 +174,21 @@ class Broker:
                         self.log("CONNECT DENIED %s user=%r" % (addr, user))
                         return
                     c["id"] = cid or ("%s:%d" % addr)
+                    c["authed"] = True
                     self.stats["connect"] += 1
                     with self.lock:
                         self.clients.append(c)
                     self._send(sock, b"\x20\x02\x00\x00")
                     self.log("CONNECT %s" % c["id"])
+                elif not c["authed"]:
+                    # 认证状态机：CONNECT 之前收到任何其它报文一律断开。
+                    self.log("UNAUTH packet type=%d from %s -> drop" % (typ, addr))
+                    return
                 elif typ == 8:    # SUBSCRIBE
                     mid = struct.unpack(">H", body[0:2])[0]; i = 2; granted = b""
                     while i < len(body):
                         f, i = _read_utf(body, i); q = body[i]; i += 1
-                        if not _acl_ok(f):
+                        if not _sub_filter_ok(f):
                             granted += b"\x80"
                             self.log("SUB DENIED %s <- %s" % (f, c["id"]))
                             continue
@@ -193,8 +234,8 @@ class Client:
     def __init__(self, host="127.0.0.1", port=1883, client_id="aicpe", on_message=None, keepalive=30,
                  username=None, password=None):
         self.host, self.port, self.cid = host, port, client_id
-        self.username = username if username is not None else (os.environ.get("MQTT_USER") or "")
-        self.password = password if password is not None else (os.environ.get("MQTT_PASS") or "")
+        self.username = username if username is not None else MQTT_USER
+        self.password = password if password is not None else MQTT_PASS
         self.sock = None; self.on_message = on_message
         self.keepalive = keepalive; self._mid = 0; self._stop = False
         self._thread = None
@@ -204,6 +245,8 @@ class Client:
         return bool(self._connected and self._thread and self._thread.is_alive() and not self._stop)
 
     def connect(self, timeout=8):
+        if not self.username or not self.password:
+            raise RuntimeError("MQTT 凭据缺失：拒绝匿名连接（fail-closed）")
         self.sock = socket.socket(); self.sock.settimeout(timeout)
         self.sock.connect((self.host, self.port))
         flags = 0x02

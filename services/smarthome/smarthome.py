@@ -6,7 +6,7 @@
 """
 import json, os, sys, time
 sys.path.insert(0, "/data/ai_cpe/services/smarthome")
-from mqtt_lib import Client                                # noqa: E402
+from mqtt_lib import Client, client_credentials             # noqa: E402
 
 BROKER = os.environ.get("MQTT_BROKER", "127.0.0.1")
 PORT = int(os.environ.get("MQTT_PORT", "1883"))
@@ -24,7 +24,8 @@ def _one_shot(action, timeout=30.0):
                 state.update(json.loads(payload.decode()))
             except ValueError:
                 pass
-    cli = Client(BROKER, PORT, "aicpe-cli-%d" % (os.getpid() % 100000), on_message=_on_msg).connect(timeout=3)
+    cli = Client(BROKER, PORT, "aicpe-cli-%d" % (os.getpid() % 100000), on_message=_on_msg,
+                 **client_credentials()).connect(timeout=3)
     cli.subscribe(T_STATE)
     deadline = time.time() + timeout
     if action == "status":
@@ -49,7 +50,8 @@ def _send_only(action):
     """只发指令、不等物理确认（语音/看板「秒回」用）。
     指令经本地 broker 交给 smarthome agent（Matter 真灯）异步执行（约 12~19s）；
     物理结果可随时用 `smarthome.py status` 查询。"""
-    cli = Client(BROKER, PORT, "aicpe-cli-%d" % (os.getpid() % 100000)).connect(timeout=3)
+    cli = Client(BROKER, PORT, "aicpe-cli-%d" % (os.getpid() % 100000),
+                 **client_credentials()).connect(timeout=3)
     cli.publish(T_SET, json.dumps({"state": action}), retain=False)
     time.sleep(0.2)                                   # 让 broker/agent 排空一拍
     cli.close()
