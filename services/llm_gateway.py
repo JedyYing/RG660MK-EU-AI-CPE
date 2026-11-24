@@ -1,9 +1,10 @@
-"""统一大模型通道：本地(MT200 NPU) / 在线(Hermes 在线 DeepSeek)。
+"""统一大模型通道：本地(SG885G-WF 3B) / 在线(Hermes 在线 DeepSeek)。
 
 模式唯一来源：/data/ai_cpe/local-model-mode.json（model_mode.py 读写）
-  mt200-local → 本地模式：http://192.168.1.244:18091/v1/chat/completions
-                （笔记本 LAN 代理 → SSH 隧道 → MT200:8090，模型 deepseek-7b-npu）
-  hermes      → 在线模式：https://ai.phicotek.com/api/llmrouter/v1/chat/completions
+  mt200-local → 本地大模型（历史命名，实际为 SG885G-WF 3B 本地推理）：
+                http://192.168.1.212:18091/v1/chat/completions
+                （笔记本 LAN 代理 → socat → adb forward → SG885G:8080）
+  hermes      → 在线大模型：https://ai.phicotek.com/api/llmrouter/v1/chat/completions
                 （与设备上的 Hermes 同一 provider/同一 key，模型 deepseek-v4-flash）
 
 安全约束：
@@ -21,6 +22,7 @@
   ModelError / LocalModelError（别名）
 """
 import json
+import re
 import os
 import time
 import urllib.error
@@ -30,10 +32,11 @@ from urllib.parse import urlsplit
 MODE_FILE = '/data/ai_cpe/local-model-mode.json'
 ENV_FILE = '/data/hermes/.hermes/.env'
 
-LOCAL_ENDPOINT = 'http://192.168.1.244:18091/v1/chat/completions'
-LOCAL_MODEL = 'deepseek-7b-npu'
+LOCAL_ENDPOINT = 'http://192.168.1.212:18091/v1/chat/completions'
+LOCAL_MODEL = 'q3.gguf'          # 线上模型标识（llama-server 加载名，勿改）
+LOCAL_MODEL_LABEL = 'Qwen2-3B（SG885G-WF）'   # 仅用于页面/接口展示
 LOCAL_HOST = '192.168.1.244'
-LOCAL_HOSTS = ['192.168.1.244', '172.25.25.240']
+LOCAL_HOSTS = ['192.168.1.212', '192.168.1.244', '172.25.25.240']
 _LOCAL_PICK = {'url': None, 't': 0.0}
 
 ONLINE_ENDPOINT = 'https://ai.phicotek.com/api/llmrouter/v1/chat/completions'
@@ -41,10 +44,11 @@ ONLINE_MODEL = 'deepseek-v4-flash'
 ONLINE_HOST = 'ai.phicotek.com'
 ONLINE_KEY_NAME = 'PHICOTEK_API_KEY'
 
-MODES = ('mt200-local', 'hermes')
+MODES = ('mt200-local', 'hermes', 'cpu-local')
 ALIASES = {'local': 'mt200-local', 'mt200-local': 'mt200-local',
-           'online': 'hermes', 'hermes': 'hermes', 'cloud': 'hermes'}
-LABELS = {'mt200-local': '本地模式', 'hermes': '在线模式'}
+           'online': 'hermes', 'hermes': 'hermes', 'cloud': 'hermes',
+           'cpu': 'cpu-local', 'cpu-local': 'cpu-local'}
+LABELS = {'mt200-local': '端侧大模型', 'hermes': '云端大模型', 'cpu-local': '无大模型模式'}
 
 # 本地模型 1024 token 上下文，短输入保守限额；在线模式可放宽。
 LOCAL_CHAR_LIMIT = 600
@@ -123,7 +127,7 @@ def set_mode(mode):
 
 
 def allowed_hosts():
-    hosts = {'127.0.0.1', 'localhost', '::1', '192.168.1.1', '192.168.1.244', '172.25.25.240'}
+    hosts = {'127.0.0.1', 'localhost', '::1', '192.168.1.1', '192.168.1.212', '192.168.1.244', '172.25.25.240'}
     try:
         if get_mode() == 'hermes':
             hosts.add(ONLINE_HOST)
@@ -294,11 +298,35 @@ CALLS = collections.deque(maxlen=512)
 CALL_LOG = os.environ.get("LLM_CALL_LOG", "/data/ai_cpe/logs/llm_calls.jsonl")
 
 
+
+def _cpu_reply(messages):
+    """纯本地 CPU 规则应答：不联网、不加载模型、不产生任何 token。"""
+    text = ""
+    for m in reversed(messages or []):
+        if isinstance(m, dict) and m.get("role") == "user":
+            text = (m.get("content") or "").strip()
+            break
+    q = re.sub(r"[\s，。！？、,.!?]", "", text)
+    now = time.strftime("%Y年%m月%d日 %H点%M分")
+    if re.search(r"(几点|时间|日期|几号|星期)", q):
+        return "设备时间：%s。本回答由本地 CPU 规则生成，未调用任何大模型。" % now
+    if re.search(r"(你是谁|什么模型|在哪|本地|CPU|cpu)", q):
+        return "我是运行在 RG660MK 上的本地规则引擎，纯 CPU 应答，不调用任何大模型。"
+    if re.search(r"(你好|您好|hi|hello)", q.lower()):
+        return "你好，本地规则引擎在线，所有回答由 CPU 规则生成，零 token 消耗。"
+    if q:
+        return "本地 CPU 规则引擎已收到「%s」；当前为无大模型模式，只做确定性应答。" % text[:20]
+    return "本地 CPU 规则引擎待命，未调用任何大模型。"
+
+
 def chat_meta(messages, max_tokens=None, timeout=None):
     mode = get_mode()
     t0 = time.monotonic()
     try:
-        if mode == 'mt200-local':
+        if mode == 'cpu-local':
+            text = _cpu_reply(messages)
+            model = 'cpu-rules'
+        elif mode == 'mt200-local':
             text = _local_chat(messages, max_tokens, timeout or 180)
             model = LOCAL_MODEL
         else:
@@ -308,10 +336,14 @@ def chat_meta(messages, max_tokens=None, timeout=None):
         raise
     elapsed = round((time.monotonic() - t0) * 1000)
     # 只记录可实测的量（端到端耗时 / 输出字符数），不编造 NPU 硬件利用率。
-    LAST_STATS.update({'ts': time.time(), 'elapsed_ms': elapsed, 'model': model,
+    LAST_STATS.update({'ts': time.time(), 'elapsed_ms': elapsed,
+                       'model': (LOCAL_MODEL_LABEL if mode == 'mt200-local' else model),
                        'chars': len(text or ''), 'ok': True})
-    CALLS.append((time.time(), elapsed))
+    if mode != 'cpu-local':
+        CALLS.append((time.time(), elapsed))
     try:
+        if mode == 'cpu-local':
+            raise RuntimeError('skip-log')
         os.makedirs(os.path.dirname(CALL_LOG), exist_ok=True)
         with open(CALL_LOG, "a", encoding="utf-8") as _f:
             _f.write(json.dumps({"t": time.time(), "ms": elapsed, "model": model}) + "\n")
@@ -319,7 +351,8 @@ def chat_meta(messages, max_tokens=None, timeout=None):
             os.replace(CALL_LOG, CALL_LOG + ".1")
     except Exception:
         pass
-    return text, {'backend': mode, 'label': LABELS[mode], 'model': model,
+    return text, {'backend': mode, 'label': LABELS[mode],
+                  'model': (LOCAL_MODEL_LABEL if mode == 'mt200-local' else model),
                   'elapsed_ms': elapsed}
 
 
@@ -357,14 +390,18 @@ def chat(messages, max_tokens=None, timeout=None):
     return chat_meta(messages, max_tokens=max_tokens, timeout=timeout)[0]
 
 
-SYSTEM_PROMPT = ('你是部署在%s的助手。只用简体中文短答，不声称访问云端，不编造实时数据。')
+SYSTEM_PROMPT = ('你是部署在%s的语音助手小皮。只用简体中文口语短答，一到两句话，不超过60字；不声称访问云端，不编造实时数据。')
 
 
 def ask_meta(text, timeout=None):
     mode = get_mode()
-    sysmsg = SYSTEM_PROMPT % ('MT200' if mode == 'mt200-local' else 'RG660MK（在线模型）')
+    if '介绍' in text and ('自己' in text or '你' in text):
+        sysmsg = ('你是运行在 SG885G-WF 端侧设备上的语音助手小皮。请用 3 句话介绍自己：'
+                  '名字、端侧本地运行不外传数据、能做什么（聊天问答、报时、算术、控制灯光）。不超过 100 字。')
+    else:
+        sysmsg = SYSTEM_PROMPT % ('SG885G-WF' if mode == 'mt200-local' else 'RG660MK（在线模型）')
     return chat_meta([{'role': 'system', 'content': sysmsg},
-                      {'role': 'user', 'content': text}], max_tokens=200, timeout=timeout)
+                      {'role': 'user', 'content': text}], max_tokens=120, timeout=timeout)
 
 
 def ask(text, timeout=None):
@@ -381,12 +418,42 @@ def describe():
     info = {
         'mode': mode,
         'label': LABELS.get(mode, mode),
-        'backend': 'MT200 本地推理' if mode == 'mt200-local' else '在线 DeepSeek',
-        'model': LOCAL_MODEL if mode == 'mt200-local' else ONLINE_MODEL,
-        'endpoint': local_endpoint() if mode == 'mt200-local' else ONLINE_ENDPOINT,
+        'backend': ('SG885G-WF 3B 本地推理（HTP0）' if mode == 'mt200-local'
+                    else ('本地 CPU 规则引擎' if mode == 'cpu-local' else '在线 DeepSeek')),
+        'model': (LOCAL_MODEL_LABEL if mode == 'mt200-local'
+                  else ('cpu-rules' if mode == 'cpu-local' else ONLINE_MODEL)),
+        'endpoint': (local_endpoint() if mode == 'mt200-local'
+                     else ('' if mode == 'cpu-local' else ONLINE_ENDPOINT)),
         'dsh_console': 'http://127.0.0.1:3081/',
         'error': err,
     }
+    if mode == 'mt200-local':
+        info.update({
+            'hardware': 'SG885G-WF（QCS8550）',
+            'tops': '48 TOPS INT8 / 12 TOPS FP16',
+            'quant': 'Q4_K_M（GGUF）',
+            'context': 2048,
+            'spec': 'HTP0 · 48 TOPS INT8 · Q4_K_M · ctx 2048',
+            'transport': '笔记本 18091→18090→adb 28080→SG885G:8080',
+        })
+    elif mode == 'cpu-local':
+        info.update({
+            'hardware': 'RG660MK CPU',
+            'tops': '无 NPU',
+            'quant': '规则引擎',
+            'context': 0,
+            'spec': '零 token · 不调用大模型',
+            'transport': '本机规则引擎',
+        })
+    else:
+        info.update({
+            'hardware': '云端',
+            'tops': '云端算力',
+            'quant': 'DeepSeek V4 Flash',
+            'context': 0,
+            'spec': '云端 API · 非本地权重',
+            'transport': 'RG → ai.phicotek.com',
+        })
     if mode == 'hermes':
         info['key_present'] = bool(_env_key())
     return info
