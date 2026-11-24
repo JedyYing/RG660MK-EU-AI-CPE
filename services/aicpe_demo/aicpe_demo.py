@@ -92,7 +92,7 @@ NAS_HOST = "192.168.1.212"   # MiniNAS 存储底座（x86 主机 sh-d-l，2026-1
 NAS_ZT_HOST = "172.25.25.240"   # 旧 ZeroTier 地址：仅作最后兜底，不再作为主通道
 NAS_GW_HOST = "127.0.0.1"       # 阿里云网关 SSH 隧道：模组本地 2283/10080 映射到电脑
 BULB = "/data/ai_cpe/smarthome.py"
-BULB_IPS = ("192.168.1.134", "192.168.1.224")   # 灯的历史地址，用于快速判在线   # Matter 优先 / MQTT 兜底 控制面（原涂鸦脚本已退役，见 /data/ai_cpe/attic_tuya/）
+BULB_IPS = ("192.168.1.135", "192.168.1.134", "192.168.1.224")   # 灯的历史地址，用于快速判在线   # Matter 优先 / MQTT 兜底 控制面（原涂鸦脚本已退役，见 /data/ai_cpe/attic_tuya/）
 TTS = "/data/ai_cpe/tts_say.py"
 FACEREC = "/data/ai_cpe/face_recognize.py"; SHERPA_INIT = "/etc/init.d/sherpa-asr"
 PY = "/usr/bin/python3"; VENV = "/data/hermes/venv/bin/python"
@@ -102,13 +102,20 @@ STATE = {"started": time.time(), "phase": "init", "items": [], "log": [], "done"
 LOCK = threading.RLock()
 RUN_LOCK = threading.Lock()
 
-# ---- 可选 Token 鉴权（安全扫描 2.4/2.5；默认关闭）----
+# ---- Token 鉴权（安全整改 2.4/2.5：fail-closed；令牌缺失时拒绝启动）----
 DEMO_TOKEN = (os.environ.get("DEMO_TOKEN") or "").strip()
 if not DEMO_TOKEN:
     try:
         DEMO_TOKEN = open("/data/ai_cpe/demo/data/demo-token").read().strip()
     except Exception:
         DEMO_TOKEN = ""
+# 运维级令牌：/face/enroll 等写生物特征的接口必须用它，与看板令牌区分
+OPS_TOKEN = (os.environ.get("DEMO_OPS_TOKEN") or "").strip()
+if not OPS_TOKEN:
+    try:
+        OPS_TOKEN = open("/data/ai_cpe/secrets/ops_token").read().strip()
+    except Exception:
+        OPS_TOKEN = ""
 
 
 def _demo_token_from(headers, path, cookies=None):
@@ -123,6 +130,17 @@ def _demo_token_from(headers, path, cookies=None):
         from urllib.parse import parse_qs
         tok = (parse_qs(path.split("?", 1)[1]).get("token") or [""])[0]
     return tok
+
+
+def _token_ok(tok, ops_only=False):
+    """常量时间校验；ops_only=True 时只认运维令牌（/face/enroll 等写接口）。"""
+    import hmac as _hm
+    tok = tok or ""
+    if ops_only:
+        return bool(OPS_TOKEN) and _hm.compare_digest(tok, OPS_TOKEN)
+    if _hm.compare_digest(tok, DEMO_TOKEN):
+        return True
+    return bool(OPS_TOKEN) and _hm.compare_digest(tok, OPS_TOKEN)
 
 HISTORY_FILE = DEMO + "/history_offline.json"
 
@@ -1458,7 +1476,7 @@ def check_local_compute(it):
         return
 
     ms.append(("端侧算力单元", "SG885G-WF（QCS8550）· NPU 48 TOPS INT8"))
-    ms.append(("本地模型", "Qwen2-3B Q4_K_M（q3.gguf）"))
+    ms.append(("本地模型", "Qwen2-3B（SG885G-WF）"))
     ms.append(("调用路径", "CPE → 笔记本 :18091 → socat :18090 → adb forward :28080 → SG885G :8080"))
     try:
         import llm_gateway as _llm
@@ -1549,6 +1567,31 @@ def _pw(st):
     return "unknown"
 
 
+
+
+def _mdns_matter_present(timeout=2.5):
+    """发 mDNS PTR 查询 _matter._tcp.local，2.5s 内有任何应答即认为灯在局域网。"""
+    import socket as _s
+    import struct as _st
+    q = _st.pack(">HHHHHH", 0, 0, 1, 0, 0, 0)
+    for part in "_matter._tcp.local".split("."):
+        q += bytes([len(part)]) + part.encode()
+    q += b"\x00" + _st.pack(">HH", 12, 1)
+    try:
+        sk = _s.socket(_s.AF_INET, _s.SOCK_DGRAM, _s.IPPROTO_UDP)
+        sk.setsockopt(_s.SOL_SOCKET, _s.SO_REUSEADDR, 1)
+        try:
+            sk.setsockopt(_s.SOL_SOCKET, _s.SO_BINDTODEVICE, b"br-lan")
+        except Exception:
+            pass
+        sk.settimeout(timeout)
+        sk.sendto(q, ("224.0.0.251", 5353))
+        sk.recvfrom(4096)
+        sk.close()
+        return True
+    except Exception:
+        return False
+
 def check_smart_home(it, no_audio=False):
     """智能灯控（Matter/MQTT 控制面，Matter 优先、MQTT 兜底）：设备内 broker + 代理 → 执行器，零云依赖、零涂鸦。"""
     set_item(it, "running")
@@ -1571,10 +1614,15 @@ def check_smart_home(it, no_audio=False):
             _alive_ip = _ip
             break
     if _alive_ip is None:
-        ms.append(("灯在线探测", "ping %s 均不通" % "/".join(BULB_IPS)))
-        set_item(it, "skip", "灯泡不在线（ping 不通）→ 检查灯电源与 WiFi 配网", ms)
-        return
-    ms.append(("灯在线探测", "ping %s 通（%.1fs）" % (_alive_ip, time.time() - _t0)))
+        # 2026-11-23：IP 可能被 DHCP 分给别的设备，ping 不通不代表灯掉线；用 mDNS 兜底
+        if _mdns_matter_present():
+            ms.append(("灯在线探测", "ping 不通但 mDNS 可见（IP 可能已变化），继续走 Matter"))
+        else:
+            ms.append(("灯在线探测", "ping %s 均不通且 mDNS 无应答" % "/".join(BULB_IPS)))
+            set_item(it, "skip", "灯泡不在线（ping 不通且 mDNS 无应答）→ 检查灯电源与 WiFi 配网", ms)
+            return
+    else:
+        ms.append(("灯在线探测", "ping %s 通（%.1fs）" % (_alive_ip, time.time() - _t0)))
     # 实机标定：正常态 status ≈8s；CASE 卡死态 37–44s → 15s/10s 可干净区分
     rc, st0 = _smarthome("status", t=15)
     if not (rc == 0 and bool(st0.get("success"))):
@@ -2342,7 +2390,8 @@ async function tick(){
     var llm=s.llm||{};
     if(llm.label){
       var mt=document.getElementById("modeTag");
-      if(mt){ mt.textContent="当前模式："+llm.label+" · "+(llm.model||"")+(llm.mode==="mt200-local"?"（W4A16 · 权重INT4/激活FP16 · ctx 1024）":(llm.mode==="cpu-local"?"（规则引擎 · 零 token · 不调用大模型）":"")); mt.style.background=(llm.mode==="mt200-local"?"rgba(49,209,122,.22)":"rgba(58,160,240,.22)"); }
+      var _spec=(llm.spec?("（"+llm.spec+"）"):(llm.mode==="cpu-local"?"（规则引擎 · 零 token · 不调用大模型）":""));
+      if(mt){ mt.textContent="当前模式："+llm.label+" · "+(llm.model||"")+_spec; mt.style.background=(llm.mode==="mt200-local"?"rgba(49,209,122,.22)":"rgba(58,160,240,.22)"); }
       var bl=document.getElementById("mLocal"), bo=document.getElementById("mOnline");
       if(bl) bl.style.outline=(llm.mode==="mt200-local"?"2px solid #31d17a":"none");
       if(bo) bo.style.outline=(llm.mode==="hermes"?"2px solid #3aa0f0":"none");
@@ -2369,15 +2418,16 @@ async function tick(){
     function escapeStrings(x){Object.keys(x).forEach(function(k){if(typeof x[k]==="string")x[k]=esc(x[k]);else if(x[k]&&typeof x[k]==="object")escapeStrings(x[k]);});} escapeStrings(c);
     if(c.model){
       var _lm=c.llm||{}; var _mode=_lm.mode||""; var _local=(_mode==="mt200-local"); var _cpu=(_mode==="cpu-local");
-      var _label=_local?"端侧大模型":(_cpu?"无大模型模式":"云端大模型");
+      var _label=_lm.label||(_local?"端侧大模型":(_cpu?"无大模型模式":"云端大模型"));
       var _green=(_local||_cpu);
       var chips="<span class='chip modebadge' style='background:"+(_green?"#0f3a24":"#0f2743")+";border-color:"+(_green?"#31d17a":"#4aa3ff")+";color:"+(_green?"#8ff0b5":"#9ccbff")+"'>当前模型通道："+_label+" · "+(_lm.model||"—")+"</span>";
       if(_cpu){
         chips+="<span class='chip'><b>纯 CPU</b> 规则引擎 · 零 token · 不调用大模型</span>";
       }
       if(_local){
-        chips+="<span class='chip mtspec'><b>MT200</b> QCS9075 · 8×A78C 2.36GHz · Adreno 663 · 100 TOPS 稠密 / 200 TOPS 稀疏 · 10.86GB · 128GB UFS · Ubuntu 24.04</span>";
-        chips+="<span class='chip mtspec'><b>本地推理</b> deepseek-7b-npu · <b>W4A16</b>（权重 INT4 / 激活 FP16）· ctx 1024（编译期上限）· QnnHtp / Hexagon V73 · decode 12.9 tok/s · TTFT ≈1.1s · 端到端 11.9s / 39 字 · NPU 200 TOPS 稀疏 / 100 稠密 · API :8090→:18090</span>";
+        var _hw=_lm.hardware||"SG885G-WF（QCS8550）";
+        var _spec2=_lm.spec||"HTP0 · 48 TOPS INT8 · Q4_K_M · ctx 2048";
+        chips+="<span class='chip mtspec'><b>本地推理</b> "+esc(_hw)+" · "+esc(_spec2)+"</span>";
       }
       var _mL=document.getElementById("mLocal"), _mO=document.getElementById("mOnline");
       if(_mL&&_mO){ _mL.style.opacity=_local?1:0.4; _mO.style.opacity=_local?0.4:1;
@@ -2395,7 +2445,7 @@ async function tick(){
           ? ("占空比 <b style='color:#31d17a'>"+_u.toFixed(1)+"%</b>（近60s · "+_calls+" 次）")
           : ("<b style='color:#8ea6c8'>空闲</b>（近60s无推理"+( _ago?(" · 最近 "+_ago):"")+"）");
         var _npuTxt="<span class='chip' style='border-color:#3aa0f0'><b>NPU</b> "+esc(_npuModel)+
-          " · 算力 <b style='color:#7fb7ff'>100 TOPS 稠密 / 200 TOPS 稀疏</b> · "+_stateTxt;
+          " · 算力 <b style='color:#7fb7ff'>"+esc(_lm.tops||"48 TOPS INT8")+"</b> · "+_stateTxt;
         if(npu&&npu.ok&&npu.elapsed_ms){ _npuTxt+=" · 最近一次 <b style='color:#31d17a'>"+(npu.elapsed_ms/1000).toFixed(1)+" s</b>"; }
         chips+=_npuTxt+"</span>";
       }
@@ -2461,7 +2511,11 @@ async function setMode(m){
   try{
     var r=await fetch("/mode",{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:m})});
     var j=await r.json();
-    if(out) out.textContent="已切到"+(j.label||m)+" · "+(j.model||"")+(j.error?(" · "+j.error):"");
+    if(out){
+      var _msg="已切到"+(j.label||m)+" · "+(j.model||"")+(j.error?(" · "+j.error):"");
+      out.textContent=_msg;
+      setTimeout(function(){ if(out.textContent===_msg) out.textContent=""; }, 6000);
+    }
     tick();
   }catch(e){ if(out) out.textContent="模式切换失败：" + e; }
 }
@@ -2606,13 +2660,12 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
         if self.headers.get("Sec-Fetch-Site") == "cross-site":
             self._send(403, "application/json", '{"error":"cross site denied"}')
             return
-        if DEMO_TOKEN:
-            import hmac as _hm
-            _tok = _demo_token_from(self.headers, self.path, self.headers.get("Cookie"))
-            if not _hm.compare_digest(_tok or "", DEMO_TOKEN):
-                log("=== 401 POST %s 无有效 token ===" % self.path.split("?")[0])
-                self._send(401, "application/json", '{"error":"unauthorized"}')
-                return
+        _tok = _demo_token_from(self.headers, self.path, self.headers.get("Cookie"))
+        _p0 = self.path.split("?")[0]
+        if not _token_ok(_tok, ops_only=(_p0 == "/face/enroll")):
+            log("=== 401 POST %s 无有效 token（ops_only=%s）===" % (_p0, _p0 == "/face/enroll"))
+            self._send(401, "application/json", '{"error":"unauthorized"}')
+            return
         if self.path == "/mode":
             try:
                 self.connection.settimeout(10)
@@ -2840,22 +2893,21 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         p = self.path.split("?")[0]
+        if p == "/healthz":
+            self._send(200, "application/json", '{"ok":true}')
+            return
         if p == "/auth":
-            import hmac as _hm
             tok = _demo_token_from(self.headers, self.path, self.headers.get("Cookie"))
-            if DEMO_TOKEN and _hm.compare_digest(tok or "", DEMO_TOKEN):
+            if _token_ok(tok):
                 self._send(302, "text/plain", "ok", [("Location", "/"),
                           ("Set-Cookie", "demo_token=%s; Path=/; HttpOnly; SameSite=Strict" % tok)])
             else:
                 self._send(401, "application/json", '{"error":"unauthorized"}')
             return
-        if DEMO_TOKEN and p in ("/state", "/snap", "/cam/stream", "/report", "/faces",
-                                "/face/enroll", "/home/confirm", "/agent", "/run", "/reset", "/mode"):
-            import hmac as _hm
-            tok = _demo_token_from(self.headers, self.path, self.headers.get("Cookie"))
-            if not _hm.compare_digest(tok or "", DEMO_TOKEN):
-                self._send(401, "application/json", '{"error":"unauthorized"}')
-                return
+        _tok = _demo_token_from(self.headers, self.path, self.headers.get("Cookie"))
+        if not _token_ok(_tok, ops_only=(p == "/face/enroll")):
+            self._send(401, "application/json", '{"error":"unauthorized"}')
+            return
         if p == "/":
             self._send(200, "text/html; charset=utf-8", DASH_HTML)
         elif p == "/simple":
@@ -2879,6 +2931,10 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
             out["cpe"] = cpe
             _llm = llm_gateway.describe()
             out["llm"] = _llm
+            # 让 CPE 卡片始终使用同一份最新通道信息，避免 12 秒缓存显示旧模式
+            cpe = dict(cpe)
+            cpe["llm"] = _llm
+            out["cpe"] = cpe
             try:
                 out["npu"] = llm_gateway.stats()
             except Exception:
@@ -2896,8 +2952,9 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
                 "mode": _llm["label"],
                 "controller": "RG660MK",
                 "llm": "%s · %s" % (_llm["backend"], _llm["model"]),
-                "transport": ("笔记本LAN代理→SSH→MT200:8090" if _llm["mode"] == "mt200-local"
-                              else "RG 出网→ai.phicotek.com（Hermes 在线通道）"),
+                "transport": (_llm.get("transport") or
+                              ("笔记本LAN代理→ADB→SG885G:8080" if _llm["mode"] == "mt200-local"
+                               else "RG 出网→ai.phicotek.com（Hermes 在线通道）")),
                 "laptop_required": _llm["mode"] == "mt200-local",
                 "dsh_console": _llm["dsh_console"],
             }
@@ -2982,6 +3039,10 @@ def background_refresher():
 
 
 def serve(port):
+    if not DEMO_TOKEN:
+        print("=== 启动中止：DEMO_TOKEN 未配置（fail-closed）。"
+              "请生成 /data/ai_cpe/demo/data/demo-token（0600）后重启 ===", flush=True)
+        sys.exit(2)
     import socket as _socket
     from http.server import ThreadingHTTPServer
 
