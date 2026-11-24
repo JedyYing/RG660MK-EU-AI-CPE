@@ -8,6 +8,8 @@
 PROG=/data/camview/camview
 PORT=8090
 LOG=/data/camview/watchdog.log
+TOKF=/data/ai_cpe/secrets/ops_token     # camview 已要求运维令牌（报告 2.2），健康检查需携带
+
 
 ts() { date '+%Y-%m-%d %H:%M:%S'; }
 log() { echo "$(ts) $1" >> "$LOG"; }
@@ -21,7 +23,7 @@ if [ -z "$PID" ]; then
 elif ls -l /proc/$PID/fd 2>/dev/null | grep -qi 'usb.*(deleted)'; then
     NEED=1; REASON="USB句柄失效(deleted)"
 else
-    BYTES=$(curl -s -m 8 "http://127.0.0.1:${PORT}/snapshot" 2>/dev/null | wc -c | tr -d ' ')
+    BYTES=$(curl -s -m 8 -H "Authorization: Bearer $(cat "$TOKF" 2>/dev/null)" "http://127.0.0.1:${PORT}/snapshot" 2>/dev/null | wc -c | tr -d ' ')
     [ "${BYTES:-0}" -lt 1000 ] && { NEED=1; REASON="snapshot取帧失败(${BYTES}字节)"; }
 fi
 
