@@ -569,11 +569,51 @@ _CN_OP = {"加": "+", "减": "-", "乘": "*", "除以": "/", "除": "/",
           "×": "*", "÷": "/", "＋": "+", "－": "-", "x": "*", "X": "*"}
 
 
+
+
+_CN_DIGIT = {"零": 0, "〇": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4,
+             "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+_CN_UNIT = {"十": 10, "百": 100, "千": 1000, "万": 10000}
+
+
+def _cn2num(seg):
+    """把一段中文数字转成整数；无法解析返回 None。"""
+    total = 0
+    section = 0
+    number = 0
+    for ch in seg:
+        if ch in _CN_DIGIT:
+            number = _CN_DIGIT[ch]
+        elif ch in _CN_UNIT:
+            unit = _CN_UNIT[ch]
+            if unit == 10000:
+                section = (section + number) * unit
+                total += section
+                section = 0
+            else:
+                if number == 0:
+                    number = 1
+                section += number * unit
+            number = 0
+        else:
+            return None
+    return total + section + number
+
+
+def _cn_num_replace(text):
+    def _rep(m):
+        v = _cn2num(m.group())
+        return str(v) if v is not None else m.group()
+    return re.sub(r"[零〇一二两三四五六七八九十百千万]+", _rep, text)
+
 def _normalize_calc(text):
     """把中文算式口语归一成 ASCII 算术串。仅保留数字与 + - * / ( ) 和小数点。"""
     # 已观察到的 ASR 尾音误识别，仅在后续整串通过算式白名单时生效。
     text = re.sub(r"^一家一等(?:一集|[于於]几)$", "一加一等于几", text)
     t = re.sub(r"等一[節节]$", "等于几", text)
+    t = _cn_num_replace(t)
+    # 多字运算符优先（乘以/除以），避免被单字 乘/除 抢先替换（2026-11-23）
+    t = t.replace("乘以", "*").replace("除以", "/")
     for k, v in _CN_OP.items():
         t = t.replace(k, v)
     for k, v in _CN_NUM.items():
@@ -1159,12 +1199,24 @@ def remote_play(path):
         data = open(path, "rb").read()
         ctype = "audio/mpeg" if str(path).endswith(".mp3") else "audio/wav"
         req = urllib.request.Request(BT_PLAY_URL, data=data, headers={"Content-Type": ctype}, method="POST")
-        with urllib.request.urlopen(req, timeout=20) as r:
+        with urllib.request.urlopen(req, timeout=4) as r:
             return r.status == 200
     except Exception as e:
         print("[TTS] bt_play failed: %s" % type(e).__name__, flush=True)
         return False
 
+
+
+
+def _split_speech(text, max_parts=3):
+    """按标点切成 1-3 段，便于首段先播（2026-11-23 降首包延迟）。"""
+    parts = [x.strip() for x in re.split(r"[。！？；，、]", text) if x.strip()]
+    if not parts:
+        return [text]
+    if len(parts) <= max_parts:
+        return parts
+    per = (len(parts) + max_parts - 1) // max_parts
+    return ["，".join(parts[i:i + per]) for i in range(0, len(parts), per)][:max_parts]
 
 def speak(text):
     if not text:
@@ -1186,6 +1238,12 @@ def speak(text):
     if _d and play_date_fast(int(_d.group(1)), int(_d.group(2)), _d.group(3)):
         print("[LATENCY] date_fast_ok text=%r" % text, flush=True)
         return
+    if len(text) > 24 and os.environ.get("VOICE_TTS_CHUNK", "1") == "1":
+        _parts = _split_speech(text)
+        if len(_parts) > 1:
+            for _p in _parts:
+                speak(_p)
+            return
     started = time.monotonic()
     disposable = False
     mp3 = None
@@ -1277,7 +1335,14 @@ def is_idle_command(text):
     裸命令被丢弃。这里只放行长度 <=12 且模式明确的灯控/时间/天气，降低误触发。
     """
     s = (text or "").strip()
-    if not s or len(s) > 12:
+    if not s:
+        return False
+    if is_calc(s):
+        return True
+    # 2026-11-23：自然提问（不带唤醒词）也要能答；限定疑问词 + 长度，避免电视噪声误触发
+    if len(s) <= 25 and re.search(r"(怎么回事|为什么|是什么|什么是|介绍|怎么样|如何|是谁|在哪|多少|能不能|可以吗|吗[？?]?$)", s):
+        return True
+    if len(s) > 12:
         return False
     if re.search(r"(打开|关闭|开|关).{0,2}灯|灯.{0,2}(打开|关闭|开|关)", s):
         return True
@@ -1467,9 +1532,14 @@ def dispatch(intent, slots, text):
     if intent == "STOCK_QUOTE":
         found = resolve_symbol(slots.get("query", text))
         if not found:
-            # 名称解析不出来(常见于 ASR 误听)时交给 Hermes,不要谎称查过了。
-            return None, True
-        return get_stock_quote(found[0]), False
+            return "暂时查不到这只股票的行情，可能名称听错了。", False
+        try:
+            _q = get_stock_quote(found[0])
+        except Exception:
+            _q = ""
+        if not (_q or "").strip():
+            return "暂时查不到实时行情，请稍后再试。", False
+        return _q, False
     if intent == "LOCAL_DATE_TIME":
         return get_time_now(text), False
     if intent == "LOCAL_CALCULATOR":
@@ -1594,7 +1664,7 @@ def handle_turn(text, handler, tts,
         print("[TURN=%d] TTS_START" % turn.id, flush=True)
         tts(reply)
         print("[TURN=%d] TTS_DONE" % turn.id, flush=True)
-        vlog("tts", text=str(text)[:80], ok=True)
+        vlog("tts", text=str(reply)[:80], ok=True)
     turn.result = reply
     return turn
 

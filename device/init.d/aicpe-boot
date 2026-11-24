@@ -7,6 +7,7 @@ start() {
   [ -e /data/opt/ffmpeg/ffmpeg ] && { [ -e /usr/bin/ffmpeg ] || ln -sf /data/opt/ffmpeg/ffmpeg /usr/bin/ffmpeg; }
   [ -e /data/opt/bash-root/bin/bash ] && { [ -e /usr/bin/bash ] || ln -sf /data/opt/bash-root/bin/bash /usr/bin/bash; }
   [ -e /proc/asound/card2 ] && amixer -c 2 sset Mic 75% >/dev/null 2>&1
+  [ -e /proc/asound/card1 ] && amixer -c 1 sset Mic 62% >/dev/null 2>&1
   [ -x /data/ai_cpe/tools/led_net_solid.sh ] && /data/ai_cpe/tools/led_net_solid.sh
   if ! pgrep -f 'zerotier-one -d' >/dev/null 2>&1; then
     LD_LIBRARY_PATH=/data/zerotier/libs nohup /data/zerotier/bin/zerotier-one -d /data/zerotier/home >/dev/null 2>&1 &
@@ -20,6 +21,8 @@ start() {
       --paraformer=/data/ai_cpe/sherpa-onnx/paraformer-zh-small/model.int8.onnx \
       > /data/ai_cpe/logs/sherpa_asr.log 2>&1 &
   fi
+  export TTS_OUTPUT=local VOICE_TTS_ENGINE=piper VOICE_VAD_ON=1600 VOICE_VAD_OFF=1100
+  export REC_DEV=$(cat /data/ai_cpe/voice_rec_dev 2>/dev/null || echo plughw:CARD=WEBCAM,DEV=0)
   if ! pgrep -f 'voice_assistant.py' >/dev/null 2>&1; then
     cd /data/ai_cpe
     nohup /data/hermes/venv/bin/python /data/ai_cpe/voice_assistant.py > /data/ai_cpe/logs/voice.log 2>&1 &
