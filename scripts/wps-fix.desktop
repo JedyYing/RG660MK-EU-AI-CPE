@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=WPS 修复（清理卡死实例）
+Comment=清理残留 WPS 进程，解决「对话框打开时命令无法执行」/无法打开文件
+Exec=/home/jedyying/scripts/wps_fix.sh
+Icon=wps-office
+Terminal=true
+Categories=Utility;
