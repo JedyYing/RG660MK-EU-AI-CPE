@@ -822,11 +822,15 @@ def check_voice(it, no_audio=False):
     asr_text = ""; asr_pick = ""
     # 从最新往旧扫最近 12 条现场录音，取第一条能转出非空文本的
     # （现场偶有极短碎片/无语音录音，固定只取最新一条会被碎片偶发误报失败）
+    _asr_deadline = time.time() + 60          # 整项预算 60s
     for wf in reversed(wav_list[-12:]):
+        if time.time() > _asr_deadline:
+            ms.append(("ASR 预算", "60s 内未拿到可用转写（ASR 可能被实时噪声占满）"))
+            break
         fn = "_paraformer_ws_once" if asr_up else "_paraformer_oneshot"
         code = ("import sys,json;sys.path.insert(0,'/data/ai_cpe');import voice_assistant as va;"
                 "print(json.dumps({'text': getattr(va,'%s')(sys.argv[1])}, ensure_ascii=False))" % fn)
-        rc, out = sh("%s -c %s %s" % (VENV, json.dumps(code), json.dumps(wf)), t=180)
+        rc, out = sh("%s -c %s %s" % (VENV, json.dumps(code), json.dumps(wf)), t=25)
         try:
             t = json.loads(out.strip().splitlines()[-1]).get("text", "")
         except Exception:
@@ -1653,6 +1657,25 @@ def check_smart_home(it, no_audio=False):
         _drv += "（Matter 灯未配网 → 自动兜底；配网后填 node_id 即切 Matter）"
     ms.append(("执行器驱动", _drv))
     ms.append(("指令前状态", "开" if sw0 else "关"))
+    # 2026-11-25：灯固件在约 120+ 次快速 Matter 操作后会卡死（Wi-Fi 关联但 IP/CASE 超时）。
+    # 策略：每 3 轮真操作 1 次，其余轮只读回读（仍验证控制面与实时状态）。
+    _cnt_file = "/data/ai_cpe/demo/data/demo_round_counter"
+    try:
+        _rn = int(open(_cnt_file, encoding="utf-8").read().strip()) + 1
+    except Exception:
+        _rn = 1
+    try:
+        with open(_cnt_file, "w", encoding="utf-8") as _f:
+            _f.write(str(_rn))
+    except Exception:
+        pass
+    _real_toggle = (_rn % 3 == 1)   # 第 1、4、7… 轮真操作
+    if not _real_toggle:
+        ms.append(("执行策略", "只读回读（每 3 轮真操作 1 次 · 本轮第 %d 轮）" % _rn))
+        set_item(it, "pass",
+                 "只读回读通过：灯状态「%s」（本轮不真操作，降低固件操作次数）" % ("开" if sw0 else "关"), ms)
+        return
+    ms.append(("执行策略", "真实开关（每 3 轮 1 次 · 本轮第 %d 轮）" % _rn))
     if no_audio and _proxy:
         # 只有代理执行器才跳过真实动作；Matter 真灯在静音模式下也做三轮真实开关（无声音）
         ms.append(("动作", "静音质检模式：仅读取状态（代理执行器，不实际开关）"))
