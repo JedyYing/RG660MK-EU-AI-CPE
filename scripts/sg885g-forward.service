@@ -1,0 +1,12 @@
+[Unit]
+Description=SG885G adb port forward keeper (28080/28081)
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /home/jedyying/scripts/sg885g_forward.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

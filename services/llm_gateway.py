@@ -2,7 +2,7 @@
 
 模式唯一来源：/data/ai_cpe/local-model-mode.json（model_mode.py 读写）
   mt200-local → 本地大模型（历史命名，实际为 SG885G-WF 3B 本地推理）：
-                http://192.168.1.212:18091/v1/chat/completions
+                http://172.25.25.240:18091/v1/chat/completions
                 （笔记本 LAN 代理 → socat → adb forward → SG885G:8080）
   hermes      → 在线大模型：https://ai.phicotek.com/api/llmrouter/v1/chat/completions
                 （与设备上的 Hermes 同一 provider/同一 key，模型 deepseek-v4-flash）
@@ -32,7 +32,7 @@ from urllib.parse import urlsplit
 MODE_FILE = '/data/ai_cpe/local-model-mode.json'
 ENV_FILE = '/data/hermes/.hermes/.env'
 
-LOCAL_ENDPOINT = 'http://192.168.1.212:18091/v1/chat/completions'
+LOCAL_ENDPOINT = 'http://172.25.25.240:18091/v1/chat/completions'
 LOCAL_MODEL = 'q3.gguf'          # 线上模型标识（llama-server 加载名，勿改）
 LOCAL_MODEL_LABEL = 'Qwen2-3B（SG885G-WF）'   # 仅用于页面/接口展示
 LOCAL_HOST = '192.168.1.244'

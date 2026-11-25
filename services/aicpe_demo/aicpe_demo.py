@@ -584,9 +584,14 @@ def cpe_info():
     m4 = re.search(r'"address":\s*"([0-9.]+)"', w)
     if m4:
         d["wan_ip"] = m4.group(1)
-    rc, o5 = sh("cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null", t=4)
+    rc, o5 = sh("cat /sys/class/thermal/thermal_zone1/temp 2>/dev/null", t=4)
     try:
         d["temp_c"] = round(int(o5.strip()) / 1000.0, 1)
+    except Exception:
+        pass
+    rc, o6 = sh("cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null", t=4)
+    try:
+        d["temp_max_c"] = round(int(o6.strip()) / 1000.0, 1)
     except Exception:
         pass
     try:
@@ -2283,8 +2288,6 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px}
   <span class="tag" id="opStatus" style="background:transparent"></span>
   <div id="bar"><div id="barIn"></div></div>
   <span class="tag" id="stat">加载中…</span>
-  <a class="tag" id="dshLink" href="http://127.0.0.1:3081/" target="_blank" rel="noopener" style="text-decoration:none;color:#cfe0f5">DSH 控制台 ↗</a>
-  <button id="enrollBtn" onclick="enrollFace()" style="background:#3aa0f0;color:#04202f;border:0;border-radius:10px;padding:9px 14px;font-size:14px;font-weight:700;cursor:pointer">录入身份</button>
   <button id="runbtn" onclick="startRun(true)" style="background:#31d17a;color:#06231a;border:0;border-radius:10px;padding:9px 16px;font-size:15px;font-weight:700;cursor:pointer">开始演示</button>
 </header>
 <div id="cpewrap"></div>
@@ -2391,7 +2394,7 @@ async function tick(){
     if(llm.label){
       var mt=document.getElementById("modeTag");
       var _spec=(llm.spec?("（"+llm.spec+"）"):(llm.mode==="cpu-local"?"（规则引擎 · 零 token · 不调用大模型）":""));
-      if(mt){ mt.textContent="当前模式："+llm.label+" · "+(llm.model||"")+_spec; mt.style.background=(llm.mode==="mt200-local"?"rgba(49,209,122,.22)":"rgba(58,160,240,.22)"); }
+      if(mt){ mt.textContent="当前模式："+llm.label+(llm.model?(" · "+llm.model):""); mt.style.background=(llm.mode==="mt200-local"?"rgba(49,209,122,.22)":"rgba(58,160,240,.22)"); }
       var bl=document.getElementById("mLocal"), bo=document.getElementById("mOnline");
       if(bl) bl.style.outline=(llm.mode==="mt200-local"?"2px solid #31d17a":"none");
       if(bo) bo.style.outline=(llm.mode==="hermes"?"2px solid #3aa0f0":"none");
@@ -2420,7 +2423,7 @@ async function tick(){
       var _lm=c.llm||{}; var _mode=_lm.mode||""; var _local=(_mode==="mt200-local"); var _cpu=(_mode==="cpu-local");
       var _label=_lm.label||(_local?"端侧大模型":(_cpu?"无大模型模式":"云端大模型"));
       var _green=(_local||_cpu);
-      var chips="<span class='chip modebadge' style='background:"+(_green?"#0f3a24":"#0f2743")+";border-color:"+(_green?"#31d17a":"#4aa3ff")+";color:"+(_green?"#8ff0b5":"#9ccbff")+"'>当前模型通道："+_label+" · "+(_lm.model||"—")+"</span>";
+      var chips="";
       if(_cpu){
         chips+="<span class='chip'><b>纯 CPU</b> 规则引擎 · 零 token · 不调用大模型</span>";
       }
@@ -2485,7 +2488,7 @@ async function tick(){
       var _cntxt=_cnm.length?("："+_cnm.slice(0,3).join("、")+(_cnm.length>3?" 等 "+_cnm.length+" 台":"")):"";
       chips+="<span class='chip'><b>接入终端</b> "+c.clients+" 个（WiFi "+c.clients_wifi+" · 有线 "+c.clients_lan+"）"+_cntxt+"</span>";
       if(c.wan_ip) chips+="<span class='chip'><b>WAN</b> "+c.wan_ip+(c.wan_up?" ✓":" ✗")+"</span>";
-      if(c.temp_c) chips+="<span class='chip' title='thermal_zone0 (soc_max) 板载 SoC 最高温'><b>SoC温度</b> "+c.temp_c+" °C</span>";
+      if(c.temp_c) chips+="<span class='chip' title='SoC 主传感器 soc0；括号内为热点 soc_max'><b>SoC温度</b> "+c.temp_c+" °C"+(c.temp_max_c?"（热点 "+c.temp_max_c+" °C）":"")+"</span>";
       if(c.mem_total_mb) chips+="<span class='chip'><b>内存</b> 总 "+c.mem_total_mb+" MiB · 可用 "+c.mem_avail_mb+" MiB</span>";
       if(c.hermes_mb) chips+="<span class='chip'><b>Hermes 占用</b> "+c.hermes_mb+" MiB</span>";
       if(c.uptime_s) chips+="<span class='chip'><b>运行</b> "+Math.floor(c.uptime_s/3600)+"h"+Math.floor(c.uptime_s%3600/60)+"m</span>";
@@ -2522,10 +2525,14 @@ async function setMode(m){
 async function enrollFace(){
   var st=document.getElementById('opStatus'), b=document.getElementById('enrollBtn');
   if(!confirm('请正对摄像头：将抓拍当前画面，录入为本机身份模板（subject=self）。继续？')) return;
+  // 人脸录入属运维级写接口（令牌鉴权 2.5）：需 ops token，首次输入后存本标签页
+  var ot=sessionStorage.getItem('opsToken')||'';
+  if(!ot){ ot=prompt('请输入运维令牌（ops token，用于人脸录入）')||''; if(!ot){ if(st) st.textContent='已取消：未输入运维令牌'; return; } sessionStorage.setItem('opsToken',ot); }
   b.disabled=true; if(st) st.textContent='正在抓拍并录入…';
   try{
-    var r=await fetch('/face/enroll',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject_id:'self'})});
+    var r=await fetch('/face/enroll',{method:'POST',headers:{'Content-Type':'application/json','X-Demo-Token':ot},body:JSON.stringify({subject_id:'self'})});
     var j=await r.json();
+    if(r.status===401){ sessionStorage.removeItem('opsToken'); if(st) st.textContent='录入失败：运维令牌无效，请重试'; return; }
     if(st) st.textContent = j.ok ? ('身份录入成功：'+(j.result&&j.result.identities||1)+' 个模板') : ('录入失败：'+(j.error||'无人脸'));
   }catch(e){ if(st) st.textContent='录入失败：'+e; }
   finally{ b.disabled=false; }
@@ -2632,6 +2639,24 @@ function draw(){
   g.fillText("纵轴上限 "+mx.toFixed(1)+" ms",10,14);
 }
 </script></body></html>"""
+
+
+LOGIN_HTML = """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI CPE 看板 · 访问令牌</title>
+<style>
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1220;color:#e8f1ff;font-family:-apple-system,"PingFang SC",sans-serif}
+.box{width:min(92vw,380px);background:#121c2e;border:1px solid #22314d;border-radius:14px;padding:26px 24px}
+h1{font-size:17px;margin:0 0 6px}p{font-size:12.5px;color:#8fa6c4;margin:0 0 16px;line-height:1.6}
+input{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:9px;border:1px solid #2b3c5a;background:#0b1524;color:#e8f1ff;font-size:14px}
+button{margin-top:12px;width:100%;padding:10px;border:0;border-radius:9px;background:#2f7cf6;color:#fff;font-size:14px;cursor:pointer}
+.tip{margin-top:14px;font-size:11.5px;color:#63799a;line-height:1.6}
+</style></head><body><form class="box" method="get" action="/auth">
+<h1>AI CPE 看板</h1><p>该看板已启用访问令牌。请输入令牌后进入（浏览器会记住本次令牌）。</p>
+<input name="token" type="password" placeholder="访问令牌" autofocus autocomplete="current-password">
+<button type="submit">进入看板</button>
+<div class="tip">令牌由管理员提供；也可直接访问 /auth?token=令牌。</div>
+</form></body></html>"""
 
 
 class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
@@ -2906,10 +2931,18 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
             return
         _tok = _demo_token_from(self.headers, self.path, self.headers.get("Cookie"))
         if not _token_ok(_tok, ops_only=(p == "/face/enroll")):
-            self._send(401, "application/json", '{"error":"unauthorized"}')
+            # 页面类路径给令牌输入页（裸 JSON 401 会被误认为“看板坏了”）；接口类保持 fail-closed
+            if p in ("/", "/simple", "/rtt"):
+                self._send(401, "text/html; charset=utf-8", LOGIN_HTML)
+            else:
+                self._send(401, "application/json", '{"error":"unauthorized"}')
             return
+        # 令牌来自 URL 查询串时补种 Cookie，保证页面内 fetch/AJAX 后续请求自动携带
+        _extra = []
+        if "token=" in self.path:
+            _extra.append(("Set-Cookie", "demo_token=%s; Path=/; HttpOnly; SameSite=Strict" % _tok))
         if p == "/":
-            self._send(200, "text/html; charset=utf-8", DASH_HTML)
+            self._send(200, "text/html; charset=utf-8", DASH_HTML, _extra)
         elif p == "/simple":
             self._send(200, "text/html; charset=utf-8", SIMPLE_HTML)
         elif p == "/rtt":
@@ -3101,7 +3134,7 @@ def main():
     if not a.no_serve:
         serve(a.port)
         ip = sh("ip -4 addr show br-lan | awk '/inet /{print $2}' | cut -d/ -f1")[1].strip() or "192.168.1.1"
-        print("看板地址: http://%s:%d/   （局域网任意设备可访问；演示期间保持在线）" % (ip, a.port), flush=True)
+        print("看板地址: http://%s:%d/   （首次访问需输入访问令牌，浏览器会记住；演示期间保持在线）" % (ip, a.port), flush=True)
     if a.serve_only:
         print("常驻模式：看板已就绪，等待页面点击「开始演示」…", flush=True)
         while True:

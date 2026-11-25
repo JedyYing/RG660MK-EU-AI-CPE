@@ -26,6 +26,7 @@ REMOTE_USER = "jedyying"
 # 笔记本 LAN IP 由 DHCP 下发会变（曾 .244 → .212），优先从本机 DHCP 租约里按 MAC 取。
 LAPTOP_MAC = "00:e0:4c:55:75:98"
 LAPTOP_FALLBACK = "192.168.1.212"
+ZT_FALLBACK = "172.25.25.240"   # 无网线（ZeroTier）
 
 REMOTE_PY = "/usr/bin/python3"
 REMOTE_SCRIPT = "/home/jedyying/work_cpe_board/tools/usage_stats.py"
@@ -46,6 +47,25 @@ def laptop_ip():
     return LAPTOP_FALLBACK
 
 
+def _port_open(host, port=22, timeout=1.5):
+    import socket
+    try:
+        sk = socket.create_connection((host, port), timeout=timeout)
+        sk.close()
+        return True
+    except Exception:
+        return False
+
+
+def _best_laptop_ip():
+    lan = laptop_ip()
+    if _port_open(lan):
+        return lan
+    if _port_open(ZT_FALLBACK):
+        return ZT_FALLBACK
+    return lan
+
+
 def run_local(db, start):
     r = subprocess.run([PY, USAGE, db, start], capture_output=True, text=True, timeout=180)
     if r.returncode != 0:
@@ -55,7 +75,7 @@ def run_local(db, start):
 
 def run_remote(db, start):
     cmd = "%s %s %s %s" % (REMOTE_PY, REMOTE_SCRIPT, db, start)
-    ssh = ["ssh", "-y", "-T", "-i", KEY, "%s@%s" % (REMOTE_USER, laptop_ip())]
+    ssh = ["ssh", "-y", "-T", "-i", KEY, "%s@%s" % (REMOTE_USER, _best_laptop_ip())]
     r = subprocess.run(ssh + [cmd], capture_output=True, text=True, timeout=180,
                        stdin=subprocess.DEVNULL)
     if r.returncode != 0:
