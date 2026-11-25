@@ -321,12 +321,15 @@ class AINetService:
             self.threads.append(t)
         api_srv = None
         try:
-            from ai_net.api import start_api
+            from ai_net.api import start_api, load_token, DEFAULT_TOKEN_FILE
             a = self.cfg.get("api", {})
-            api_srv = start_api(self, a.get("host", "0.0.0.0"), int(a.get("port", 8123)))
-            log.info("api on %s:%s", a.get("host"), a.get("port"))
+            host = a.get("host", "127.0.0.1")
+            port = int(a.get("port", 8123))
+            token = load_token(a.get("auth_token_file", DEFAULT_TOKEN_FILE))
+            api_srv = start_api(self, host, port, token=token)
+            log.info("api on %s:%s (token required)", host, port)
         except Exception as e:  # noqa
-            log.warning("api start failed: %s", e)
+            log.error("管理 API 未启动（%s）；服务继续运行，但没有 HTTP 管理接口", e)
 
         def _stop(signum=None, frame=None):
             self.stop_ev.set()

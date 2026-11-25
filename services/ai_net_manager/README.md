@@ -36,7 +36,7 @@
 36|```bash
 37|bash services/ai_net_manager/deploy_ai_net.sh          # 推送+装服务+启动
 38|ssh root@fcd3.. 'python3 -m ai_net.service --mode shadow --config /data/ai_cpe/ai_net/config/main.json'
-39|curl http://[fcd3...]:8123/v1/status                   # HTTP API（设计 §12.1）
+39|curl -H "Authorization: Bearer $(cat /data/ai_cpe/secrets/ops_token)" http://127.0.0.1:8123/v1/status   # HTTP API（设计 §12.1，仅回环 + 令牌）
 40|```
 41|
 42|## 数据与状态
@@ -55,7 +55,7 @@
 
 ## 设备运行状态（2026-10-09 晚 实测）
 - 服务: procd `ai-net`（S98 开机自启、respawn）; 路径: `/data/ai_cpe/ai_net`
-- API（只读）: `http://192.168.1.1:8123/v1/status`（注意绑定 IPv4 0.0.0.0，设备上用 127.0.0.1 而非 [::1]）
+- API: 仅绑定回环 `127.0.0.1:8123`（配置 `api.host`），所有接口需令牌：`Authorization: Bearer <令牌>` 或 Basic（密码为令牌）。令牌文件 `api.auth_token_file`，默认 `/data/ai_cpe/secrets/ops_token`，权限须 0600，缺失或过宽则 API 不启动（服务本身继续运行）。`/v1/mode`、`/v1/reload-model` 为写接口，同样需要令牌。不对局域网与 WAN 开放。
 - 实测: NCI=0594FCB484 / TAC=590D0A / RSRP=-65 dBm / reg=HOME / qoe_score≈65 / 活动流 126（WAN 99）/ ping 13.5ms
 - 采样: radio 1s、qoe 1s、flows 2s、decision 2s；落盘 radio/qoe/flows/window/decisions.jsonl
 

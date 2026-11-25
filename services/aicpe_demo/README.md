@@ -44,3 +44,13 @@
 - 主程序：`/data/ai_cpe/hermes/home/aicpe_demo/aicpe_demo.py`（procd 服务 `aicpe-board`，8099）
 - 视频找帧工具：`/data/ai_cpe/tools/vsearch.py` → 仓库副本 `services/aicpe_demo/tools/vsearch.py`
 - 索引：`/data/vindex/concert/`（frames + index.json）
+
+## 访问控制（2026-11-20，报告 2.4 / 2.5）
+- 首页 `/` 公开（静态页，不含数据）。其余接口一律需要设备运维令牌：`/state`、`/run`、`/mode`、`/reset`、`/agent`、`/home/confirm`、`/face/enroll`、`/snap`、`/cam/stream`、`/faces`、`/report` 等。
+- 令牌文件：设备 `/data/ai_cpe/secrets/ops_token`，权限须为 0600 且内容非空。缺失或权限过宽时看板拒绝启动（退出码 2）。
+- 认证方式：`Authorization: Bearer <令牌>`；或 HTTP Basic（用户名任意，密码为令牌），浏览器会弹出登录框。
+- 未认证请求返回 401，并写入 `/data/ai_cpe/logs/aicpe_board_audit.log`（时间、来源 IP、路径）。审计文件超过 512KB 时轮转一份。
+- 人脸录入（`/face/enroll`）另记录来源 IP、subject_id 与结果。subject_id 只能是 `/data/ai_cpe/demo/config/enroll_subjects.json` 登记的名单，文件缺省时仅允许 `self`。
+- 看板仍监听全部网卡（IPv4 + IPv6），局域网、ZeroTier 与 IPv6 ULA 访问依赖这一绑定，由令牌保护。
+- 开机不再自启 cloudflared 公网隧道（原 8099、8080）。远程访问请改用带认证的受控通道。
+- 命令行示例：`curl -H "Authorization: Bearer $(cat /data/ai_cpe/secrets/ops_token)" http://127.0.0.1:8099/state`

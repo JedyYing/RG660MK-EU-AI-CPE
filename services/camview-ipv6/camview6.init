@@ -7,6 +7,9 @@ STOP=10
 USE_PROCD=1
 
 start_service() {
+    # 默认关闭（安全测试报告 2.2 第 5 条）：不再把 camview 暴露到 IPv6。
+    # 确需启用时，先确认 camview 已启用运维令牌且防火墙只放行必要来源，再执行：touch /etc/camview6.enable
+    [ -f /etc/camview6.enable ] || return 0
     procd_open_instance
     procd_set_param command /usr/bin/python3 /data/ai_cpe/hermes/home/camview6.py 8090
     procd_set_param respawn

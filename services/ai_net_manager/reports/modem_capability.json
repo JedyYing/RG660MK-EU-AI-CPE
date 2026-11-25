@@ -1,11 +1,11 @@
 {
- "ts_ms": 1791535406355,
+ "ts_ms": 1795505259573,
  "platform": "mtk-mipc",
  "read": {
   "nw_get_signal": {
    "status": "ok",
    "rc": 0,
-   "sample": ""
+   "sample": "RAT 5G, RSRP=-66"
   },
   "nw_get_rat": {
    "status": "ok",
@@ -15,7 +15,7 @@
   "check_nw_status": {
    "status": "ok",
    "rc": 0,
-   "sample": ""
+   "sample": "MIPC_NW_REGISTER_STATE_HOME"
   },
   "nw_radio_state_get": {
    "status": "ok",
@@ -25,7 +25,7 @@
   "show_register_status": {
    "status": "ok",
    "rc": 0,
-   "sample": ""
+   "sample": "MIPC_NW_REGISTER_STATE_HOME"
   },
   "at_cesq": {
    "status": "ok",

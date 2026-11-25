@@ -2,7 +2,7 @@
 # 部署 ai-net-manager 到 RG660MK（Shadow 模式）
 set -u
 K=/home/jedyying/.ssh/id_ed25519_termux
-OPTS="-o ConnectTimeout=8 -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+OPTS="-o ConnectTimeout=8 -o BatchMode=yes -o StrictHostKeyChecking=accept-new"
 T=""
 for t in "root@fdc3:8285:b409::1" "root@192.168.1.1"; do
   if timeout 10 ssh -i $K $OPTS $t 'echo OK' 2>/dev/null | grep -q OK; then T=$t; break; fi
@@ -29,10 +29,12 @@ echo "▸ 能力探测（只读）…"
 ssh -i $K $OPTS $T 'cd /data/ai_cpe/ai_net && python3 -m ai_net.executor.capability 2>&1 | tail -14' || true
 scp -q -i $K $OPTS "$T:/data/ai_cpe/ai_net/reports/modem_capability.json" "$HERE/reports/" 2>/dev/null && echo "  capability 报告已取回 repo"
 
+echo "▸ 确认设备 API 令牌（只检查/首次生成，0600，不打印内容）…"
+ssh -i $K $OPTS $T 'mkdir -p /data/ai_cpe/secrets && chmod 700 /data/ai_cpe/secrets && { [ -s /data/ai_cpe/secrets/ops_token ] || (umask 077; head -c 24 /dev/urandom | od -An -tx1 | tr -d " \n" > /data/ai_cpe/secrets/ops_token); } && chmod 600 /data/ai_cpe/secrets/ops_token && echo "  token file ready"'
 echo "▸ 启动服务（shadow）…"
 ssh -i $K $OPTS $T '/etc/init.d/ai-net restart 2>&1; sleep 6;
   echo "--- 进程:"; ps w | grep "[a]i_net.service" | head -2
-  echo "--- API:"; curl -s -m 6 http://[::1]:8123/v1/status | head -c 600; echo
+  echo "--- API:"; TOK=$(cat /data/ai_cpe/secrets/ops_token 2>/dev/null); curl -s -m 6 -H "Authorization: Bearer $TOK" http://127.0.0.1:8123/v1/status | head -c 600; echo
   echo "--- 数据:"; ls -la /data/ai_cpe/ai_net/data/ 2>/dev/null | head -8'
 
 rm -rf "$STAGE"
