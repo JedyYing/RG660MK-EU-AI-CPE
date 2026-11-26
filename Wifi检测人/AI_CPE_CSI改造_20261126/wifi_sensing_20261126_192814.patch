@@ -1,0 +1,1122 @@
+diff --git a/csi_sensing/analyze_bk.py b/csi_sensing/analyze_bk.py
+new file mode 100644
+index 0000000..8be2054
+--- /dev/null
++++ b/csi_sensing/analyze_bk.py
+@@ -0,0 +1,170 @@
++#!/usr/bin/env python3
++# -*- coding: utf-8 -*-
++"""analyze_bk — 用 BK7236 风格状态机离线评估 MT7992 CSI 录制
++
++用法:
++  python3 analyze_bk.py --rec data/samples/sample_2g_walk_152405.jsonl.gz \
++      --motion-start 30 --motion-end 60 --pre-end 30 --out data/eval_bk.json
++
++输入支持 .jsonl 和 .jsonl.gz；按 pkt_sn 去重；以前 200 个唯一 pre 帧做静默基线。
++输出与 analyze_motion.py 的 legacy 结果分开，便于做改造前后对照。
++"""
++from __future__ import annotations
++
++import argparse
++import gzip
++import json
++import os
++import statistics
++from dataclasses import asdict, dataclass
++from typing import Any
++
++from bk_state import BKConfig, BKStateMachine, normalize_amp
++
++
++def load(path: str) -> list[dict[str, Any]]:
++    opener = gzip.open if path.endswith(".gz") else open
++    rows = []
++    with opener(path, "rt", encoding="utf-8") as f:
++        for line in f:
++            line = line.strip()
++            if not line:
++                continue
++            try:
++                r = json.loads(line)
++            except json.JSONDecodeError:
++                continue
++            if r.get("amp"):
++                rows.append(r)
++    rows.sort(key=lambda r: float(r.get("t_rel", r.get("ts", 0))))
++    return rows
++
++
++def pct(values: list[float], q: float) -> float | None:
++    if not values:
++        return None
++    s = sorted(values)
++    idx = max(0, min(len(s) - 1, int(round((q / 100.0) * (len(s) - 1)))))
++    return round(float(s[idx]), 4)
++
++
++def _dedup_frames(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
++    out = []
++    last_sn = object()
++    for r in rows:
++        sn = r.get("pkt_sn")
++        if sn == last_sn:
++            continue
++        last_sn = sn
++        out.append(r)
++    return out
++
++
++def _pre_noise_p95(rows: list[dict[str, Any]]) -> float | None:
++    vals = []
++    prev = None
++    for r in _dedup_frames(rows):
++        amp = normalize_amp(r.get("amp") or [])
++        if not amp:
++            continue
++        if prev is not None:
++            vals.append(sum(abs(a - b) for a, b in zip(amp, prev)) / len(amp) * 100.0)
++        prev = amp
++    return pct(vals, 95)
++
++
++def evaluate(rows: list[dict[str, Any]], motion_start: float, motion_end: float,
++             pre_end: float, cfg: BKConfig | None = None) -> dict[str, Any]:
++    cell = (cfg or BKConfig())
++    # BK 的默认阈值 5 是它自己的特征量纲；MT7992 的 move_rate 约 10–60，
++    # 必须用静默段 p95 校准，不能照搬 5。
++    pre_frames = [r for r in rows if float(r.get("t_rel", r.get("ts", 0))) < pre_end]
++    noise_p95 = _pre_noise_p95(pre_frames)
++    calibrated_thres1 = max(cell.thres1, round((noise_p95 or 0.0) * 1.5, 4))
++    cell.thres1 = calibrated_thres1
++    machine = BKStateMachine(config=cell)
++    # 1) 静默基线：前 200 个唯一帧（只吃 pre 段）
++    machine.start_calibration(cell.calibration_cnt)
++    for r in pre_frames:
++        machine.push(r)
++    baseline = machine.finish_calibration()
++    # 2) 全量回放；重置状态但保留基线
++    machine.state = "no_motion"
++    machine.present = False
++    machine.motion_count = 0
++    machine.empty_count = 0
++    machine.prev_amp = None
++    machine.prev_sn = None
++    machine.prev_ts = None
++    timeline = []
++    for r in rows:
++        t = float(r.get("t_rel", r.get("ts", 0)))
++        res = machine.push(r)
++        if res.get("changed"):
++            timeline.append({"t": round(t, 3), **{k: res.get(k) for k in
++                             ("move_rate", "state_rate", "state", "present")}})
++    pre = [x for x in timeline if x["t"] < motion_start]
++    motion = [x for x in timeline if motion_start <= x["t"] <= motion_end]
++    post = [x for x in timeline if x["t"] > motion_end]
++    pre_move = [x["move_rate"] for x in pre]
++    mot_move = [x["move_rate"] for x in motion]
++    pre_state = [x["state_rate"] for x in pre]
++    mot_state = [x["state_rate"] for x in motion]
++    # 检出：状态为 motion 或 move_rate 超过阈值；报告两者，避免口径混淆
++    det_state = [bool(x["present"]) for x in motion]
++    det_rate = [bool(x["move_rate"] > (cfg or BKConfig()).thres1) for x in motion]
++    first = next((x["t"] - motion_start for x in motion if x["present"]), None)
++    return {
++        "algorithm": "bk7236-inspired",
++        "config": asdict(cell),
++        "calibrated_threshold": cell.thres1,
++        "baseline_frames": len(pre_frames),
++        "baseline_ready": bool(baseline),
++        "frames_total": len(rows),
++        "frames_used": machine.frames_used,
++        "unique_or_used_ratio": round(machine.frames_used / max(1, len(rows)), 3),
++        "segments": {"pre": len(pre), "motion": len(motion), "post": len(post)},
++        "move_rate": {
++            "pre": {"p50": pct(pre_move, 50), "p95": pct(pre_move, 95)},
++            "motion": {"p50": pct(mot_move, 50), "p95": pct(mot_move, 95)},
++        },
++        "state_rate": {
++            "pre": {"p50": pct(pre_state, 50), "p95": pct(pre_state, 95)},
++            "motion": {"p50": pct(mot_state, 50), "p95": pct(mot_state, 95)},
++        },
++        "detect_ratio_state": round(sum(det_state) / len(det_state), 4) if det_state else None,
++        "detect_ratio_rate": round(sum(det_rate) / len(det_rate), 4) if det_rate else None,
++        "pre_fp_ratio_state": round(sum(bool(x["present"]) for x in pre) / len(pre), 4) if pre else None,
++        "first_detect_latency_s": round(first, 2) if first is not None else None,
++        "state_events": machine.events[-20:],
++        "note": "state detection requires 4 consecutive move_rate > calibrated threshold; threshold = max(BK default, pre p95 x 1.5)",
++    }
++
++
++def main() -> int:
++    ap = argparse.ArgumentParser()
++    ap.add_argument("--rec", required=True, help="jsonl 或 jsonl.gz")
++    ap.add_argument("--motion-start", type=float, default=30.0)
++    ap.add_argument("--motion-end", type=float, default=60.0)
++    ap.add_argument("--pre-end", type=float, default=30.0)
++    ap.add_argument("--thres1", type=float, default=5.0)
++    ap.add_argument("--motion-consecutive", type=int, default=4)
++    ap.add_argument("--out", default="")
++    args = ap.parse_args()
++    cfg = BKConfig(thres1=args.thres1, motion_consecutive=args.motion_consecutive)
++    rows = load(args.rec)
++    if not rows:
++        print(json.dumps({"ok": False, "msg": "no amp frames"}, ensure_ascii=False))
++        return 1
++    out = evaluate(rows, args.motion_start, args.motion_end, args.pre_end, cfg)
++    out["ok"] = True
++    out["rec"] = os.path.abspath(args.rec)
++    print(json.dumps(out, ensure_ascii=False, indent=1))
++    if args.out:
++        with open(args.out, "w", encoding="utf-8") as f:
++            json.dump(out, f, ensure_ascii=False, indent=1)
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/csi_sensing/bk_state.py b/csi_sensing/bk_state.py
+new file mode 100644
+index 0000000..a4be6ca
+--- /dev/null
++++ b/csi_sensing/bk_state.py
+@@ -0,0 +1,293 @@
++#!/usr/bin/env python3
++# -*- coding: utf-8 -*-
++"""bk_state — BK7236 CSI 状态机的 Python 移植（参考 Wifi检测人/BK7236）
++
++Beken 的 `armino_main.c` 不直接算 CSI；固件算法事件给出
++`move_change_rate` / `state_change_rate`，应用层再按阈值做“无人 / 有人 /
++静态变化”状态机。本模块在 MT7992 原始 CSI 上计算两个等价特征：
++
++    move_rate  = 相邻两个唯一 CSI 帧的归一化幅度平均差 × 100
++    state_rate = 当前帧相对静默基线的归一化幅度平均差 × 100
++
++然后用 BK7236 的状态机逻辑（连续 N 次、阈值、空态确认）输出状态。
++这不是把 Beken 的闭源 DSP 搬过来，而是把可复用的状态机和参数语义落到
++我们的原始 CSI 数据上；算法差异见 docs/wifi_sensing 对照报告。
++
++作者: hermes  2026-11-26
++"""
++from __future__ import annotations
++
++from dataclasses import dataclass, asdict
++from typing import Any, Iterable
++
++
++def normalize_amp(amp: Iterable[float]) -> list[float]:
++    """按帧均值归一化，去掉 RSSI/AGC 的整体缩放，只保留 CFR 形状。"""
++    vals = [float(x) for x in amp]
++    if not vals:
++        return []
++    m = sum(vals) / len(vals)
++    if m <= 1e-9:
++        return [0.0] * len(vals)
++    return [x / m for x in vals]
++
++
++def mean_abs_diff(left: Iterable[float], right: Iterable[float]) -> float:
++    a, b = list(left), list(right)
++    if not a or not b or len(a) != len(b):
++        return 0.0
++    return sum(abs(x - y) for x, y in zip(a, b)) / len(a)
++
++
++@dataclass
++class BKConfig:
++    """BK7236 CSI demo 的默认参数（可从 BLE/JSON 覆盖）。"""
++
++    thres1: float = 5.0       # 动态变化阈值（move_change_rate）
++    thres2: float = 3.0       # 状态变化阈值（state_change_rate）
++    thres3: float = 8.0       # 静态变化判定阈值
++    thres4: float = 8.0       # 运动中重新配置的阈值（保留兼容）
++    rate1: int = 8
++    rate2: int = 16
++    rate3: int = 8
++    static_update: int = 15000
++    calibration_cnt: int = 200
++    hold_time: int = 0
++    motion_consecutive: int = 4       # BK: motion_cnt >= 4 才判有人
++    empty_consecutive: int = 4        # 无人连续确认
++    static_detection: int = 100       # BK: 100 个算法事件
++    static_detection_threshold: int = 50
++
++    @classmethod
++    def from_dict(cls, data: dict[str, Any] | None) -> "BKConfig":
++        if not data:
++            return cls()
++        fields = cls.__dataclass_fields__
++        kwargs = {}
++        for key, value in data.items():
++            if key in fields and value is not None:
++                try:
++                    kwargs[key] = type(getattr(cls(), key))(value)
++                except (TypeError, ValueError):
++                    pass
++        return cls(**kwargs)
++
++
++class BKStateMachine:
++    """BK7236 风格的状态机；输入 normalized amplitude 帧，输出状态和特征。
++
++    `push` 返回一个 dict，既用于在线 daemon，也用于离线评估，避免两套算法：
++        {
++          "move_rate": float, "state_rate": float,
++          "state": "no_motion"|"motion",
++          "state_static": "empty"|"change",
++          "present": bool, "changed": bool, "event": dict|None
++        }
++    重复 pkt_sn（固件重臂回放）会被跳过，避免把同一 PPDU 当作运动。
++    """
++
++    def __init__(self, config: BKConfig | None = None, baseline: list[float] | None = None):
++        self.cfg = config or BKConfig()
++        self.state = "no_motion"
++        self.state_static = "empty"
++        self.present = False
++        self.move_rate = 0.0
++        self.state_rate = 0.0
++        self.motion_count = 0
++        self.empty_count = 0
++        self.static_count = 0
++        self.prev_amp: list[float] | None = None
++        self.prev_sn: Any = None
++        self.prev_ts: float | None = None
++        self.baseline = list(baseline) if baseline else None
++        self.calibrating = False
++        self.calib_target = 0
++        self._calib_sum: list[float] = []
++        self._calib_n = 0
++        self.events: list[dict[str, Any]] = []
++        self._event_open: dict[str, Any] | None = None
++        self.frames_seen = 0
++        self.frames_used = 0
++
++    # ---- 校准 ---------------------------------------------------------
++    def start_calibration(self, frames: int | None = None) -> None:
++        self.calibrating = True
++        self.calib_target = int(frames or self.cfg.calibration_cnt)
++        self._calib_sum = []
++        self._calib_n = 0
++        self.state = "no_motion"
++        self.present = False
++        self.motion_count = 0
++        self.empty_count = 0
++
++    def finish_calibration(self) -> list[float] | None:
++        if self._calib_n <= 0:
++            self.calibrating = False
++            return None
++        self.baseline = [x / self._calib_n for x in self._calib_sum]
++        self.calibrating = False
++        self.calib_target = self._calib_n
++        return self.baseline
++
++    def _calibration_add(self, amp: list[float]) -> bool:
++        if not self._calib_sum:
++            self._calib_sum = [0.0] * len(amp)
++        if len(amp) != len(self._calib_sum):
++            return False
++        for i, value in enumerate(amp):
++            self._calib_sum[i] += value
++        self._calib_n += 1
++        if self._calib_n >= self.calib_target:
++            self.finish_calibration()
++        return True
++
++    # ---- 主入口 -------------------------------------------------------
++    def push(self, frame: dict[str, Any]) -> dict[str, Any]:
++        amp = frame.get("amp")
++        if not amp:
++            return self.snapshot(changed=False)
++        self.frames_seen += 1
++        na = normalize_amp(amp)
++        if not na:
++            return self.snapshot(changed=False)
++
++        # 只对连续重复 pkt_sn 去重；不按全局集合去重，避免序号回绕误删新帧。
++        sn = frame.get("pkt_sn")
++        ts = float(frame.get("host_ts") or frame.get("ts") or 0.0)
++        if sn is not None and sn == self.prev_sn and self.prev_ts is not None and ts - self.prev_ts < 1.0:
++            return self.snapshot(changed=False)
++
++        if self.calibrating:
++            self._calibration_add(na)
++            self.prev_amp = na
++            self.prev_sn = sn
++            self.prev_ts = ts
++            return self.snapshot(changed=False)
++
++        move = mean_abs_diff(self.prev_amp, na) * 100.0 if self.prev_amp else 0.0
++        state_rate = mean_abs_diff(self.baseline, na) * 100.0 if self.baseline else 0.0
++        self.move_rate = round(move, 4)
++        self.state_rate = round(state_rate, 4)
++        self.prev_amp = na
++        self.prev_sn = sn
++        self.prev_ts = ts
++        self.frames_used += 1
++        event = self._update_state()
++        return self.snapshot(changed=True, event=event)
++
++    def _update_state(self) -> dict[str, Any] | None:
++        cfg = self.cfg
++        event = None
++        if self.state == "no_motion":
++            if self.move_rate > cfg.thres1:
++                self.motion_count += 1
++            else:
++                self.motion_count = 0
++            if self.motion_count >= cfg.motion_consecutive:
++                self.state = "motion"
++                self.present = True
++                self.empty_count = 0
++                self.motion_count = 0
++                self._event_open = {
++                    "type": "motion_start",
++                    "ts": self.prev_ts or 0.0,
++                    "move_rate": self.move_rate,
++                }
++                self.events.append(self._event_open)
++                event = self._event_open
++            # 静态环境变化：相对基线持续偏离；只记录，不冒充人体运动。
++            if self.state_rate > cfg.thres3:
++                self.static_count += 1
++            else:
++                self.static_count = 0
++            if self.static_count >= cfg.static_detection_threshold:
++                self.state_static = "change"
++        else:  # motion
++            if self.move_rate > cfg.thres1:
++                self.empty_count = 0
++                self.state = "motion"
++            else:
++                self.empty_count += 1
++                if self.empty_count >= cfg.empty_consecutive:
++                    self.state = "no_motion"
++                    self.present = False
++                    self.empty_count = 0
++                    start = (self._event_open or {}).get("ts", self.prev_ts or 0.0)
++                    ev = {
++                        "type": "motion_end",
++                        "ts": self.prev_ts or 0.0,
++                        "duration": round(max(0.0, (self.prev_ts or 0.0) - start), 1),
++                        "move_rate": self.move_rate,
++                    }
++                    self.events.append(ev)
++                    self._event_open = None
++                    event = ev
++        return event
++
++    def snapshot(self, changed: bool = True, event: dict[str, Any] | None = None) -> dict[str, Any]:
++        return {
++            "move_rate": self.move_rate,
++            "state_rate": self.state_rate,
++            "state": self.state,
++            "state_static": self.state_static,
++            "present": self.present,
++            "changed": bool(changed),
++            "frames_seen": self.frames_seen,
++            "frames_used": self.frames_used,
++            "motion_count": self.motion_count,
++            "empty_count": self.empty_count,
++            "static_count": self.static_count,
++            "threshold": self.cfg.thres1,
++            "thresholds": asdict(self.cfg),
++            "baseline": self.baseline,
++            "event": event,
++        }
++
++    # ---- 离线便捷入口 -------------------------------------------------
++    def feed(self, frames: Iterable[dict[str, Any]], calibrate_first: int = 0) -> list[dict[str, Any]]:
++        rows = []
++        if calibrate_first:
++            self.start_calibration(calibrate_first)
++        for frame in frames:
++            rows.append(self.push(frame))
++        return rows
++
++
++class BKDetector:
++    """给 csi_daemon 使用的最小适配器，保持原 MotionDetector 的字段接口。"""
++
++    algorithm = "bk"
++
++    def __init__(self, config: BKConfig | None = None, baseline: list[float] | None = None,
++                 threshold: float | None = None):
++        if threshold is not None:
++            cfg = config or BKConfig()
++            cfg.thres1 = float(threshold)
++            config = cfg
++        self.machine = BKStateMachine(config=config, baseline=baseline)
++        self.last_score = 0.0
++        self.last_diff = 0.0
++        self.present = False
++        self.last_active_at = 0.0
++        self.threshold = self.machine.cfg.thres1
++        self.baseline = baseline
++        self.events = self.machine.events
++
++    @property
++    def state(self) -> str:
++        return self.machine.state
++
++    def push(self, frame: dict[str, Any]) -> float | None:
++        result = self.machine.push(frame)
++        self.last_score = float(result.get("move_rate") or 0.0)
++        self.last_diff = float(result.get("state_rate") or 0.0)
++        self.present = bool(result.get("present"))
++        if self.present:
++            self.last_active_at = float(frame.get("host_ts") or frame.get("ts") or 0.0)
++        self.baseline = self.machine.baseline
++        return self.last_score
++
++    def calibrate(self, duration: float = 20.0) -> dict[str, Any] | None:
++        # daemon 的 /api/calibrate 已按时间采集；这里只返回当前状态
++        return {"baseline": self.machine.baseline, "duration": duration,
++                "samples": self.machine._calib_n}
+diff --git a/csi_sensing/ble_config_schema.json b/csi_sensing/ble_config_schema.json
+new file mode 100644
+index 0000000..c397df4
+--- /dev/null
++++ b/csi_sensing/ble_config_schema.json
+@@ -0,0 +1,32 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "title": "BK7236 CSI BLE provisioning config (reference mapping)",
++  "description": "Extracted from BK7236 bk_idk/projects/wifi/csi; do not copy thres values to MT7992 without calibration.",
++  "type": "object",
++  "required": ["code"],
++  "properties": {
++    "code": {"type": "integer", "enum": [1], "description": "1 = start/apply CSI config"},
++    "ssid": {"type": "string", "maxLength": 32},
++    "password": {"type": "string", "maxLength": 64},
++    "tx_type": {"type": "integer", "minimum": 0, "maximum": 2},
++    "rx_mode": {"type": "integer", "minimum": 0, "maximum": 2},
++    "format": {"type": "integer", "minimum": 0, "maximum": 7},
++    "is_resp_null": {"type": "integer", "minimum": 0, "maximum": 1},
++    "interval": {"type": "integer", "minimum": 1},
++    "interval2": {"type": "integer", "minimum": 1},
++    "mode": {"type": "integer"},
++    "type": {"type": "integer", "enum": [1, 2], "description": "1=STA, 2=AP"},
++    "rate1": {"type": "integer", "minimum": 1, "maximum": 1023},
++    "rate2": {"type": "integer", "minimum": 1, "maximum": 1023},
++    "rate3": {"type": "integer", "minimum": 1, "maximum": 1023},
++    "thres1": {"type": "number", "exclusiveMinimum": 0, "maximum": 99},
++    "thres2": {"type": "number", "exclusiveMinimum": 0, "maximum": 99},
++    "thres3": {"type": "number", "exclusiveMinimum": 0, "maximum": 99},
++    "thres4": {"type": "number", "exclusiveMinimum": 0, "maximum": 99},
++    "static_update": {"type": "integer", "minimum": 0, "maximum": 3599999},
++    "hold_time": {"type": "integer", "minimum": 0, "maximum": 3599999999},
++    "calibration_cnt": {"type": "integer", "minimum": 0, "maximum": 3599999},
++    "cali_mode": {"type": "integer", "minimum": 0, "maximum": 3}
++  },
++  "additionalProperties": false
++}
+diff --git a/csi_sensing/csi_daemon.py b/csi_sensing/csi_daemon.py
+index fd34aac..b78d249 100644
+--- a/csi_sensing/csi_daemon.py
++++ b/csi_sensing/csi_daemon.py
+@@ -24,6 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+ from urllib.parse import urlparse, parse_qs
+ 
+ from csilib import (CSICapture, MotionDetector, StateWriter, FRAME_TYPE_QOS_DATA)
++from bk_state import BKDetector, BKConfig
+ 
+ BASE = os.path.dirname(os.path.abspath(__file__))
+ DATA_DIR = os.path.join(BASE, "data")
+@@ -53,10 +54,19 @@ class App:
+             except Exception:  # noqa: BLE001
+                 baseline = None
+         self.baseline_path = bpath
+-        self.det = MotionDetector(window_sec=args.window,
+-                                  threshold=(baseline or {}).get("threshold"),
+-                                  quiet_sec=args.quiet,
+-                                  baseline=baseline)
++        self.algorithm = getattr(args, "algorithm", "bk")
++        if self.algorithm == "bk":
++            cfg = BKConfig.from_dict((baseline or {}).get("config"))
++            if (baseline or {}).get("threshold") is not None:
++                cfg.thres1 = float(baseline["threshold"])
++            self.det = BKDetector(config=cfg,
++                                  baseline=(baseline or {}).get("vector"),
++                                  threshold=cfg.thres1)
++        else:
++            self.det = MotionDetector(window_sec=args.window,
++                                      threshold=(baseline or {}).get("threshold"),
++                                      quiet_sec=args.quiet,
++                                      baseline=baseline)
+         self.cap = CSICapture(iface=args.iface, frame_type=args.frame_type,
+                               fix_chain=args.fix_chain, configure=not args.no_config)
+         self.writer = StateWriter(os.path.join(DATA_DIR, "state.json"))
+@@ -101,6 +111,10 @@ class App:
+                     "tx_mac": f.get("tx_mac"), "rx_path": f.get("rx_path"),
+                     "score": round(self.det.last_score, 4),
+                     "diff": round(self.det.last_diff, 4),
++                    "algorithm": self.algorithm,
++                    "state": getattr(self.det, "state", None),
++                    "move_rate": getattr(self.det, "last_score", None),
++                    "state_rate": getattr(self.det, "last_diff", None),
+                     "present": self.det.present,
+                     "fps": round(len(self.fps_win) / 5.0, 2),
+                 }, ensure_ascii=False) + "\n")
+@@ -123,6 +137,10 @@ class App:
+                 "n_sub": f.get("n_sub"),
+                 "score": round(self.det.last_score, 4),
+                 "diff": round(self.det.last_diff, 4),
++                "algorithm": self.algorithm,
++                "state": getattr(self.det, "state", None),
++                "move_rate": getattr(self.det, "last_score", None),
++                "state_rate": getattr(self.det, "last_diff", None),
+                 "threshold": self.det.threshold,
+                 "present": self.det.present,
+                 "last_active_ago": round(time.time() - self.det.last_active_at, 1)
+@@ -139,6 +157,9 @@ class App:
+         self.calibrating = True
+         self.calib_msg = f"采集中（{sec:.0f}s），请保持无人走动"
+         t0 = time.time()
++        if self.algorithm == "bk":
++            # BK 的 calibration_cnt 是帧数；在线按 sec 采集，至少 40 帧。
++            self.det.machine.start_calibration(max(40, int(sec * 20)))
+         time.sleep(sec)
+         vals = [s[2] for s in self.scores if s[1] >= t0 - 1 and s[2] > 0]
+         self.calibrating = False
+@@ -148,12 +169,30 @@ class App:
+         vals.sort()
+         med = vals[len(vals) // 2]
+         p95 = vals[max(0, int(len(vals) * 0.95) - 1)]
+-        thr = max(round(p95 * 2.5, 4), 0.01)
+-        base = {"noise_med": med, "noise_p95": p95, "threshold": thr,
+-                "samples": len(vals), "duration": sec,
+-                "calibrated_at": time.time(), "iface": self.args.iface}
+-        self.det.baseline = base
+-        self.det.threshold = thr
++        if self.algorithm == "bk":
++            vec = self.det.machine.finish_calibration()
++            if not vec:
++                self.calib_msg = "校准失败：未收集到足够的唯一 CSI 帧"
++                return {"ok": False, "msg": self.calib_msg}
++            # 保留 BK 默认阈值 5 作为下限，避免把噪声阈值抬得过高。
++            thr = max(5.0, round(p95 * 1.5, 4))
++            self.det.machine.baseline = vec
++            self.det.machine.cfg.thres1 = thr
++            self.det.baseline = vec
++            self.det.threshold = thr
++            base = {"noise_med": med, "noise_p95": p95, "threshold": thr,
++                    "vector": vec, "config": self.det.machine.cfg.__dict__,
++                    "samples": len(vals), "duration": sec,
++                    "calibrated_at": time.time(), "iface": self.args.iface,
++                    "algorithm": "bk"}
++        else:
++            thr = max(round(p95 * 2.5, 4), 0.01)
++            base = {"noise_med": med, "noise_p95": p95, "threshold": thr,
++                    "samples": len(vals), "duration": sec,
++                    "calibrated_at": time.time(), "iface": self.args.iface,
++                    "algorithm": "legacy"}
++            self.det.baseline = base
++            self.det.threshold = thr
+         json.dump(base, open(self.baseline_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+         self.calib_msg = f"校准完成：噪声p95={p95:.4f}，阈值={thr:.4f}（{len(vals)} 样本）"
+         return {"ok": True, "baseline": base, "msg": self.calib_msg}
+@@ -211,6 +250,10 @@ def make_handler(app: App):
+                         "fps": round(len(app.fps_win) / 5.0, 2),
+                         "score": round(app.det.last_score, 4),
+                         "diff": round(app.det.last_diff, 4),
++                        "algorithm": app.algorithm,
++                        "state": getattr(app.det, "state", None),
++                        "move_rate": getattr(app.det, "last_score", None),
++                        "state_rate": getattr(app.det, "last_diff", None),
+                         "threshold": app.det.threshold,
+                         "present": app.det.present,
+                         "calibrating": app.calibrating,
+@@ -245,6 +288,8 @@ def main():
+     ap.add_argument("--quiet", type=float, default=12.0)
+     ap.add_argument("--frame-type", type=int, default=FRAME_TYPE_QOS_DATA)
+     ap.add_argument("--fix-chain", type=int, default=0, help="固定上报链路（默认 0，避免多链混采）")
++    ap.add_argument("--algorithm", choices=("bk", "legacy"), default="bk",
++                    help="bk=BK7236 风格变化率状态机（默认）；legacy=原 4s 方差检测")
+     ap.add_argument("--no-config", action="store_true", help="不自动配置 mwctl（仅读流）")
+     args = ap.parse_args()
+ 
+diff --git a/csi_sensing/run.sh b/csi_sensing/run.sh
+index 4c1f360..a636efc 100755
+--- a/csi_sensing/run.sh
++++ b/csi_sensing/run.sh
+@@ -12,6 +12,7 @@ LOG=$BASE/data/daemon.log
+ IFACE=${2:-ra0}
+ FTYPE=${3:-34}
+ PORT=${4:-8098}
++ALG=${5:-bk}
+ 
+ start() {
+   mkdir -p "$BASE/data"
+@@ -19,12 +20,12 @@ start() {
+     echo "already running pid=$(cat "$PIDF")"; exit 0
+   fi
+   cd "$BASE" || exit 1
+-  nohup "$PY" csi_daemon.py --iface "$IFACE" --port "$PORT" --frame-type "$FTYPE" \
++  nohup "$PY" csi_daemon.py --iface "$IFACE" --port "$PORT" --frame-type "$FTYPE" --algorithm "$ALG" \
+       >>"$LOG" 2>&1 &
+   echo $! > "$PIDF"
+   sleep 2
+   if kill -0 "$(cat "$PIDF")" 2>/dev/null; then
+-    echo "started pid=$(cat "$PIDF") iface=$IFACE frame_type=$FTYPE port=$PORT"
++    echo "started pid=$(cat "$PIDF") iface=$IFACE frame_type=$FTYPE port=$PORT algorithm=$ALG"
+     curl -s "http://127.0.0.1:$PORT/api/health" || true
+     echo
+   else
+diff --git a/csi_sensing/test_bk_state.py b/csi_sensing/test_bk_state.py
+new file mode 100644
+index 0000000..837cddb
+--- /dev/null
++++ b/csi_sensing/test_bk_state.py
+@@ -0,0 +1,40 @@
++#!/usr/bin/env python3
++# -*- coding: utf-8 -*-
++"""最小回归：验证 BK7236 风格状态机的“连续 4 次才 motion”与退出。"""
++import os
++import sys
++
++sys.path.insert(0, "/data/ai_cpe/csi_sensing")
++from bk_state import BKConfig, BKStateMachine
++
++
++def frame(i, delta=0.0, sn=None):
++    amp = [10.0 + delta, 9.0, 8.0]
++    return {"amp": amp, "pkt_sn": sn if sn is not None else i, "host_ts": float(i)}
++
++
++def main():
++    cfg = BKConfig(thres1=1.0, motion_consecutive=4, empty_consecutive=4)
++    m = BKStateMachine(cfg)
++    # 基线 8 帧
++    m.start_calibration(8)
++    for i in range(8):
++        m.push(frame(i))
++    assert m.baseline is not None, "baseline missing"
++    # 连续 3 帧变化不应触发（每帧形状都变化，模拟真实运动）
++    for i in range(3):
++        m.push(frame(10 + i, delta=10.0 + (i % 2)))
++    assert not m.present, "motion should require 4 consecutive frames"
++    # 第 4 帧触发
++    m.push(frame(14, delta=11.0))
++    assert m.present, "motion should start after 4 consecutive frames"
++    # 连续 5 帧稳定后退出（第 1 帧先结束最后一次变化）
++    for i in range(5):
++        m.push(frame(20 + i, delta=0.0))
++    assert not m.present, "motion should end after 4 empty frames"
++    print("BK_STATE_TEST=PASS")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git "a/docs/wifi_sensing/BK7236_BLE\351\205\215\347\275\256\345\215\217\350\256\256\346\221\230\345\275\225_20261126.md" "b/docs/wifi_sensing/BK7236_BLE\351\205\215\347\275\256\345\215\217\350\256\256\346\221\230\345\275\225_20261126.md"
+new file mode 100644
+index 0000000..679961c
+--- /dev/null
++++ "b/docs/wifi_sensing/BK7236_BLE\351\205\215\347\275\256\345\215\217\350\256\256\346\221\230\345\275\225_20261126.md"
+@@ -0,0 +1,165 @@
++# BK7236 CSI BLE 配置协议摘录与映射
++
++日期：2026-11-26
++来源：`Wifi检测人/BK7236/bk_idk/projects/wifi/csi/main/`
++（`bk_csi_ble_provision.c`、`bk_csi_ble_provision.h`、`armino_main.c`）
++
++## 1. 广播与连接
++
++| 项 | 值 |
++|---|---|
++| 广播名 | `bk_csi_demo_<MAC后3字节>` |
++| 16-bit Service Data UUID | `0xFE01` |
++| 厂商 ID | `0x05F0`（Beken） |
++| 配置写入 opcode | `0xA5`（低字节） |
++| 设备上报 opcode | `0x5A`（低字节，高字节为分段信息） |
++| 单包通知上限 | 247 字节 payload（加 5 字节头） |
++
++> 这是 Beken demo 的 `ble_boarding` 通用通道，不是标准 Matter/BLE GATT 服务。不要原样暴露到公网。
++
++## 2. 配置下发帧
++
++BLE 写入：
++
++```text
++opcode = 0xA5
++data   = csi_code(2B LE) | json_len(2B LE) | JSON UTF-8
++```
++
++`csi_code = 17`（`CSI_BOARDING_OP_START_CSI_CONFIG`）。
++
++大 JSON 会按 `0xA5` 分段：`opcode` 高字节编码 `seg_num/seg_count`；设备按 `cur_seg_count==0` 开始缓存，最后一段拼好后调用 `csi_data_rcv_data_handle()`。
++
++## 3. 配置 JSON 字段
++
++以下字段名直接来自 `armino_main.c` 的 `cJSON_GetObjectItem()`：
++
++| 字段 | 类型/范围 | 含义 | 本机映射 |
++|---|---|---|---|
++| `code` | 1 | 1=启动配置 | `POST /api/config` |
++| `ssid` | string | STA/AP SSID | 采集器 SSID |
++| `password` | string | STA/AP 密码（不写日志） | 采集器密码 |
++| `tx_type` | 0..2 | Beken 发送类型 | 不适用 MT7992 |
++| `rx_mode` | 0..2 | Beken 接收模式 | 不适用 |
++| `format` | 0..7 | CSI 输出格式 | TLV/IQ/amp |
++| `is_resp_null` | 0/1 | 对应 `csi_work_type` | 事件模式 |
++| `interval` | ms | 算法/上报间隔 | `--interval` |
++| `interval2` | ms | 运动中重配置间隔 | 状态机参数 |
++| `mode` | int | `csi_work_mode` | 采集模式 |
++| `type` | 1/2 | 1=STA，2=AP | 拓扑 |
++| `rate1/2/3` | 1..1023 | 算法速率参数 | 保留 |
++| `thres1` | 1..99 | 动态变化阈值 | `BKConfig.thres1` |
++| `thres2` | 1..99 | 状态变化阈值 | `BKConfig.thres2` |
++| `thres3` | 1..99 | 静态变化阈值 | `BKConfig.thres3` |
++| `thres4` | 1..99 | 运动中重配置阈值 | `BKConfig.thres4` |
++| `static_update` | <3600000 | 静默基线更新周期（×interval） | `static_update` |
++| `hold_time` | <3600000000 | 运动保持/无人确认 | `hold_time` |
++| `calibration_cnt` | <3600000 | 校准帧数/计数 | `calibration_cnt` |
++| `cali_mode` | 0..3 | 校准模式；1=清变化标志 | `calibration_cnt` 辅助 |
++
++默认值（BK demo）：
++
++```json
++{
++  "code": 1,
++  "ssid": "<ssid>",
++  "password": "<password>",
++  "tx_type": 0,
++  "rx_mode": 0,
++  "format": 0,
++  "is_resp_null": 0,
++  "interval": 100,
++  "interval2": 100,
++  "mode": 0,
++  "type": 1,
++  "rate1": 8,
++  "rate2": 16,
++  "rate3": 8,
++  "thres1": 5,
++  "thres2": 3,
++  "thres3": 8,
++  "thres4": 8,
++  "static_update": 15000,
++  "hold_time": 0,
++  "calibration_cnt": 200,
++  "cali_mode": 0
++}
++```
++
++注意：
++
++- `thres1..4` 是 Beken 算法的特征量纲，**不能直接套到 MT7992 的 `move_rate`**；本机必须用静默段校准。
++- `password` 不应进入普通日志、URL 或 Git；在设备上使用 0600 文件或内存注入。
++
++## 4. 设备上报帧
++
++设备通知：
++
++```text
++opcode = 0x5A | (segment << 8)
++header = opcode(2B LE) | status(1B) | payload_len(2B LE)
++payload = JSON UTF-8
++```
++
++`csi_ind_send_to_app()` 产生的 JSON：
++
++```json
++{"csi_ind": 0, "csi_result": 0}
++```
++
++`csi_result` 语义：
++
++| 值 | 含义 |
++|---|---|
++| 0 | empty / 无人 |
++| 1 | motion / 有人活动 |
++| 2 | static change / 静态环境变化 |
++
++Beken demo 还在本地用 RGB 灯显示：
++
++- 绿色 = empty；
++- 粉色 = motion；
++- 蓝色 = static change。
++
++## 5. 与本机看板/API 的映射建议
++
++当前 `csi_sensing` 已有：
++
++```text
++GET  /api/state       # 实时特征
++GET  /api/events      # motion_start/motion_end
++POST /api/calibrate   # 20s 静默校准
++```
++
++若要对齐 BK 的 BLE 语义，建议增加：
++
++```text
++POST /api/config
++  body: 上述 JSON 字段
++  response: {"ok": true, "algorithm": "bk", "thresholds": {...}}
++
++GET /api/state
++  state: "no_motion" | "motion"
++  state_static: "empty" | "change"
++  move_rate / state_rate
++```
++
++注意：我们的 `state_rate` 是“相对静默基线”的代理量，不宣称等于 Beken 的 `state_change_rate`。
++
++## 6. 安全边界
++
++- Beken demo 的 BLE boarding 没有应用层认证/加密；不要把该通道直接用于量产。
++- 如果后续在本机实现配置接口，应加：
++  - 仅本机/局域网绑定；
++  - 一次性 token 或已配对 BLE 绑定；
++  - SSID/密码不写入日志、不进入 Git；
++  - 配置变更审计（来源、时间、字段差异）。
++
++## 7. 参考代码位置
++
++```text
++Wifi检测人/BK7236/bk_idk/projects/wifi/csi/main/bk_csi_ble_provision.c
++Wifi检测人/BK7236/bk_idk/projects/wifi/csi/main/bk_csi_ble_provision.h
++Wifi检测人/BK7236/bk_idk/projects/wifi/csi/main/armino_main.c
++Wifi检测人/BK7236/bk_idk/projects/wifi/csi/main/bk_csi_common.h
++```
+diff --git "a/docs/wifi_sensing/BK7236_vs_MT7992_\345\257\271\347\205\247\344\270\216\346\224\271\351\200\240_20261126.md" "b/docs/wifi_sensing/BK7236_vs_MT7992_\345\257\271\347\205\247\344\270\216\346\224\271\351\200\240_20261126.md"
+new file mode 100644
+index 0000000..4aae981
+--- /dev/null
++++ "b/docs/wifi_sensing/BK7236_vs_MT7992_\345\257\271\347\205\247\344\270\216\346\224\271\351\200\240_20261126.md"
+@@ -0,0 +1,169 @@
++# BK7236 Wi‑Fi CSI 检测方案 vs RG660MK / MT7992 现状
++
++日期：2026-11-26
++参考代码：`/home/jedyying/RG660MK-EU-AI-CPE/Wifi检测人/BK7236/bk_idk/projects/wifi/csi/`
++本机实现：`/data/ai_cpe/csi_sensing/`
++
++## 1. 结论摘要
++
++BK7236 这套代码是一个**完整的 Wi‑Fi CSI 人体活动参考方案**：
++
++```text
++CSI 原始数据 → 固件算法事件（move_change_rate / state_change_rate）
++→ 应用层状态机（无人 / 有人 / 静态变化）
++→ 板载 RGB 灯 / BLE 结果回传
++```
++
++它可以复用 **状态机、阈值语义、BLE 配置协议**；但 **不能直接移植检测算法**：Beken 的 DSP 在 `libwifi_csi.a` 中闭源，项目源码只是应用层。
++
++RG660MK 使用 MT7992，当前能通过 `mwctl set csi=` 采原始 CSI，但：
++
++- 固件 022 的 CSI latch 只锁存少量 PPDU，需要 100ms 重臂；
++- 重臂导致同一 `pkt_sn` 重复回放，帧间相关约 0.5；
++- 现有 4 秒方差检测在两次真机录制中检出率均为 **0%**；
++- 本次新增 BK 风格状态机后，按静默基线校准阈值，仍未检出，说明瓶颈在 CSI 数据质量，不是状态机。
++
++## 2. BK7236 代码结构
++
++| 文件 | 内容 |
++|---|---|
++| `projects/wifi/csi/main/armino_main.c` | CSI 初始化、`EVENT_WIFI_CSI_ALG_IND`、状态机、参数解析 |
++| `projects/wifi/csi/main/bk_csi_common.h` | `csi_wifi_alg_t`、`csi_wifi_config_t`、状态和阈值 |
++| `projects/wifi/csi/main/bk_csi_ble_provision.c` | BLE 广播/分段/JSON 配置/结果回传 |
++| `projects/wifi/csi/main/bk_csi_demo.c` | 用 6 个 GPIO 的 RGB 灯显示结果 |
++| `components/bk_libs/bk7236/libs/libwifi_csi.a` | CSI 算法库（闭源） |
++| `include/modules/wifi_types.h:789` | `move_change_rate` / `state_change_rate` 事件结构 |
++
++关键代码路径：
++
++```c
++// armino_main.c
++bk_wifi_csi_info_cb_register(wifi_csi_rx_cb_demo);
++...
++case EVENT_WIFI_CSI_ALG_IND:
++    csi_wifi_alg_result_handle(
++        csi_data_info->move_change_rate,
++        csi_data_info->state_change_rate);
++```
++
++`csi_wifi_alg_result_handle()` 是**状态机**，不是 DSP：
++
++```text
++NO_MOTION:
++  move_change_rate > thres1 连续 4 次 → MOTION
++  （可选）static_update / calibration_cnt 自动校准
++MOTION:
++  move_change_rate <= thres1 连续 4 次 → NO_MOTION
++  state_change_rate > thres3 且持续 → STATIC_CHANGE
++```
++
++默认参数：
++
++```text
++thres1=5, thres2=3, thres3=8, thres4=8
++rate1=8, rate2=16, rate3=8
++static_update=15000
++calibration_cnt=200
++hold_time=0
++motion_consecutive=4
++```
++
++## 3. 本机 MT7992 现状
++
++### 3.1 已有能力
++
++- `csilib.CSICapture`：`mwctl` 配置 + 非阻塞 `proc` 读取 + 100ms 重臂；
++- TLV 解析：RSSI/SNR/BW/PCI/ARFCN/`pkt_sn`/I/Q/amp；
++- `MotionDetector`：4 秒滑窗逐子载波 std + 帧间差；
++- `csi_daemon`：`:8098` 看板、`/api/state`、`/api/events`、`/api/calibrate`；
++- 录制/离线评估：`csi_record.py`、`walk_test.py`、`analyze_motion.py`。
++
++### 3.2 已存在的问题
++
++- CSI latch 一次性，不重臂只有 0.1–0.8 帧/s；
++- 10Hz 重臂后约 90–110 帧/s，但同一 `pkt_sn` 重复；
++- 2.4G 录制 750 帧只有 93 个唯一 `pkt_sn`（约 12%）；
++- 帧间相关约 0.5，不能当稳定信道；
++- 两次走动录制 legacy 检出率 **0%**，分离度 1.03 / 0.98。
++
++## 4. 可复用 / 必须重写
++
++| 模块 | BK7236 | 本机处理 | 结论 |
++|---|---|---|---|
++| CSI 采集 | 固件回调 | `mwctl` + proc + 重臂 | **重写** |
++| 变化率算法 | 固件 `libwifi_csi.a` | `bk_state.py` 的幅值差分代理 | **重写/近似** |
++| 状态机 | `csi_wifi_alg_result_handle` | `BKStateMachine` | **复用逻辑** |
++| 阈值 | 5/3/8/8 | 必须按静默段重新校准 | **不可照搬** |
++| BLE 配置 | BLE boarding JSON | 尚未实现 | **可复用协议** |
++| 结果输出 | RGB 灯 + BLE | HTTP `/api/state` | **映射复用** |
++
++## 5. 本次代码改造
++
++新增/修改：
++
++```text
++csi_sensing/bk_state.py       # BK 风格 move_rate/state_rate + 状态机
++csi_sensing/analyze_bk.py     # 离线评估 + 阈值校准
++csi_sensing/csi_daemon.py     # --algorithm bk|legacy，默认 bk
++csi_sensing/run.sh            # 支持第 5 个参数 algorithm
++csi_sensing/test_bk_state.py  # 合成帧回归
++```
++
++`bk_state.py` 的特征定义：
++
++```text
++move_rate  = 相邻唯一帧归一化幅度的平均绝对差 × 100
++state_rate = 当前帧相对静默基线的归一化幅度平均绝对差 × 100
++```
++
++这不是 Beken 的原始 DSP，只是可解释的代理特征；阈值必须由静默段校准。
++
++## 6. 实测对比
++
++样本：`data/samples/sample_2g_walk_152405.jsonl.gz`
++750 帧，93 个唯一 `pkt_sn`，pre/motion/post 各 250 帧。
++
++### legacy（4 秒方差）
++
++```text
++fps = 84.66
++pre score p50/p95 = 0.355 / 0.379
++motion score p50/p95 = 0.367 / 0.390
++threshold = 0.9487
++detect_ratio = 0.0
++separation = 1.03
++```
++
++### BK 风格状态机
++
++```text
++唯一帧使用率 = 108/750 = 14.4%
++静默段 move_rate p50/p95 = 24.59 / 64.59
++运动段 move_rate p50/p95 = 14.48 / 52.50
++按静默 p95×1.5 校准阈值 = 96.88
++detect_ratio = 0.0
++pre 误报率 = 0.0
++```
++
++> 如果直接使用 BK 默认阈值 `thres1=5`，预录段会被判为运动（误报很高）。这说明 **阈值不能跨芯片照搬**。
++
++### 结论
++
++- 状态机逻辑可以复用；
++- 但这批 MT7992 录制没有形成“运动段高于静默段”的变化率分离；
++- 不能对外宣称“已实现 Wi‑Fi 人体检测”；
++- 需要先解决 CSI 数据质量（netlink/连续流/固件），再评估状态机。
++
++## 7. 建议
++
++1. **短期**：保留 `--algorithm bk` 作为实验模式，默认仍以状态机记录特征和事件，不把“motion”当产品结论。
++2. **中期**：拿 MTK 的连续 CSI 模式或修复 latch/重臂重复问题；用同一套 `bk_state.py` 重测。
++3. **长期**：若需 Beken 级检测，优先获取 MTK 官方 sensing SDK/算法库；不要尝试从 `libwifi_csi.a` 反编译搬运。
++4. **数据纪律**：所有报告必须标注唯一帧比例、fps、频段、终端型号和录制时长；不能把 90 帧/s 当成 90 个独立 PPDU/s。
++
++## 8. 相关文件
++
++- 本机：`/data/ai_cpe/csi_sensing/bk_state.py`
++- 离线评估：`/data/ai_cpe/csi_sensing/analyze_bk.py`
++- 原始 sample：`/data/ai_cpe/csi_sensing/data/samples/`
++- BK 参考：`Wifi检测人/BK7236/bk_idk/projects/wifi/csi/`
+diff --git a/docs/wifi_sensing/eval_bk_2g_20261126.json b/docs/wifi_sensing/eval_bk_2g_20261126.json
+new file mode 100644
+index 0000000..03158ee
+--- /dev/null
++++ b/docs/wifi_sensing/eval_bk_2g_20261126.json
+@@ -0,0 +1,58 @@
++{
++ "algorithm": "bk7236-inspired",
++ "config": {
++  "thres1": 96.8835,
++  "thres2": 3.0,
++  "thres3": 8.0,
++  "thres4": 8.0,
++  "rate1": 8,
++  "rate2": 16,
++  "rate3": 8,
++  "static_update": 15000,
++  "calibration_cnt": 200,
++  "hold_time": 0,
++  "motion_consecutive": 4,
++  "empty_consecutive": 4,
++  "static_detection": 100,
++  "static_detection_threshold": 50
++ },
++ "calibrated_threshold": 96.8835,
++ "baseline_frames": 250,
++ "baseline_ready": true,
++ "frames_total": 750,
++ "frames_used": 108,
++ "unique_or_used_ratio": 0.144,
++ "segments": {
++  "pre": 37,
++  "motion": 35,
++  "post": 36
++ },
++ "move_rate": {
++  "pre": {
++   "p50": 24.5906,
++   "p95": 64.589
++  },
++  "motion": {
++   "p50": 14.4772,
++   "p95": 52.5025
++  }
++ },
++ "state_rate": {
++  "pre": {
++   "p50": 14.5497,
++   "p95": 42.6761
++  },
++  "motion": {
++   "p50": 13.7362,
++   "p95": 42.5674
++  }
++ },
++ "detect_ratio_state": 0.0,
++ "detect_ratio_rate": 0.0,
++ "pre_fp_ratio_state": 0.0,
++ "first_detect_latency_s": null,
++ "state_events": [],
++ "note": "state detection requires 4 consecutive move_rate > thres1; threshold from BK defaults",
++ "ok": true,
++ "rec": "/data/ai_cpe/csi_sensing/data/samples/sample_2g_walk_152405.jsonl.gz"
++}
+\ No newline at end of file

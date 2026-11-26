@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BK7236 CSI BLE provisioning config (reference mapping)",
+  "description": "Extracted from BK7236 bk_idk/projects/wifi/csi; do not copy thres values to MT7992 without calibration.",
+  "type": "object",
+  "required": ["code"],
+  "properties": {
+    "code": {"type": "integer", "enum": [1], "description": "1 = start/apply CSI config"},
+    "ssid": {"type": "string", "maxLength": 32},
+    "password": {"type": "string", "maxLength": 64},
+    "tx_type": {"type": "integer", "minimum": 0, "maximum": 2},
+    "rx_mode": {"type": "integer", "minimum": 0, "maximum": 2},
+    "format": {"type": "integer", "minimum": 0, "maximum": 7},
+    "is_resp_null": {"type": "integer", "minimum": 0, "maximum": 1},
+    "interval": {"type": "integer", "minimum": 1},
+    "interval2": {"type": "integer", "minimum": 1},
+    "mode": {"type": "integer"},
+    "type": {"type": "integer", "enum": [1, 2], "description": "1=STA, 2=AP"},
+    "rate1": {"type": "integer", "minimum": 1, "maximum": 1023},
+    "rate2": {"type": "integer", "minimum": 1, "maximum": 1023},
+    "rate3": {"type": "integer", "minimum": 1, "maximum": 1023},
+    "thres1": {"type": "number", "exclusiveMinimum": 0, "maximum": 99},
+    "thres2": {"type": "number", "exclusiveMinimum": 0, "maximum": 99},
+    "thres3": {"type": "number", "exclusiveMinimum": 0, "maximum": 99},
+    "thres4": {"type": "number", "exclusiveMinimum": 0, "maximum": 99},
+    "static_update": {"type": "integer", "minimum": 0, "maximum": 3599999},
+    "hold_time": {"type": "integer", "minimum": 0, "maximum": 3599999999},
+    "calibration_cnt": {"type": "integer", "minimum": 0, "maximum": 3599999},
+    "cali_mode": {"type": "integer", "minimum": 0, "maximum": 3}
+  },
+  "additionalProperties": false
+}

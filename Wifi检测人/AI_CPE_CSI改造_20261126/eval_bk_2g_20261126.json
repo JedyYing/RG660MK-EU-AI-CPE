@@ -1,0 +1,58 @@
+{
+ "algorithm": "bk7236-inspired",
+ "config": {
+  "thres1": 96.8835,
+  "thres2": 3.0,
+  "thres3": 8.0,
+  "thres4": 8.0,
+  "rate1": 8,
+  "rate2": 16,
+  "rate3": 8,
+  "static_update": 15000,
+  "calibration_cnt": 200,
+  "hold_time": 0,
+  "motion_consecutive": 4,
+  "empty_consecutive": 4,
+  "static_detection": 100,
+  "static_detection_threshold": 50
+ },
+ "calibrated_threshold": 96.8835,
+ "baseline_frames": 250,
+ "baseline_ready": true,
+ "frames_total": 750,
+ "frames_used": 108,
+ "unique_or_used_ratio": 0.144,
+ "segments": {
+  "pre": 37,
+  "motion": 35,
+  "post": 36
+ },
+ "move_rate": {
+  "pre": {
+   "p50": 24.5906,
+   "p95": 64.589
+  },
+  "motion": {
+   "p50": 14.4772,
+   "p95": 52.5025
+  }
+ },
+ "state_rate": {
+  "pre": {
+   "p50": 14.5497,
+   "p95": 42.6761
+  },
+  "motion": {
+   "p50": 13.7362,
+   "p95": 42.5674
+  }
+ },
+ "detect_ratio_state": 0.0,
+ "detect_ratio_rate": 0.0,
+ "pre_fp_ratio_state": 0.0,
+ "first_detect_latency_s": null,
+ "state_events": [],
+ "note": "state detection requires 4 consecutive move_rate > thres1; threshold from BK defaults",
+ "ok": true,
+ "rec": "/data/ai_cpe/csi_sensing/data/samples/sample_2g_walk_152405.jsonl.gz"
+}
