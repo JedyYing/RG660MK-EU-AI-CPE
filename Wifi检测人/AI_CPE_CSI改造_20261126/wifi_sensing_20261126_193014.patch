@@ -512,7 +512,7 @@ index 0000000..c397df4
 +  "additionalProperties": false
 +}
 diff --git a/csi_sensing/csi_daemon.py b/csi_sensing/csi_daemon.py
-index fd34aac..b78d249 100644
+index fd34aac..2210de7 100644
 --- a/csi_sensing/csi_daemon.py
 +++ b/csi_sensing/csi_daemon.py
 @@ -24,6 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -534,7 +534,7 @@ index fd34aac..b78d249 100644
 +        self.algorithm = getattr(args, "algorithm", "bk")
 +        if self.algorithm == "bk":
 +            cfg = BKConfig.from_dict((baseline or {}).get("config"))
-+            if (baseline or {}).get("threshold") is not None:
++            if (baseline or {}).get("algorithm") == "bk" and (baseline or {}).get("threshold") is not None:
 +                cfg.thres1 = float(baseline["threshold"])
 +            self.det = BKDetector(config=cfg,
 +                                  baseline=(baseline or {}).get("vector"),
@@ -637,7 +637,7 @@ index fd34aac..b78d249 100644
      args = ap.parse_args()
  
 diff --git a/csi_sensing/run.sh b/csi_sensing/run.sh
-index 4c1f360..a636efc 100755
+index 4c1f360..0ed91ca 100755
 --- a/csi_sensing/run.sh
 +++ b/csi_sensing/run.sh
 @@ -12,6 +12,7 @@ LOG=$BASE/data/daemon.log
@@ -663,6 +663,13 @@ index 4c1f360..a636efc 100755
      curl -s "http://127.0.0.1:$PORT/api/health" || true
      echo
    else
+@@ -62,5 +63,5 @@ case "${1:-}" in
+   stop) stop ;;
+   status) status ;;
+   rollback) stop; echo "rolled back (csi off)" ;;
+-  *) echo "usage: $0 {start|stop|status|rollback} [iface] [frame_type] [port]"; exit 1 ;;
++  *) echo "usage: $0 {start|stop|status|rollback} [iface] [frame_type] [port] [algorithm bk|legacy]"; exit 1 ;;
+ esac
 diff --git a/csi_sensing/test_bk_state.py b/csi_sensing/test_bk_state.py
 new file mode 100644
 index 0000000..837cddb
