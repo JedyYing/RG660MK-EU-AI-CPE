@@ -1,0 +1,2130 @@
+diff --git a/demo/config/ai-service.json b/demo/config/ai-service.json
+new file mode 100644
+index 0000000..90091fc
+--- /dev/null
++++ b/demo/config/ai-service.json
+@@ -0,0 +1,74 @@
++{
++  "listen": "127.0.0.1",
++  "port": 8765,
++  "request_timeout_ms": 15000,
++  "max_request_bytes": 2097152,
++  "auth_token_file": "/data/ai_cpe/demo/data/api-token",
++  "enroll_token_file": "/data/ai_cpe/secrets/ops_token",
++  "media_roots": [
++    "/data/ai_cpe/demo/media"
++  ],
++  "runtime": {
++    "backend": "command",
++    "enabled": true,
++    "command": [
++      "/data/ai_cpe/demo/bin/vision_runner_wrapper"
++    ],
++    "max_output_bytes": 2097152
++  },
++  "models": {
++    "detect": {
++      "family": "yolo",
++      "path": "/data/ai_cpe/demo/ai_models/yolov8n/model.ncnn.param"
++    },
++    "face_detect": {
++      "family": "retinaface-mnet25",
++      "path": "/data/ai_cpe/demo/ai_runtime/face/mnet.25-opt.param"
++    },
++    "face_embed": {
++      "family": "mobilefacenet",
++      "path": "/data/ai_cpe/demo/ai_runtime/face/mobilefacenet.param"
++    },
++    "pose": {
++      "family": "yolo-pose-coco17",
++      "path": "/data/ai_cpe/demo/ai_models/yolov8n-pose/model.ncnn.param"
++    },
++    "asr": null,
++    "kws": null,
++    "tts": null
++  },
++  "face_recognition": {
++    "gallery_path": "/data/ai_cpe/demo/data/face-gallery.json",
++    "similarity_threshold": 0.52,
++    "max_identities": 100,
++    "max_templates_per_identity": 5
++  },
++  "posture": {
++    "keypoint_confidence": 0.35,
++    "sitting_hip_angle_deg": [
++      55,
++      135
++    ],
++    "sitting_knee_angle_deg": [
++      45,
++      135
++    ],
++    "standing_min_angle_deg": 145
++  },
++  "resource_limits": {
++    "max_parallel_inference": 1,
++    "max_http_clients": 4,
++    "max_input_file_bytes": 20971520,
++    "staging_dir": "/data/ai_cpe/demo/run/staging",
++    "max_camera_width": 1280,
++    "max_camera_height": 720,
++    "max_camera_fps": 15,
++    "memory_high_mb": 420,
++    "memory_max_mb": 520
++  },
++  "fallback": {
++    "keep_hermes_running": true,
++    "keep_cpe_network_untouched": true,
++    "cloud_vision_requires_explicit_enable": true
++  }
++}
+diff --git a/demo/services/ai_service.py b/demo/services/ai_service.py
+new file mode 100644
+index 0000000..4594322
+--- /dev/null
++++ b/demo/services/ai_service.py
+@@ -0,0 +1,855 @@
++#!/usr/bin/env python3
++"""Constrained loopback vision service for RG660MK-EU.
++
++The service intentionally contains no accelerator SDK dependency. A statically
++configured runner process owns HailoRT/model integration and exchanges one JSON
++object over stdin/stdout. This keeps Hermes and the HTTP process independent of
++USB drivers and vendor ABI changes.
++"""
++
++from __future__ import annotations
++
++import argparse
++import fcntl
++import hmac
++import json
++import math
++import os
++import selectors
++import signal
++import subprocess
++import tempfile
++import threading
++import time
++import uuid
++from collections import Counter
++from contextlib import contextmanager
++from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
++from typing import Any, Iterator
++
++
++class ServiceError(Exception):
++    def __init__(self, code: str, message: str, status: int = 400) -> None:
++        super().__init__(message)
++        self.code = code
++        self.message = message
++        self.status = status
++
++
++def load_config(path: str) -> dict[str, Any]:
++    with open(path, "r", encoding="utf-8") as stream:
++        value = json.load(stream)
++    if not isinstance(value, dict):
++        raise ValueError("configuration root must be a JSON object")
++    return value
++
++
++def require_dict(value: Any, name: str) -> dict[str, Any]:
++    if not isinstance(value, dict):
++        raise ServiceError("INVALID_ARGUMENT", f"{name} must be an object")
++    return value
++
++
++def normalize(vector: Any) -> list[float]:
++    if not isinstance(vector, list) or not vector:
++        raise ServiceError("RUNTIME_UNAVAILABLE", "runner returned an invalid face embedding", 503)
++    try:
++        values = [float(item) for item in vector]
++    except (TypeError, ValueError) as exc:
++        raise ServiceError("RUNTIME_UNAVAILABLE", "face embedding contains a non-number", 503) from exc
++    if not all(math.isfinite(item) for item in values):
++        raise ServiceError("RUNTIME_UNAVAILABLE", "face embedding contains a non-finite value", 503)
++    magnitude = math.sqrt(sum(item * item for item in values))
++    if magnitude <= 1e-12:
++        raise ServiceError("RUNTIME_UNAVAILABLE", "face embedding has zero magnitude", 503)
++    return [item / magnitude for item in values]
++
++
++def cosine(left: list[float], right: list[float]) -> float:
++    if len(left) != len(right):
++        return -1.0
++    return sum(a * b for a, b in zip(left, right))
++
++
++def validate_media_path(path_value: Any, media_roots: list[str], max_bytes: int) -> str:
++    if not isinstance(path_value, str) or not os.path.isabs(path_value):
++        raise ServiceError("INVALID_ARGUMENT", "input.path must be an absolute path")
++    try:
++        resolved = os.path.realpath(path_value)
++        allowed = any(os.path.commonpath((resolved, root)) == root for root in media_roots)
++    except ValueError as exc:
++        raise ServiceError("INVALID_ARGUMENT", "input.path is outside configured media roots") from exc
++    if not allowed:
++        raise ServiceError("INVALID_ARGUMENT", "input.path is outside configured media roots")
++    try:
++        stat = os.stat(resolved)
++    except OSError as exc:
++        raise ServiceError("INVALID_ARGUMENT", f"input file is unavailable: {exc}") from exc
++    if not os.path.isfile(resolved):
++        raise ServiceError("INVALID_ARGUMENT", "input.path must reference a regular file")
++    if stat.st_size <= 0 or stat.st_size > max_bytes:
++        raise ServiceError("RESOURCE_LIMIT", f"input file must be between 1 and {max_bytes} bytes", 413)
++    return resolved
++
++
++def stage_media_path(source: str, staging_dir: str, max_bytes: int) -> str:
++    """Copy a validated input into a private immutable path before invoking the runner."""
++    os.makedirs(staging_dir, mode=0o700, exist_ok=True)
++    os.chmod(staging_dir, 0o700)
++    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
++    try:
++        source_fd = os.open(source, flags)
++    except OSError as exc:
++        raise ServiceError("INVALID_ARGUMENT", f"cannot securely open input file: {exc}") from exc
++    target_fd = -1
++    target_path = ""
++    try:
++        source_stat = os.fstat(source_fd)
++        if (source_stat.st_mode & 0o170000) != 0o100000 or not 0 < source_stat.st_size <= max_bytes:
++            raise ServiceError("RESOURCE_LIMIT", "input changed after validation", 413)
++        suffix = os.path.splitext(source)[1][:16]
++        target_fd, target_path = tempfile.mkstemp(prefix="inference-", suffix=suffix, dir=staging_dir)
++        os.fchmod(target_fd, 0o400)
++        copied = 0
++        while True:
++            chunk = os.read(source_fd, min(65536, max_bytes - copied + 1))
++            if not chunk:
++                break
++            copied += len(chunk)
++            if copied > max_bytes:
++                raise ServiceError("RESOURCE_LIMIT", "input exceeded size limit while staging", 413)
++            view = memoryview(chunk)
++            while view:
++                written = os.write(target_fd, view)
++                view = view[written:]
++        os.fsync(target_fd)
++        os.close(target_fd)
++        target_fd = -1
++        return target_path
++    except BaseException:
++        if target_fd >= 0:
++            os.close(target_fd)
++        if target_path:
++            try:
++                os.unlink(target_path)
++            except OSError:
++                pass
++        raise
++    finally:
++        os.close(source_fd)
++
++
++class Gallery:
++    """Thread-safe, atomic embedding store. Raw face images are never persisted."""
++
++    def __init__(self, config: dict[str, Any]) -> None:
++        self.path = str(config.get("gallery_path", ""))
++        self.threshold = float(config.get("similarity_threshold", 0.52))
++        self.max_identities = int(config.get("max_identities", 100))
++        self.max_templates = int(config.get("max_templates_per_identity", 5))
++        self._lock = threading.RLock()
++        if not self.path or not os.path.isabs(self.path):
++            raise ValueError("face_recognition.gallery_path must be absolute")
++        if not 0.0 < self.threshold < 1.0:
++            raise ValueError("face_recognition.similarity_threshold must be between 0 and 1")
++        self.lock_path = self.path + ".lock"
++
++    @contextmanager
++    def _file_lock(self, exclusive: bool) -> Iterator[None]:
++        parent = os.path.dirname(self.path)
++        os.makedirs(parent, mode=0o700, exist_ok=True)
++        descriptor = os.open(self.lock_path, os.O_CREAT | os.O_RDWR, 0o600)
++        try:
++            os.chmod(self.lock_path, 0o600)
++            fcntl.flock(descriptor, fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH)
++            yield
++        finally:
++            fcntl.flock(descriptor, fcntl.LOCK_UN)
++            os.close(descriptor)
++
++    def _read_unlocked(self) -> dict[str, Any]:
++        if not os.path.exists(self.path):
++            return {"version": 1, "dimensions": None, "identities": {}}
++        with open(self.path, "r", encoding="utf-8") as stream:
++            value = json.load(stream)
++        if not isinstance(value, dict) or value.get("version") != 1:
++            raise ServiceError("RUNTIME_UNAVAILABLE", "face gallery has an unsupported format", 503)
++        identities = value.get("identities")
++        if not isinstance(identities, dict):
++            raise ServiceError("RUNTIME_UNAVAILABLE", "face gallery identities are invalid", 503)
++        return value
++
++    def count(self) -> int:
++        with self._lock, self._file_lock(False):
++            return len(self._read_unlocked()["identities"])
++
++    def names(self) -> list[str]:
++        with self._lock, self._file_lock(False):
++            return sorted(self._read_unlocked()["identities"])
++
++    def match(self, embedding: Any) -> tuple[str | None, float]:
++        query = normalize(embedding)
++        with self._lock, self._file_lock(False):
++            data = self._read_unlocked()
++        dimensions = data.get("dimensions")
++        if dimensions is not None and dimensions != len(query):
++            raise ServiceError("RUNTIME_UNAVAILABLE", "face embedding dimension does not match gallery", 503)
++        best_name: str | None = None
++        best_score = -1.0
++        for name, templates in data["identities"].items():
++            if not isinstance(templates, list):
++                continue
++            for template in templates:
++                try:
++                    score = cosine(query, normalize(template))
++                except ServiceError:
++                    continue
++                if score > best_score:
++                    best_name, best_score = str(name), score
++        if best_score < self.threshold:
++            return None, max(-1.0, best_score)
++        return best_name, best_score
++
++    def add(self, subject_id: str, embedding: Any) -> int:
++        if not subject_id or len(subject_id) > 64 or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for ch in subject_id):
++            raise ServiceError("INVALID_ARGUMENT", "subject_id must match [A-Za-z0-9_-]{1,64}")
++        vector = normalize(embedding)
++        with self._lock, self._file_lock(True):
++            data = self._read_unlocked()
++            identities = data["identities"]
++            if subject_id not in identities and len(identities) >= self.max_identities:
++                raise ServiceError("RESOURCE_LIMIT", "face gallery identity limit reached")
++            dimensions = data.get("dimensions")
++            if dimensions is not None and dimensions != len(vector):
++                raise ServiceError("INVALID_ARGUMENT", "embedding dimension does not match gallery")
++            data["dimensions"] = len(vector)
++            templates = identities.setdefault(subject_id, [])
++            if not isinstance(templates, list):
++                raise ServiceError("RUNTIME_UNAVAILABLE", "face gallery subject is invalid", 503)
++            templates.append(vector)
++            del templates[:-self.max_templates]
++            self._write_unlocked(data)
++            return len(templates)
++
++    def remove(self, subject_id: str) -> bool:
++        with self._lock, self._file_lock(True):
++            data = self._read_unlocked()
++            existed = data["identities"].pop(subject_id, None) is not None
++            if existed:
++                if not data["identities"]:
++                    data["dimensions"] = None
++                self._write_unlocked(data)
++            return existed
++
++    def _write_unlocked(self, data: dict[str, Any]) -> None:
++        parent = os.path.dirname(self.path)
++        os.makedirs(parent, mode=0o700, exist_ok=True)
++        fd, temporary = tempfile.mkstemp(prefix=".gallery-", suffix=".json", dir=parent)
++        try:
++            os.fchmod(fd, 0o600)
++            with os.fdopen(fd, "w", encoding="utf-8") as stream:
++                json.dump(data, stream, ensure_ascii=False, separators=(",", ":"))
++                stream.flush()
++                os.fsync(stream.fileno())
++            os.replace(temporary, self.path)
++            os.chmod(self.path, 0o600)
++        except BaseException:
++            try:
++                os.unlink(temporary)
++            except OSError:
++                pass
++            raise
++
++
++class CommandRunner:
++    REQUIRED_MODELS = {
++        "detect": ("detect",),
++        "face": ("face_detect", "face_embed"),
++        "pose": ("pose",),
++    }
++
++    def __init__(self, config: dict[str, Any], models: dict[str, Any]) -> None:
++        self.config = config
++        self.models = models
++        command = config.get("command", [])
++        if not isinstance(command, list) or not all(isinstance(item, str) and item for item in command):
++            raise ValueError("runtime.command must be a non-empty string array")
++        self.command = command
++        self.max_output_bytes = int(config.get("max_output_bytes", 2 * 1024 * 1024))
++
++    @property
++    def enabled(self) -> bool:
++        return self.config.get("enabled") is True
++
++    def model_paths(self, operation: str) -> dict[str, str]:
++        selected: dict[str, str] = {}
++        for name in self.REQUIRED_MODELS[operation]:
++            entry = self.models.get(name)
++            path = entry.get("path") if isinstance(entry, dict) else None
++            if not isinstance(path, str) or not path:
++                raise ServiceError("MODEL_UNAVAILABLE", f"model {name} is not configured", 503)
++            if not os.path.isfile(path):
++                raise ServiceError("MODEL_UNAVAILABLE", f"model {name} is unavailable", 503)
++            selected[name] = path
++        return selected
++
++    def health(self) -> dict[str, Any]:
++        executable = self.command[0] if self.command else ""
++        executable_ok = bool(executable) and os.path.isfile(executable) and os.access(executable, os.X_OK)
++        model_state: dict[str, bool] = {}
++        for name, entry in self.models.items():
++            path = entry.get("path") if isinstance(entry, dict) else None
++            model_state[name] = isinstance(path, str) and os.path.isfile(path) and os.access(path, os.R_OK)
++        required = {name for names in self.REQUIRED_MODELS.values() for name in names}
++        models_ready = all(model_state.get(name, False) for name in required)
++        return {
++            "backend": self.config.get("backend", "command"),
++            "enabled": self.enabled,
++            "runner_available": executable_ok,
++            "models": model_state,
++            "ready": self.enabled and executable_ok and models_ready,
++            "reason": self.config.get("reason") if not self.enabled else None,
++        }
++
++    @staticmethod
++    def _terminate_group(process: subprocess.Popen[bytes]) -> None:
++        try:
++            os.killpg(process.pid, signal.SIGTERM)
++        except ProcessLookupError:
++            pass
++        time.sleep(0.2)
++        try:
++            os.killpg(process.pid, signal.SIGKILL)
++        except ProcessLookupError:
++            pass
++        try:
++            process.wait(timeout=1)
++        except subprocess.TimeoutExpired:
++            pass
++
++    def _execute(self, request: dict[str, Any], timeout_s: float) -> tuple[int, str, str]:
++        deadline = time.monotonic() + timeout_s
++        try:
++            process = subprocess.Popen(
++                self.command,
++                stdin=subprocess.PIPE,
++                stdout=subprocess.PIPE,
++                stderr=subprocess.PIPE,
++                start_new_session=True,
++            )
++        except OSError as exc:
++            raise ServiceError("RUNTIME_UNAVAILABLE", f"cannot execute vision runner: {exc}", 503) from exc
++        assert process.stdin is not None and process.stdout is not None and process.stderr is not None
++        input_buffer = memoryview(json.dumps(request, separators=(",", ":")).encode("utf-8"))
++        selector = selectors.DefaultSelector()
++        for stream in (process.stdin, process.stdout, process.stderr):
++            os.set_blocking(stream.fileno(), False)
++        selector.register(process.stdin, selectors.EVENT_WRITE, "stdin")
++        selector.register(process.stdout, selectors.EVENT_READ, "stdout")
++        selector.register(process.stderr, selectors.EVENT_READ, "stderr")
++        buffers = {"stdout": bytearray(), "stderr": bytearray()}
++        try:
++            while selector.get_map():
++                remaining = deadline - time.monotonic()
++                if remaining <= 0:
++                    self._terminate_group(process)
++                    raise ServiceError("TIMEOUT", "vision runner exceeded request timeout", 504)
++                for key, _mask in selector.select(min(remaining, 0.1)):
++                    if key.data == "stdin":
++                        try:
++                            written = os.write(key.fileobj.fileno(), input_buffer)
++                        except (BrokenPipeError, OSError) as exc:
++                            self._terminate_group(process)
++                            raise ServiceError("RUNTIME_UNAVAILABLE", "vision runner closed its input unexpectedly", 503) from exc
++                        input_buffer = input_buffer[written:]
++                        if not input_buffer:
++                            selector.unregister(key.fileobj)
++                            key.fileobj.close()
++                        continue
++                    try:
++                        chunk = os.read(key.fileobj.fileno(), 65536)
++                    except BlockingIOError:
++                        continue
++                    if not chunk:
++                        selector.unregister(key.fileobj)
++                        key.fileobj.close()
++                        continue
++                    buffers[key.data].extend(chunk)
++                    if len(buffers["stdout"]) + len(buffers["stderr"]) > self.max_output_bytes:
++                        self._terminate_group(process)
++                        raise ServiceError("RESOURCE_LIMIT", "vision runner output exceeded the configured limit", 503)
++            return_code = process.wait(timeout=max(0.1, deadline - time.monotonic()))
++        except subprocess.TimeoutExpired as exc:
++            self._terminate_group(process)
++            raise ServiceError("TIMEOUT", "vision runner did not exit after closing output", 504) from exc
++        finally:
++            selector.close()
++            for stream in (process.stdin, process.stdout, process.stderr):
++                if not stream.closed:
++                    stream.close()
++        return (
++            return_code,
++            buffers["stdout"].decode("utf-8", errors="replace"),
++            buffers["stderr"].decode("utf-8", errors="replace"),
++        )
++
++    def infer(self, operation: str, input_path: str, timeout_s: float, options: dict[str, Any]) -> dict[str, Any]:
++        if operation not in self.REQUIRED_MODELS:
++            raise ServiceError("INVALID_ARGUMENT", f"unsupported runner operation: {operation}")
++        if not self.enabled:
++            raise ServiceError("RUNTIME_UNAVAILABLE", str(self.config.get("reason", "runtime is disabled")), 503)
++        health = self.health()
++        if not health["runner_available"]:
++            raise ServiceError("RUNTIME_UNAVAILABLE", "configured vision runner is not executable", 503)
++        request = {
++            "version": 1,
++            "operation": operation,
++            "input": {"path": input_path},
++            "models": self.model_paths(operation),
++            "options": options,
++        }
++        return_code, stdout, _stderr = self._execute(request, timeout_s)
++        if return_code != 0:
++            raise ServiceError("RUNTIME_UNAVAILABLE", f"vision runner exited with code {return_code}", 503)
++        try:
++            response = json.loads(stdout)
++        except json.JSONDecodeError as exc:
++            raise ServiceError("RUNTIME_UNAVAILABLE", "vision runner returned invalid JSON", 503) from exc
++        if not isinstance(response, dict) or not isinstance(response.get("ok"), bool):
++            raise ServiceError("RUNTIME_UNAVAILABLE", "vision runner response must contain boolean ok", 503)
++        if not response["ok"]:
++            error = response.get("error", {})
++            code = str(error.get("code", "RUNTIME_UNAVAILABLE")) if isinstance(error, dict) else "RUNTIME_UNAVAILABLE"
++            message = str(error.get("message", "vision runner failed")) if isinstance(error, dict) else "vision runner failed"
++            raise ServiceError(code, message, 503)
++        result = response.get("result")
++        if not isinstance(result, dict):
++            raise ServiceError("RUNTIME_UNAVAILABLE", "vision runner result must be an object", 503)
++        return result
++
++
++class PostureClassifier:
++    # COCO17: shoulder, hip, knee, ankle pairs.
++    SIDES = ((5, 11, 13, 15), (6, 12, 14, 16))
++
++    def __init__(self, config: dict[str, Any]) -> None:
++        self.keypoint_confidence = float(config.get("keypoint_confidence", 0.35))
++        self.sitting_hip = tuple(float(v) for v in config.get("sitting_hip_angle_deg", [55, 135]))
++        self.sitting_knee = tuple(float(v) for v in config.get("sitting_knee_angle_deg", [45, 135]))
++        self.standing_min = float(config.get("standing_min_angle_deg", 145))
++
++    @staticmethod
++    def _point(keypoints: list[Any], index: int, minimum: float) -> tuple[float, float] | None:
++        if index >= len(keypoints):
++            return None
++        value = keypoints[index]
++        if isinstance(value, dict):
++            raw = (value.get("x"), value.get("y"), value.get("score", value.get("confidence", 0)))
++        elif isinstance(value, list) and len(value) >= 3:
++            raw = (value[0], value[1], value[2])
++        else:
++            return None
++        try:
++            x, y, confidence = float(raw[0]), float(raw[1]), float(raw[2])
++        except (TypeError, ValueError):
++            return None
++        return (x, y) if confidence >= minimum and math.isfinite(x) and math.isfinite(y) else None
++
++    @staticmethod
++    def _angle(first: tuple[float, float], vertex: tuple[float, float], last: tuple[float, float]) -> float | None:
++        left = (first[0] - vertex[0], first[1] - vertex[1])
++        right = (last[0] - vertex[0], last[1] - vertex[1])
++        denominator = math.hypot(*left) * math.hypot(*right)
++        if denominator <= 1e-9:
++            return None
++        value = max(-1.0, min(1.0, (left[0] * right[0] + left[1] * right[1]) / denominator))
++        return math.degrees(math.acos(value))
++
++    def classify(self, keypoints_value: Any) -> dict[str, Any]:
++        if not isinstance(keypoints_value, list):
++            return {"label": "unknown", "reason": "missing_keypoints"}
++        side_angles: list[tuple[float, float]] = []
++        for shoulder_i, hip_i, knee_i, ankle_i in self.SIDES:
++            points = [self._point(keypoints_value, index, self.keypoint_confidence) for index in (shoulder_i, hip_i, knee_i, ankle_i)]
++            if all(points):
++                shoulder, hip, knee, ankle = points
++                hip_angle = self._angle(shoulder, hip, knee)  # type: ignore[arg-type]
++                knee_angle = self._angle(hip, knee, ankle)  # type: ignore[arg-type]
++                if hip_angle is not None and knee_angle is not None:
++                    side_angles.append((hip_angle, knee_angle))
++        if not side_angles:
++            return {"label": "unknown", "reason": "insufficient_visible_joints"}
++        side_labels: list[str] = []
++        for hip_angle, knee_angle in side_angles:
++            if self.sitting_hip[0] <= hip_angle <= self.sitting_hip[1] and self.sitting_knee[0] <= knee_angle <= self.sitting_knee[1]:
++                side_labels.append("sitting")
++            elif hip_angle >= self.standing_min and knee_angle >= self.standing_min:
++                side_labels.append("standing")
++            else:
++                side_labels.append("unknown")
++        hip_angle = sum(pair[0] for pair in side_angles) / len(side_angles)
++        knee_angle = sum(pair[1] for pair in side_angles) / len(side_angles)
++        details = {
++            "hip_angle_deg": round(hip_angle, 1),
++            "knee_angle_deg": round(knee_angle, 1),
++            "visible_sides": len(side_angles),
++            "side_labels": side_labels,
++        }
++        known = {label for label in side_labels if label != "unknown"}
++        if len(known) > 1:
++            return {"label": "unknown", "reason": "left_right_disagreement", **details}
++        if "sitting" in known:
++            return {"label": "sitting", "confidence": "rule_match", **details}
++        if "standing" in known and all(label == "standing" for label in side_labels):
++            return {"label": "standing", "confidence": "rule_match", **details}
++        return {"label": "unknown", "reason": "angles_outside_calibrated_ranges", **details}
++
++
++class VisionApplication:
++    def __init__(self, config: dict[str, Any]) -> None:
++        self.config = config
++        self.started = time.monotonic()
++        self.media_roots = [os.path.realpath(str(item)) for item in config.get("media_roots", [])]
++        if not self.media_roots or not all(os.path.isabs(item) for item in self.media_roots):
++            raise ValueError("media_roots must contain absolute paths")
++        runtime = require_dict(config.get("runtime"), "runtime")
++        models = require_dict(config.get("models"), "models")
++        self.runner = CommandRunner(runtime, models)
++        self.gallery = Gallery(require_dict(config.get("face_recognition"), "face_recognition"))
++        self.posture = PostureClassifier(require_dict(config.get("posture"), "posture"))
++        limits = require_dict(config.get("resource_limits"), "resource_limits")
++        self.semaphore = threading.BoundedSemaphore(int(limits.get("max_parallel_inference", 1)))
++        self.max_input_bytes = int(limits.get("max_input_file_bytes", 20 * 1024 * 1024))
++        self.staging_dir = os.path.realpath(str(limits.get("staging_dir", os.path.join(os.path.dirname(self.gallery.path), "staging"))))
++        self.request_timeout_ms = int(config.get("request_timeout_ms", 15000))
++        token_path = config.get("auth_token_file")
++        self.auth_token: str | None = None
++        if token_path:
++            if not isinstance(token_path, str) or not os.path.isabs(token_path):
++                raise ValueError("auth_token_file must be an absolute path")
++            with open(token_path, "r", encoding="utf-8") as stream:
++                self.auth_token = stream.read().strip()
++            if len(self.auth_token) < 32:
++                raise ValueError("AI Service authentication token must contain at least 32 characters")
++        # 人脸录入使用独立的高权限令牌，不能复用普通推理服务令牌。
++        enroll_token_path = config.get("enroll_token_file")
++        self.enroll_token: str | None = None
++        if enroll_token_path:
++            if not isinstance(enroll_token_path, str) or not os.path.isabs(enroll_token_path):
++                raise ValueError("enroll_token_file must be an absolute path")
++            with open(enroll_token_path, "r", encoding="utf-8") as stream:
++                self.enroll_token = stream.read().strip()
++            if len(self.enroll_token) < 32:
++                raise ValueError("face enrollment token must contain at least 32 characters")
++        self.metrics = Counter()
++        self.metrics_lock = threading.Lock()
++
++    def health(self) -> dict[str, Any]:
++        runtime = self.runner.health()
++        return {
++            "service": "rg660mk-vision-ai",
++            "status": "ready" if runtime["ready"] else "degraded",
++            "runtime": runtime,
++            "gallery": {"identities": self.gallery.count(), "raw_images_stored": False},
++            "capabilities": {"object_detection": True, "face_recognition": True,
++                             "face_enrollment": True, "posture_detection": True},
++        }
++
++    def metric_snapshot(self) -> dict[str, Any]:
++        with self.metrics_lock:
++            counters = dict(self.metrics)
++        return {"uptime_s": round(time.monotonic() - self.started, 3), "requests": counters}
++
++    def infer(self, operation: str, payload: dict[str, Any]) -> dict[str, Any]:
++        request_id = str(payload.get("request_id") or uuid.uuid4())
++        input_value = require_dict(payload.get("input"), "input")
++        path = validate_media_path(input_value.get("path"), self.media_roots, self.max_input_bytes)
++        options = require_dict(payload.get("options", {}), "options")
++        try:
++            requested_timeout = int(payload.get("timeout_ms", self.request_timeout_ms))
++        except (TypeError, ValueError) as exc:
++            raise ServiceError("INVALID_ARGUMENT", "timeout_ms must be an integer") from exc
++        timeout_ms = min(max(100, requested_timeout), self.request_timeout_ms)
++        if not self.semaphore.acquire(blocking=False):
++            raise ServiceError("RESOURCE_LIMIT", "another inference is already running", 429)
++        started = time.monotonic()
++        staged_path: str | None = None
++        try:
++            staged_path = stage_media_path(path, self.staging_dir, self.max_input_bytes)
++            result = self.runner.infer(operation, staged_path, timeout_ms / 1000.0, options)
++            if operation == "face":
++                result = self._identify_faces(result)
++            elif operation == "pose":
++                result = self._classify_postures(result)
++            latency_ms = round((time.monotonic() - started) * 1000, 3)
++            with self.metrics_lock:
++                self.metrics[f"{operation}_ok"] += 1
++            return {"ok": True, "request_id": request_id, "result": result, "latency_ms": latency_ms}
++        except ServiceError:
++            with self.metrics_lock:
++                self.metrics[f"{operation}_error"] += 1
++            raise
++        finally:
++            if staged_path:
++                try:
++                    os.unlink(staged_path)
++                except OSError:
++                    pass
++            self.semaphore.release()
++
++    def enroll_face(self, payload: dict[str, Any]) -> dict[str, Any]:
++        """录入身份模板（本地 8765，需服务令牌；只接受媒体根目录内的图片）。
++
++        2026-11-02：原服务只做识别不提供录入，导致看板第 2 项"身份识别"永远无法验收。
++        这里补一个最小录入面：用与识别相同的 face 模型取 embedding，写入本地人脸库。
++        """
++        request_id = str(payload.get("request_id") or uuid.uuid4())
++        subject = payload.get("subject_id")
++        if not isinstance(subject, str) or not subject:
++            raise ServiceError("INVALID_ARGUMENT", "subject_id is required")
++        input_value = require_dict(payload.get("input"), "input")
++        path = validate_media_path(input_value.get("path"), self.media_roots, self.max_input_bytes)
++        try:
++            requested_timeout = int(payload.get("timeout_ms", self.request_timeout_ms))
++        except (TypeError, ValueError) as exc:
++            raise ServiceError("INVALID_ARGUMENT", "timeout_ms must be an integer") from exc
++        timeout_ms = min(max(100, requested_timeout), self.request_timeout_ms)
++        if not self.semaphore.acquire(blocking=False):
++            raise ServiceError("RESOURCE_LIMIT", "another inference is already running", 429)
++        started = time.monotonic()
++        staged_path: str | None = None
++        try:
++            staged_path = stage_media_path(path, self.staging_dir, self.max_input_bytes)
++            result = self.runner.infer("face", staged_path, timeout_ms / 1000.0, {})
++            faces = result.get("faces") if isinstance(result, dict) else None
++            if not isinstance(faces, list) or not faces:
++                raise ServiceError("INVALID_ARGUMENT", "no face detected in enrollment image")
++
++            def face_area(face: Any) -> float:
++                box = face.get("box") or face.get("bbox") or face.get("rect") or []
++                if isinstance(box, list) and len(box) >= 4:
++                    try:
++                        return abs(float(box[2]) - float(box[0])) * abs(float(box[3]) - float(box[1])) \
++                            if len(box) == 4 else 0.0
++                    except (TypeError, ValueError):
++                        return 0.0
++                return 0.0
++
++            face = max(faces, key=face_area)
++            count = self.gallery.add(subject, face.get("embedding"))
++            latency_ms = round((time.monotonic() - started) * 1000, 3)
++            with self.metrics_lock:
++                self.metrics["face_enroll_ok"] += 1
++            return {"ok": True, "request_id": request_id,
++                    "result": {"subject_id": subject, "templates": count,
++                               "faces_in_frame": len(faces),
++                               "identities": self.gallery.count()},
++                    "latency_ms": latency_ms}
++        except ServiceError:
++            with self.metrics_lock:
++                self.metrics["face_enroll_error"] += 1
++            raise
++        finally:
++            if staged_path:
++                try:
++                    os.unlink(staged_path)
++                except OSError:
++                    pass
++            self.semaphore.release()
++
++    def _identify_faces(self, result: dict[str, Any]) -> dict[str, Any]:
++        faces = result.get("faces")
++        if not isinstance(faces, list):
++            raise ServiceError("RUNTIME_UNAVAILABLE", "face runner result must contain faces array", 503)
++        identified: list[dict[str, Any]] = []
++        for face in faces:
++            if not isinstance(face, dict):
++                raise ServiceError("RUNTIME_UNAVAILABLE", "face runner item must be an object", 503)
++            item = face
++            name, similarity = self.gallery.match(item.get("embedding"))
++            public = {key: value for key, value in item.items() if key != "embedding"}
++            public["subject_id"] = name or "unknown"
++            public["similarity"] = round(similarity, 6)
++            public["matched"] = name is not None
++            identified.append(public)
++        return {"faces": identified, "count": len(identified)}
++
++    def _classify_postures(self, result: dict[str, Any]) -> dict[str, Any]:
++        persons = result.get("persons")
++        if not isinstance(persons, list):
++            raise ServiceError("RUNTIME_UNAVAILABLE", "pose runner result must contain persons array", 503)
++        output: list[dict[str, Any]] = []
++        for person in persons:
++            if not isinstance(person, dict):
++                raise ServiceError("RUNTIME_UNAVAILABLE", "pose runner item must be an object", 503)
++            item = person
++            public = dict(item)
++            public["posture"] = self.posture.classify(item.get("keypoints"))
++            output.append(public)
++        return {"persons": output, "count": len(output)}
++
++
++class BoundedThreadingHTTPServer(ThreadingHTTPServer):
++    daemon_threads = True
++
++    def __init__(self, address: tuple[str, int], handler: type[BaseHTTPRequestHandler], max_clients: int) -> None:
++        self.client_slots = threading.BoundedSemaphore(max_clients)
++        super().__init__(address, handler)
++
++    def process_request(self, request: Any, client_address: Any) -> None:
++        if not self.client_slots.acquire(blocking=False):
++            self.shutdown_request(request)
++            return
++        super().process_request(request, client_address)
++
++    def process_request_thread(self, request: Any, client_address: Any) -> None:
++        try:
++            super().process_request_thread(request, client_address)
++        finally:
++            self.client_slots.release()
++
++
++class ApiHandler(BaseHTTPRequestHandler):
++    server_version = "RG660MKVision/1.0"
++
++    @property
++    def application(self) -> VisionApplication:
++        return self.server.application  # type: ignore[attr-defined,no-any-return]
++
++    def setup(self) -> None:
++        super().setup()
++        self.connection.settimeout(max(1.0, self.application.request_timeout_ms / 1000.0))
++
++    def _authorized(self, enroll: bool = False) -> bool:
++        expected = self.application.enroll_token if enroll else self.application.auth_token
++        header = "X-AI-Enroll-Token" if enroll else "X-AI-Service-Token"
++        if expected is None:
++            self._send(401, {"ok": False, "error": {"code": "UNAUTHORIZED", "message": "authentication is not configured"}})
++            return False
++        supplied = self.headers.get(header, "")
++        # 看板/运维调用可用独立的 ops token；普通服务 token 仍只用于普通推理。
++        allowed = [expected]
++        if not enroll and self.application.enroll_token:
++            allowed.append(self.application.enroll_token)
++        if supplied and any(hmac.compare_digest(supplied, item) for item in allowed):
++            return True
++        self._send(401, {"ok": False, "error": {"code": "UNAUTHORIZED", "message": "valid local service token required"}})
++        return False
++
++    def log_message(self, fmt: str, *args: Any) -> None:
++        print(f"{self.address_string()} [{self.log_date_time_string()}] {fmt % args}", flush=True)
++
++    def _send(self, status: int, value: dict[str, Any]) -> None:
++        body = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
++        self.send_response(status)
++        self.send_header("Content-Type", "application/json; charset=utf-8")
++        self.send_header("Content-Length", str(len(body)))
++        self.send_header("Cache-Control", "no-store")
++        self.end_headers()
++        self.wfile.write(body)
++
++    def _payload(self) -> dict[str, Any]:
++        maximum = int(self.application.config.get("max_request_bytes", 2 * 1024 * 1024))
++        try:
++            length = int(self.headers.get("Content-Length", "0"))
++        except ValueError as exc:
++            raise ServiceError("INVALID_ARGUMENT", "invalid Content-Length") from exc
++        if length <= 0 or length > maximum:
++            raise ServiceError("RESOURCE_LIMIT", f"request body must be between 1 and {maximum} bytes", 413)
++        raw = self.rfile.read(length)
++        try:
++            value = json.loads(raw.decode("utf-8"))
++        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
++            raise ServiceError("INVALID_ARGUMENT", "request body must be valid UTF-8 JSON") from exc
++        return require_dict(value, "request")
++
++    def do_GET(self) -> None:  # noqa: N802
++        if not self._authorized():
++            return
++        try:
++            if self.path == "/health":
++                self._send(200, {"ok": True, "result": self.application.health()})
++            elif self.path == "/metrics":
++                self._send(200, {"ok": True, "result": self.application.metric_snapshot()})
++            else:
++                self._send(404, {"ok": False, "error": {"code": "NOT_FOUND", "message": "endpoint not found"}})
++        except ServiceError as exc:
++            self._send(exc.status, {"ok": False, "error": {"code": exc.code, "message": exc.message}})
++        except Exception:
++            self._send(500, {"ok": False, "error": {"code": "INTERNAL_ERROR", "message": "internal service error"}})
++
++    def do_POST(self) -> None:  # noqa: N802
++        path = self.path.split("?", 1)[0]
++        if path == "/vision/enroll":
++            if not self._authorized(enroll=True):
++                return
++        elif not self._authorized():
++            return
++        # Do not let an anonymous caller use the ordinary service token for biometric enrollment.
++        routes = {"/vision/detect": "detect", "/vision/face": "face", "/vision/posture": "pose"}
++        unsupported = {"/audio/asr", "/audio/kws", "/tts"}
++        if self.path in unsupported:
++            self._send(503, {"ok": False, "error": {"code": "MODEL_UNAVAILABLE", "message": "audio capability is not installed"}})
++            return
++        if path == "/vision/enroll":
++            request_id: str | None = None
++            try:
++                payload = self._payload()
++                request_id = str(payload.get("request_id") or uuid.uuid4())
++                payload["request_id"] = request_id
++                self._send(200, self.application.enroll_face(payload))
++            except ServiceError as exc:
++                self._send(exc.status, {"ok": False, "request_id": request_id,
++                                        "error": {"code": exc.code, "message": exc.message}})
++            except Exception:
++                self._send(500, {"ok": False, "request_id": request_id,
++                                 "error": {"code": "INTERNAL_ERROR", "message": "internal service error"}})
++            return
++        operation = routes.get(self.path)
++        if operation is None:
++            self._send(404, {"ok": False, "error": {"code": "NOT_FOUND", "message": "endpoint not found"}})
++            return
++        request_id: str | None = None
++        try:
++            payload = self._payload()
++            request_id = str(payload.get("request_id") or uuid.uuid4())
++            payload["request_id"] = request_id
++            self._send(200, self.application.infer(operation, payload))
++        except ServiceError as exc:
++            self._send(exc.status, {"ok": False, "request_id": request_id, "error": {"code": exc.code, "message": exc.message}})
++        except Exception:
++            self._send(500, {"ok": False, "request_id": request_id, "error": {"code": "INTERNAL_ERROR", "message": "internal service error"}})
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description="RG660MK-EU constrained local vision service")
++    parser.add_argument("--config", default=os.environ.get("AI_SERVICE_CONFIG", "/data/ai_cpe/demo/config/ai-service.json"))
++    args = parser.parse_args()
++    config = load_config(args.config)
++    listen = str(config.get("listen", "127.0.0.1"))
++    if listen != "127.0.0.1":
++        raise SystemExit("refusing non-IPv4-loopback listen address")
++    application = VisionApplication(config)
++    limits = require_dict(config.get("resource_limits"), "resource_limits")
++    server = BoundedThreadingHTTPServer(
++        (listen, int(config.get("port", 8765))),
++        ApiHandler,
++        max_clients=int(limits.get("max_http_clients", 4)),
++    )
++    server.application = application  # type: ignore[attr-defined]
++
++    def stop(_signum: int, _frame: Any) -> None:
++        threading.Thread(target=server.shutdown, daemon=True).start()
++
++    signal.signal(signal.SIGTERM, stop)
++    signal.signal(signal.SIGINT, stop)
++    print(f"rg660mk-vision-ai listening on {listen}:{config.get('port', 8765)}", flush=True)
++    try:
++        server.serve_forever(poll_interval=0.5)
++    finally:
++        server.server_close()
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git "a/docs/security/\345\256\211\345\205\250\346\225\264\346\224\271\345\244\215\346\265\213_20261126.md" "b/docs/security/\345\256\211\345\205\250\346\225\264\346\224\271\345\244\215\346\265\213_20261126.md"
+new file mode 100644
+index 0000000..9382ef0
+--- /dev/null
++++ "b/docs/security/\345\256\211\345\205\250\346\225\264\346\224\271\345\244\215\346\265\213_20261126.md"
+@@ -0,0 +1,97 @@
++# RG660MK-EU-AI-CPE 安全整改复测记录
++
++- 日期：2026-11-26
++- 执行：hermes
++- 依据：《RG660MK-EU-AI-CPE安全复测报告20261124_v2.docx》
++- 范围：设备端服务与运维脚本；以当前运行态 + 源码复核为准
++
++## 结论
++
++复测报告的 8 项已按当前代码、运行态和用户确认完成闭环。第 8 项（报告 2.7）的代码整改由本轮完成，root 登录口令由用户于 2026-11-24/25 期间修改；设备当前已关闭 SSH 密码登录，本轮未重复修改用户口令。
++
++| 报告项 | 复测结论 | 当前证据 |
++|---|---|---|
++| 2.1 camav 音视频未授权访问 | **已闭环，并补掉回环豁免** | `8092` 回环无 token = 401，正确 token = 200；`camav` 默认只绑回环；`_authorized()` 不再对回环放行 |
++| 2.2 camview 预览未授权访问 | **已闭环** | `8090/snapshot` 无 token = 401，带运维 token = 200；不再 `INADDR_ANY` |
++| 2.3 MQTT Broker 未授权 | **已闭环** | 匿名 CONNECT 返回 CONNACK `0x05`；带凭据客户端连接成功；默认绑定 `127.0.0.1`；ACL 为空即拒绝 |
++| 2.4 看板管理接口未授权 | **已闭环** | `DEMO_TOKEN` 缺失时服务拒绝启动；匿名 `/`、`/state` = 401；带 demo token = 200 |
++| 2.5 人脸录入未授权 / 代填内部 token | **已闭环** | `/face/enroll` 仅接受 ops token；看板不再读取/代填 `api-token`；视觉服务使用独立 `X-AI-Enroll-Token`，普通服务 token 不能录入 |
++| 2.6 attr_live 预览未授权 | **已闭环（原报告结论）** | 该服务当前未运行；源码已 fail-closed（默认回环、令牌缺失拒绝启动） |
++| 2.7 运维脚本硬编码 root SSH 凭据 | **已闭环** | 全仓旧口令字符串命中 0；脚本改为环境变量/私钥 + RejectPolicy；用户已修改模组登录口令；Dropbear `PasswordAuth off` / `RootPasswordAuth off` |
++| 2.8 AI 选网管理接口未授权 | **已闭环** | `8123/v1/status` 匿名 = 401，带 ops token = 200；`api.host=127.0.0.1`；写接口要求 JSON |
++
++## 关键复测命令与结果
++
++### 2.4 看板
++
++```text
++http://127.0.0.1:8099/        无 token -> 401
++http://127.0.0.1:8099/        带 demo token -> 200
++http://127.0.0.1:8099/state   无 token -> 401
++http://127.0.0.1:8099/healthz -> 200（仅存活探测）
++```
++
++### 2.5 人脸录入
++
++```text
++POST /face/enroll 无 token       -> 401
++POST /face/enroll 仅 demo token  -> 401
++POST /face/enroll 带 ops token   -> 已通过看板鉴权；视觉服务返回 400（空请求体/未运行），不再使用 api-token 代填
++视觉服务：
++  /vision/enroll 无令牌              -> 401
++  /vision/enroll 普通 service token  -> 401
++  /vision/enroll enrollment token    -> 通过鉴权后进入参数校验
++```
++
++源码检查：
++
++```text
++grep 'open("/data/ai_cpe/demo/data/api-token")' aicpe_demo.py -> 0 处
++ai_service.py 新增 enroll_token_file -> /data/ai_cpe/secrets/ops_token
++```
++
++### 2.3 MQTT
++
++```text
++匿名 CONNECT -> 20020005（CONNACK return code 5 = not authorized）
++mqtt_lib.Client 带 /data/ai_cpe/secrets/mqtt_{user,pass} -> 连接成功
++Broker 默认 host = 127.0.0.1
++```
++
++### 2.1 / 2.2 摄像头
++
++```text
++camav 127.0.0.1:8092/status 无 token -> 401
++camav 127.0.0.1:8092/status 带 stream token -> 200
++camview 127.0.0.1:8090/snapshot 无 token -> 401
++camview 127.0.0.1:8090/snapshot 带 ops token -> 200
++```
++
++### 2.7 凭据
++
++```text
++grep 旧 root 口令字符串（全仓） -> 0 个文件
++/etc/config/dropbear: PasswordAuth 'off'
++/etc/config/dropbear: RootPasswordAuth 'off'
++```
++
++## 剩余动作
++
++1. **root 口令轮换**：用户已修改模组登录口令；本轮不再重复修改。设备 `/etc/shadow` 修改时间为 2026-11-24 18:56，SSH 密码登录已关闭。
++2. **R17 源码/依赖扫描、SBOM**：属于原项目规范的另一项（非本次 8 项复测结论），仍建议在 Ubuntu/CI 侧建立扫描流水线。
++3. 建议把 camav 的 `stream_token` 与 camview 的 `ops_token` 分服务轮换，降低跨服务凭据影响面。
++
++## 文件变更
++
++- `hermes/home/camav.py`：移除回环免鉴权，所有来源必须 token。
++- `hermes/home/aicpe_demo/aicpe_demo.py`：
++  - camav 调用增加 `X-Auth-Token`（`stream_token`）；
++  - `/face/enroll` 不再读取/代填 `api-token`，转发调用方 ops token；
++  - 人脸属性调用使用已加载的 `OPS_TOKEN`。
++- `demo/services/ai_service.py`：新增 `enroll_token_file`，`/vision/enroll` 使用独立 `X-AI-Enroll-Token`，未配置即拒绝。
++- `demo/config/ai-service.json`：配置 `enroll_token_file=/data/ai_cpe/secrets/ops_token`。
++
++## 回滚
++
++- 恢复 `hermes/home/aicpe_demo/aicpe_demo.py.bak_*`、`hermes/home/camav.py.bak_*`、`demo/services/ai_service.py.bak_*`（如存在）后重启对应服务。
++- camav 回滚后需重新启动 `/data/hermes/venv/bin/python camav.py 8092`。
+diff --git a/hermes/home/aicpe_demo/aicpe_demo.py b/hermes/home/aicpe_demo/aicpe_demo.py
+index 1094831..38da615 100644
+--- a/hermes/home/aicpe_demo/aicpe_demo.py
++++ b/hermes/home/aicpe_demo/aicpe_demo.py
+@@ -1007,6 +1007,7 @@ def cam_notice_image(kind="obstructed", m=None):
+ 
+ 
+ _CAM_TOK = {"v": None, "ts": 0.0}
++_CAMAV_TOK = {"v": None, "ts": 0.0}
+ 
+ 
+ def _cam_token():
+@@ -1020,13 +1021,28 @@ def _cam_token():
+     return _CAM_TOK["v"]
+ 
+ 
++def _camav_token():
++    now = time.time()
++    if _CAMAV_TOK["v"] is None or now - _CAMAV_TOK["ts"] > 300:
++        try:
++            _CAMAV_TOK["v"] = open("/data/ai_cpe/.secrets/stream_token").read().strip()
++        except Exception:
++            _CAMAV_TOK["v"] = ""
++        _CAMAV_TOK["ts"] = now
++    return _CAMAV_TOK["v"]
++
++
+ def _urlopen(url, timeout):
+-    """camview 需运维令牌；camav 不需要。"""
++    """camview 用运维令牌；camav 用流媒体令牌；两者都不再走回环豁免。"""
+     req = urllib.request.Request(url)
+     if url.startswith(CAMVIEW):
+         _t = _cam_token()
+         if _t:
+             req.add_header("Authorization", "Bearer " + _t)
++    elif url.startswith(CAMAV):
++        _t = _camav_token()
++        if _t:
++            req.add_header("X-Auth-Token", _t)
+     return urllib.request.urlopen(req, timeout=timeout)
+ 
+ 
+@@ -1044,7 +1060,7 @@ def take_snapshot():
+ 
+ 
+ FACE_API = "http://127.0.0.1:8765/vision/face"
+-FACE_TOKEN_FILE = "/data/ai_cpe/demo/data/api-token"
++# 使用已加载的运维令牌，不再读取内部 api-token 文件。
+ FACE_MEDIA = "/data/ai_cpe/demo/media/face_live.jpg"
+ FACE_LAST = "/tmp/aicpe_board_last.jpg"
+ _FACE_CACHE = {"key": None, "d": None}
+@@ -1133,8 +1149,7 @@ def face_boxes():
+         try:
+             import shutil
+             shutil.copyfile(FACE_LAST, FACE_MEDIA)
+-            with open(FACE_TOKEN_FILE) as f:
+-                tok = f.read().strip()
++            tok = OPS_TOKEN
+             req = urllib.request.Request(
+                 FACE_API, data=json.dumps({"input": {"path": FACE_MEDIA}}).encode(),
+                 headers={"Content-Type": "application/json", "X-AI-Service-Token": tok})
+@@ -1423,7 +1438,7 @@ def pull_stream(secs=4):
+     # 只统计完整JPEG帧；跨块保留未完成帧，不重复统计尾部的帧头。
+     t0 = time.monotonic(); frames = 0; total = 0; buf = b""
+     try:
+-        with urllib.request.urlopen(CAMAV + "/stream?fps=10&w=288&q=38", timeout=secs + 1) as r:
++        with _urlopen(CAMAV + "/stream?fps=10&w=288&q=38", secs + 1) as r:
+             read = getattr(r, "read1", r.read)
+             while time.monotonic() - t0 < secs:
+                 chunk = read(8192)
+@@ -2855,12 +2870,11 @@ class Handler(__import__("http.server").server.BaseHTTPRequestHandler):
+                 os.makedirs(media_root, exist_ok=True)
+                 staged = os.path.join(media_root, "enroll.jpg")
+                 shutil.copyfile(SNAP, staged)
+-                with open("/data/ai_cpe/demo/data/api-token") as f:
+-                    token = f.read().strip()
++                # 只转发调用方已通过校验的运维令牌；看板不再读取/代填内部 api-token。
+                 payload = json.dumps({"subject_id": subject, "input": {"path": staged}}).encode()
+                 req = urllib.request.Request(
+                     "http://127.0.0.1:8765/vision/enroll", data=payload,
+-                    headers={"Content-Type": "application/json", "X-AI-Service-Token": token})
++                    headers={"Content-Type": "application/json", "X-AI-Enroll-Token": _tok})
+                 try:
+                     res = json.loads(urllib.request.urlopen(req, timeout=90).read().decode("utf-8"))
+                 except urllib.error.HTTPError as he:
+diff --git a/hermes/home/camav.py b/hermes/home/camav.py
+new file mode 100644
+index 0000000..abfdf4f
+--- /dev/null
++++ b/hermes/home/camav.py
+@@ -0,0 +1,995 @@
++#!/usr/bin/env python3
++# camav.py v3 -- 摄像头画面 + C270 麦克风 + 低延时双向对讲
++# 设计目标：窄上行链路（实测约 60KB/s）也能低延时
++#   /                     页面（画面 + 声音 + 对讲，音频走 WebSocket）
++#   /stream?w=&q=&fps=    低码率 MJPEG（默认 400px/q45/3fps ≈ 20KB/s）
++#   /stream_hd            原画 MJPEG（局域网用，直接转发 camview）
++#   /snapshot             单帧
++#   /audio                设备->浏览器 PCM（HTTP 兼容通道，页面已改用 /ws）
++#   /ws                   WebSocket：下行麦克风音频 + 上行对讲音频（主通道）
++#   /talk                 WebSocket：仅上行对讲（旧接口保留）
++#   /tone?dev=X           1.5s 测试音
++#   /status               状态
++# 关键点：视频【只发最新帧】——慢客户端只会丢帧，不会积压出秒级延时。
++import http.server, socketserver, subprocess, socket, sys, os, time, threading, io, array
++import base64, hashlib, hmac, struct, queue, math, urllib.parse
++from PIL import Image
++
++CAM   = ("127.0.0.1", 8090)
++MICS  = os.environ.get("MIC_DEV", "plughw:1,0").split(",")     # 只用 C270
++RATE  = int(os.environ.get("MIC_RATE", "8000"))                # 上线采样率(8k=16KB/s)
++CAPR  = int(os.environ.get("MIC_CAP_RATE", "16000"))           # 采集采样率
++SPK   = os.environ.get("SPK_DEV", "plughw:2,0").strip()        # 对讲播放(CM564，借用即释)
++IDLE  = float(os.environ.get("TALK_IDLE", "45"))
++TMAX  = float(os.environ.get("TALK_MAX", "300"))
++PRE   = float(os.environ.get("AUDIO_PRE", "0.15"))             # 下行预缓冲(秒)
++VID_W = int(os.environ.get("VID_W", "288"))
++VID_Q = int(os.environ.get("VID_Q", "38"))
++VID_F   = float(os.environ.get("VID_FPS", "2"))
++PORT  = int(sys.argv[1]) if len(sys.argv) > 1 else 8092
++
++# --- 访问控制：本机回环免鉴权；其它来源必须带 token（?token= / X-Auth-Token / Cookie）---
++TOKEN_FILE = os.environ.get("CAMAV_TOKEN_FILE", "/data/ai_cpe/.secrets/stream_token")
++
++def _load_token():
++    try:
++        with open(TOKEN_FILE, "r") as f:
++            return f.read().strip()
++    except Exception:
++        return ""
++
++BUF_MAX = RATE * 2 * 4
++BUF = bytearray(); POS = 0
++CV = threading.Condition(); READER_STARTED = False
++STATS = {"dev": None, "bytes": 0, "clients": 0, "since": 0, "talk": 0, "talk_bytes": 0, "ws": 0, "spk": None}
++TALK = {"active": False, "peer": "", "started": 0.0, "bytes": 0}
++TALK_LOCK = threading.Lock()
++VF = {"data": None, "seq": 0}
++VFLOCK = threading.Condition(); VIDEO_STARTED = False
++TCACHE = {}
++
++def _decimate(d):
++    """CAPR -> RATE 的整数抽取（块平均，简易抗混叠）"""
++    if RATE <= 0: return d
++    f = int(round(CAPR / RATE))
++    if f <= 1: return d
++    n = len(d) - (len(d) % (2 * f))
++    if n <= 0: return b""
++    a = array.array("h"); a.frombytes(d[:n])
++    if f == 2:
++        o = array.array("h", ((a[i] + a[i+1]) // 2 for i in range(0, len(a), 2)))
++    else:
++        o = array.array("h", (sum(a[i:i+f]) // f for i in range(0, len(a), f)))
++    return o.tobytes()
++
++def _reader():
++    global BUF, POS
++    while True:
++        dev = None
++        for d in MICS:
++            d = d.strip()
++            q = subprocess.Popen(["arecord","-D",d,"-f","S16_LE","-r",str(CAPR),"-c","1","-t","raw","-q"],
++                                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
++            time.sleep(0.4)
++            if q.poll() is None:
++                dev = d; break
++            try: q.kill()
++            except Exception: pass
++        if dev is None:
++            time.sleep(1.5); continue
++        STATS["dev"] = dev; STATS["since"] = time.time()
++        sys.stderr.write("audio reader: %s @%d -> %dHz\n" % (dev, CAPR, RATE)); sys.stderr.flush()
++        try:
++            while True:
++                d = q.stdout.read(4096)
++                if not d: break
++                d = _decimate(d)
++                if not d: continue
++                with CV:
++                    BUF.extend(d); POS += len(d); STATS["bytes"] += len(d)
++                    if len(BUF) > BUF_MAX: del BUF[:len(BUF)-BUF_MAX]
++                    CV.notify_all()
++        except Exception:
++            pass
++        finally:
++            try: q.kill()
++            except Exception: pass
++        sys.stderr.write("audio reader: device lost (%s), reconnecting\n" % dev); sys.stderr.flush()
++        time.sleep(0.6)
++
++def ensure_reader():
++    global READER_STARTED
++    if READER_STARTED: return
++    READER_STARTED = True
++    threading.Thread(target=_reader, daemon=True).start()
++
++# ---------------- 视频：常驻读帧（最新帧胜出） ----------------
++def _cam_token():
++    try:
++        return open("/data/ai_cpe/secrets/ops_token").read().strip()
++    except Exception:
++        return ""
++
++
++def _video_reader():
++    while True:
++        try:
++            up = socket.create_connection(CAM, timeout=10)
++            _t = _cam_token()
++            _req = (b"GET /stream HTTP/1.0\r\nHost: cam\r\nConnection: close\r\n" +
++                    (("Authorization: Bearer %s\r\n" % _t).encode() if _t else b"") + b"\r\n")
++            up.sendall(_req)
++            f = up.makefile("rb")
++            while True:
++                ln = f.readline()
++                if not ln or ln in (b"\r\n", b"\n"): break
++            buf = bytearray()
++            while True:
++                d = f.read1(65536)  # 及时交付已到达数据，不等凑满64KB造成成批丢帧
++                if not d: break
++                buf.extend(d)
++                while True:
++                    i = buf.find(b"\xff\xd8")
++                    if i < 0:
++                        if len(buf) > 1: del buf[:-1]
++                        break
++                    j = buf.find(b"\xff\xd9", i + 2)
++                    if j < 0:
++                        if i: del buf[:i]
++                        break
++                    fr = bytes(buf[i:j+2]); del buf[:j+2]
++                    if len(fr) < 200: continue
++                    with VFLOCK:
++                        VF["data"] = fr; VF["seq"] += 1; VFLOCK.notify_all()
++        except Exception:
++            pass
++        time.sleep(1.0)
++
++def ensure_video():
++    global VIDEO_STARTED
++    if VIDEO_STARTED: return
++    VIDEO_STARTED = True
++    threading.Thread(target=_video_reader, daemon=True).start()
++
++def transcode(seq, jpg, w, q):
++    key = (seq, w, q)
++    hit = TCACHE.get(key)
++    if hit is not None: return hit
++    im = Image.open(io.BytesIO(jpg)).convert("RGB")
++    if w and im.width > w:
++        h = max(2, int(im.height * w / im.width))
++        im = im.resize((w, h), Image.BILINEAR)
++    b = io.BytesIO(); im.save(b, "JPEG", quality=q)
++    out = b.getvalue()
++    if len(TCACHE) > 40: TCACHE.clear()
++    TCACHE[key] = out
++    return out
++
++# ---------------- WebSocket 最小实现 ----------------
++WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
++def ws_accept(key):
++    return base64.b64encode(hashlib.sha1((key + WS_GUID).encode()).digest()).decode()
++def ws_send(wfile, opcode, payload=b""):
++    n = len(payload)
++    hdr = bytes([0x80 | opcode])
++    if n < 126:      hdr += bytes([n])
++    elif n < 65536:  hdr += bytes([126]) + struct.pack(">H", n)
++    else:            hdr += bytes([127]) + struct.pack(">Q", n)
++    wfile.write(hdr + payload); wfile.flush()
++def ws_read(rfile):
++    h = rfile.read(2)
++    if not h or len(h) < 2: return None
++    b1, b2 = h[0], h[1]
++    opcode = b1 & 0x0F; masked = b2 & 0x80; n = b2 & 0x7F
++    if n == 126:   n = struct.unpack(">H", rfile.read(2))[0]
++    elif n == 127: n = struct.unpack(">Q", rfile.read(8))[0]
++    mask = rfile.read(4) if masked else b""
++    data = rfile.read(n) if n else b""
++    if len(data) < n: return None
++    if masked and mask:
++        data = bytes(data[i] ^ mask[i % 4] for i in range(n))
++    return opcode, data
++
++# ---------------- IMA ADPCM（4bit，8kHz 时仅 4KB/s） ----------------
++IMA_STEP = (7,8,9,10,11,12,13,14,16,17,19,21,23,25,28,31,34,37,41,45,50,55,60,66,73,80,88,97,107,118,
++            130,143,157,173,190,209,230,253,279,307,337,371,408,449,494,544,598,658,724,796,876,963,
++            1060,1166,1282,1411,1552,1707,1878,2066,2272,2499,2749,3024,3327,3660,4026,4428,4871,5358,
++            5894,6484,7132,7845,8630,9493,10442,11487,12635,13899,15289,16818,18500,20350,22385,24623,
++            27086,29794,32767)
++IMA_IDX = (-1,-1,-1,-1,2,4,6,8,-1,-1,-1,-1,2,4,6,8)
++
++class ImaEnc:
++    __slots__ = ("pred", "idx")
++    def __init__(self): self.pred = 0; self.idx = 0
++    def enc(self, smp):
++        step = IMA_STEP[self.idx]
++        diff = smp - self.pred
++        if diff < 0: code = 8; diff = -diff
++        else: code = 0
++        if diff >= step:
++            code |= 4; diff -= step
++        step >>= 1
++        if diff >= step:
++            code |= 2; diff -= step
++        step >>= 1
++        if diff >= step: code |= 1
++        step = IMA_STEP[self.idx]
++        d = step >> 3
++        if code & 4: d += step
++        if code & 2: d += step >> 1
++        if code & 1: d += step >> 2
++        if code & 8: self.pred -= d
++        else: self.pred += d
++        if self.pred > 32767: self.pred = 32767
++        elif self.pred < -32768: self.pred = -32768
++        self.idx += IMA_IDX[code]
++        if self.idx < 0: self.idx = 0
++        elif self.idx > 88: self.idx = 88
++        return code
++
++class ImaDec:
++    __slots__ = ("pred", "idx")
++    def __init__(self): self.pred = 0; self.idx = 0
++    def dec(self, code):
++        step = IMA_STEP[self.idx]
++        d = step >> 3
++        if code & 4: d += step
++        if code & 2: d += step >> 1
++        if code & 1: d += step >> 2
++        if code & 8: self.pred -= d
++        else: self.pred += d
++        if self.pred > 32767: self.pred = 32767
++        elif self.pred < -32768: self.pred = -32768
++        self.idx += IMA_IDX[code]
++        if self.idx < 0: self.idx = 0
++        elif self.idx > 88: self.idx = 88
++        return self.pred
++
++def adpcm_encode(pcm, st):
++    """S16LE bytes -> IMA ADPCM bytes（低半字节在前）"""
++    n = len(pcm) // 2
++    out = bytearray((n + 1) // 2)
++    for i in range(n):
++        c = st.enc(struct.unpack_from("<h", pcm, i * 2)[0])
++        if i & 1: out[i >> 1] |= (c << 4)
++        else: out[i >> 1] = c
++    return bytes(out)
++
++def adpcm_decode(data, st):
++    """IMA ADPCM bytes -> S16LE bytes"""
++    out = array.array("h")
++    ap = out.append
++    for b in data:
++        ap(st.dec(b & 0x0F)); ap(st.dec((b >> 4) & 0x0F))
++    return out.tobytes()
++
++PAGE = """<!doctype html><html lang="zh"><head><meta charset="utf-8">
++<meta name="viewport" content="width=device-width,initial-scale=1">
++<title>RG660MK 摄像头（画面 + 声音 + 对讲）</title>
++<style>
++*{box-sizing:border-box;margin:0;padding:0}
++body{font-family:-apple-system,"Microsoft YaHei",sans-serif;background:#0f1115;color:#e6e8ec;
++     min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;gap:12px}
++h1{font-size:18px;font-weight:600}
++.sub{color:#8b8f98;font-size:12px;text-align:center;max-width:640px}
++#stage{width:100%;max-width:900px;aspect-ratio:4/3;background:#000;border-radius:12px;overflow:hidden;
++       display:flex;align-items:center;justify-content:center;box-shadow:0 8px 30px rgba(0,0,0,.5)}
++#stage img{width:100%;height:100%;object-fit:contain}
++button{font-size:16px;padding:12px 22px;border-radius:10px;border:1px solid #2b2f36;background:#1a1d23;
++       color:#e6e8ec;cursor:pointer}
++button.on{background:#16a34a;border-color:#16a34a;color:#fff}
++button.talk.on{background:#dc2626;border-color:#dc2626}
++.bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center}
++#lw{width:100%;max-width:320px;height:6px;background:#1a1d23;border-radius:3px;overflow:hidden}
++#lv{height:100%;width:0;background:#16a34a}
++#st{min-height:32px;color:#8b8f98;font-size:12px;text-align:center;max-width:640px}
++</style></head><body>
++<h1>RG660MK 实时预览（画面 + 声音 + 对讲）</h1>
++<div class="sub">Logitech C270 · 低延时低流量：标准≈10KB/s，省流量≈5KB/s｜音频 !SR!Hz ADPCM 4KB/s（不点"开启声音"就不耗流量）｜对讲结束立即释放音箱</div>
++<div id="stage"><img id="v" alt="camera"></div>
++<div id="lw"><div id="lv"></div></div>
++<div class="bar">
++  <button id="snd">🔊 点击开启声音</button>
++  <button id="talk" class="talk">🎤 对讲</button>
++  <button id="rc">↻ 重连画面</button>
++  <button id="lite">🐢 省流量：关</button>
++  <a href="/stream_hd" style="color:#8b8f98;font-size:13px">高清原画（仅局域网，勿在手机上点）</a>
++  <a href="/snapshot" download="snapshot.jpg" style="color:#8b8f98;font-size:13px">截图保存</a>
++</div>
++<div id="st">手机请用 Chrome/Safari 直接打开；微信内置浏览器可能拿不到麦克风权限。</div>
++<script>
++var SR=!SR!, wsA=null, wsOpen=false, playing=false, ac=null, gainIn=null, next=0;
++var decState=null, encState=null;
++var IS=[7,8,9,10,11,12,13,14,16,17,19,21,23,25,28,31,34,37,41,45,50,55,60,66,73,80,88,97,107,118,130,143,157,173,190,209,230,253,279,307,337,371,408,449,494,544,598,658,724,796,876,963,1060,1166,1282,1411,1552,1707,1878,2066,2272,2499,2749,3024,3327,3660,4026,4428,4871,5358,5894,6484,7132,7845,8630,9493,10442,11487,12635,13899,15289,16818,18500,20350,22385,24623,27086,29794,32767];
++var II=[-1,-1,-1,-1,2,4,6,8,-1,-1,-1,-1,2,4,6,8];
++function imaNew(){return {p:0,i:0};}
++function imaEnc(s,st){
++  var step=IS[st.i], diff=s-st.p, code=0;
++  if(diff<0){ code=8; diff=-diff; }
++  if(diff>=step){ code|=4; diff-=step; }
++  step>>=1;
++  if(diff>=step){ code|=2; diff-=step; }
++  step>>=1;
++  if(diff>=step){ code|=1; }
++  step=IS[st.i];
++  var d=step>>3;
++  if(code&4){ d+=step; } if(code&2){ d+=step>>1; } if(code&1){ d+=step>>2; }
++  if(code&8){ st.p-=d; } else { st.p+=d; }
++  if(st.p>32767){ st.p=32767; } else if(st.p<-32768){ st.p=-32768; }
++  st.i+=II[code]; if(st.i<0){ st.i=0; } else if(st.i>88){ st.i=88; }
++  return code;
++}
++function imaDec(code,st){
++  var step=IS[st.i], d=step>>3;
++  if(code&4){ d+=step; } if(code&2){ d+=step>>1; } if(code&1){ d+=step>>2; }
++  if(code&8){ st.p-=d; } else { st.p+=d; }
++  if(st.p>32767){ st.p=32767; } else if(st.p<-32768){ st.p=-32768; }
++  st.i+=II[code]; if(st.i<0){ st.i=0; } else if(st.i>88){ st.i=88; }
++  return st.p;
++}
++var talkOn=false, micCtx=null, micStream=null, proc=null, micRatio=1;
++function st(t){document.getElementById("st").textContent=t;}
++function setLevel(v){document.getElementById("lv").style.width=Math.max(0,Math.min(100,Math.round(v*500)))+"%";}
++var vws=null, vurl=null, vfail=0, vfallback=false, lastFrame=0, vwatch=null;
++var lite=(location.search.indexOf('lite=1')>=0);
++function openVideo(){
++  if(vfallback){ document.getElementById("v").src="/stream?"+Date.now(); return; }
++  var u=(location.protocol==="https:"?"wss://":"ws://")+location.host+"/wsv"+(lite?"?w=208&q=32&fps=1":"");
++  try{ vws=new WebSocket(u); }catch(e){ vfail++; if(vfail>2){ vfallback=true; } return; }
++  vws.binaryType="arraybuffer";
++  vws.onmessage=function(ev){
++    var url=URL.createObjectURL(new Blob([ev.data],{type:"image/jpeg"}));
++    var img=document.getElementById("v");
++    var old=vurl;
++    img.onload=function(){ if(old){ URL.revokeObjectURL(old); } };
++    vurl=url; img.src=url; vfail=0; lastFrame=Date.now();
++  };
++  vws.onclose=function(){ if(!vfallback){ vfail++; if(vfail>3){ vfallback=true; openVideo(); return; } setTimeout(openVideo,1200); } };
++  vws.onerror=function(){};
++}
++function restartVideo(){
++  try{ if(vws) vws.close(); }catch(e){}
++  vws=null; vfail=0; vfallback=false; openVideo();
++}
++document.getElementById("rc").onclick=function(){ restartVideo(); };
++document.getElementById("lite").onclick=function(){
++  lite=!lite; this.textContent = lite? "🐢 省流量：开（≈5KB/s）" : "🐢 省流量：关（≈10KB/s）";
++  restartVideo(); st(lite? "省流量模式：1fps/208px（1G/月能用约 50 小时）" : "标准模式：2fps/288px（1G/月约 28 小时）");
++};
++window.addEventListener("load", function(){
++  var lb=document.getElementById("lite");
++  if(lite){ lb.textContent="🐢 省流量：开（≈5KB/s）"; }
++  openVideo();
++  vwatch=setInterval(function(){                 // 连上但没画面 → 回退 HTTP 流
++    if(vfallback) return;
++    if(lastFrame && Date.now()-lastFrame > 4000){ vfallback=true; try{ if(vws) vws.close(); }catch(e){}
++      document.getElementById("v").src="/stream?"+Date.now(); st("画面已切换为 HTTP 低码率流"); }
++  }, 2000);
++});
++function ensureWS(cb){
++  if(wsOpen && wsA && wsA.readyState===1){ if(cb) cb(); return; }
++  var u=(location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws";
++  try{ wsA=new WebSocket(u); }catch(e){ st("❌ 无法建立音频通道"); return; }
++  wsA.binaryType="arraybuffer";
++  wsA.onopen=function(){ wsOpen=true; decState=imaNew(); if(cb) cb(); };
++  wsA.onmessage=function(ev){
++    if(typeof ev.data==="string"){
++      if(ev.data.indexOf("cfg")===0){ try{ var c=JSON.parse(ev.data.slice(4)); if(c.sr) SR=c.sr; }catch(e){} }
++      else if(ev.data.indexOf("busy")===0){ st("⚠️ 有人正在对讲，请稍后再试"); stopTalk(); }
++      else if(ev.data.indexOf("spk_busy")===0){ st("⚠️ 设备音箱正被语音助手占用，请稍后再试"); stopTalk(); }
++      else if(ev.data.indexOf("timeout")===0){ stopTalk("⏱ 长时间没说话或到时限，已自动释放设备音箱"); }
++      return;
++    }
++    if(!playing || !ac) return;
++    if(!decState){ decState=imaNew(); }
++    var d=new Uint8Array(ev.data);
++    var n=d.length*2;
++    var i16=new Int16Array(n);
++    for(var k=0;k<d.length;k++){ i16[k*2]=imaDec(d[k]&15,decState); i16[k*2+1]=imaDec((d[k]>>4)&15,decState); }
++    var f32=new Float32Array(n);
++    for(var i=0;i<n;i++) f32[i]=i16[i]/32768;
++    var ab=ac.createBuffer(1,n,SR); ab.copyToChannel(f32,0);
++    var s=ac.createBufferSource(); s.buffer=ab; s.connect(gainIn);
++    if(next < ac.currentTime+0.02){ next = ac.currentTime + 0.05; }
++    s.start(next); next += ab.duration;
++  };
++  wsA.onclose=function(){ wsOpen=false; if(talkOn){ stopTalk("对讲已断开"); } };
++  wsA.onerror=function(){ st("❌ 音频通道出错"); };
++}
++document.getElementById("snd").onclick=function(){
++  var btn=this;
++  if(playing){ playing=false; next=0; decState=null; btn.textContent="🔊 点击开启声音"; btn.className=""; st("已停止监听（音频已停发，不耗流量）");
++    try{ if(wsA && wsA.readyState===1){ wsA.send("audio_off"); } }catch(e){} return; }
++  if(!ac){ ac=new (window.AudioContext||window.webkitAudioContext)(); }
++  if(!gainIn){ gainIn=ac.createGain(); gainIn.connect(ac.destination); }
++  var go=function(){ playing=true; next=0; decState=imaNew(); btn.textContent="🔊 声音已开启"; btn.className="on"; st("监听中（低延时，8kHz ADPCM）");
++    try{ if(wsA && wsA.readyState===1){ wsA.send("audio_on"); } }catch(e){} };
++  ensureWS(function(){ if(ac.state==="suspended"){ ac.resume().then(go); } else { go(); } });
++};
++document.getElementById("talk").onclick=function(){
++  if(talkOn){
++    try{ if(wsA && wsA.readyState===1){ wsA.send("talk_end"); } }catch(e){}
++    stopTalk("已停止对讲（设备音箱已释放）"); return;
++  }
++  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
++    st("❌ 此浏览器不支持麦克风（需 HTTPS；微信内置浏览器请改用 Chrome/Safari 打开）"); return;
++  }
++  var btn=this; btn.textContent="正在请求麦克风…";
++  ensureWS(function(){
++    navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}})
++    .then(function(s){
++      micStream=s;
++      micCtx=new (window.AudioContext||window.webkitAudioContext)();
++      if(micCtx.state==="suspended"){ micCtx.resume(); }
++      var src=micCtx.createMediaStreamSource(s);
++      proc=micCtx.createScriptProcessor(1024,1,1);
++      micRatio=micCtx.sampleRate/SR;
++      encState=imaNew();
++      proc.onaudioprocess=function(e){
++        var inp=e.inputBuffer.getChannelData(0);
++        var n=Math.max(1,Math.floor(inp.length/micRatio));
++        var i16=new Int16Array(n), sum=0;
++        for(var i=0;i<n;i++){
++          var v=inp[Math.floor(i*micRatio)]||0;
++          sum+=v*v;
++          i16[i]=Math.max(-32768,Math.min(32767,Math.round(v*32767)));
++        }
++        setLevel(Math.sqrt(sum/n));
++        if(wsA && wsA.readyState===1){
++          var out=new Uint8Array((n+1)>>1);
++          for(var k=0;k<n;k++){
++            var c=imaEnc(i16[k], encState);
++            if(k&1){ out[k>>1] |= (c<<4); } else { out[k>>1]=c; }
++          }
++          try{ wsA.send(out.buffer); }catch(err){}
++        }
++      };
++      var zero=micCtx.createGain(); zero.gain.value=0;
++      src.connect(proc); proc.connect(zero); zero.connect(micCtx.destination);
++      talkOn=true;
++      btn.textContent="🎤 对讲中（点此结束）"; btn.className="talk on";
++      if(gainIn){ gainIn.gain.value=0; }
++      st("正在对讲：你的声音从设备音箱播出；结束后立即释放音箱（本机监听已静音防啸叫）");
++    }).catch(function(e){ st("❌ 麦克风被拒绝："+e); btn.textContent="🎤 对讲"; });
++  });
++};
++function stopTalk(msg){
++  talkOn=false;
++  try{ if(proc){ proc.disconnect(); } }catch(e){}
++  proc=null;
++  try{ if(micStream){ micStream.getTracks().forEach(function(t){ t.stop(); }); } }catch(e){}
++  micStream=null;
++  try{ if(micCtx){ micCtx.close(); } }catch(e){}
++  micCtx=null;
++  if(gainIn){ gainIn.gain.value=1; }
++  var b=document.getElementById("talk"); b.textContent="🎤 对讲"; b.className="talk";
++  setLevel(0);
++  if(msg){ st(msg); }
++}
++</script></body></html>"""
++
++class TalkSess:
++    """一次对讲会话：懒启动 aplay，静默/结束立即释放。"""
++    def __init__(self, send, peer):
++        self.send = send; self.peer = peer
++        self.q = queue.Queue(maxsize=40); self.p = None; self.dec = ImaDec()
++        self.stop_flag = threading.Event()
++        with TALK_LOCK:
++            acquired = not TALK["active"]
++            if acquired:
++                TALK.update({"active": True, "peer": peer, "started": time.time(), "bytes": 0})
++        self.acquired = acquired
++        self.busy = not acquired
++        if acquired:
++            STATS["talk"] += 1
++            threading.Thread(target=self._writer, daemon=True).start()
++
++    def _writer(self):
++        for attempt in range(7):
++            try:
++                self.p = subprocess.Popen(["aplay","-D",SPK,"-f","S16_LE","-r",str(RATE),"-c","1","-t","raw","-q",
++                                           "--buffer-time=120000","--period-time=30000"],
++                                          stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
++                break
++            except Exception:
++                time.sleep(0.4)
++        if self.p is None:
++            try: self.send(1, b"spk_busy")
++            except Exception: pass
++            self.stop(); return
++        STATS["spk"] = SPK
++        sys.stderr.write("talk: spk acquired %s\n" % SPK); sys.stderr.flush()
++        try:
++            while not self.stop_flag.is_set():
++                try: d = self.q.get(timeout=0.5)
++                except queue.Empty: continue
++                if d is None: break
++                self.p.stdin.write(d); self.p.stdin.flush()
++                TALK["bytes"] += len(d); STATS["talk_bytes"] += len(d)
++        except Exception:
++            pass
++        finally:
++            try: self.p.stdin.close()
++            except Exception: pass
++            try: self.p.kill()
++            except Exception: pass
++            try: self.p.wait(timeout=3)
++            except Exception: pass
++            sys.stderr.write("talk: spk released %s\n" % SPK); sys.stderr.flush()
++
++    def write(self, adpcm):
++        try: self.q.put_nowait(self.dec.__class__ and adpcm_decode(adpcm, self.dec))
++        except Exception: pass
++
++    def stop(self):
++        if self.stop_flag.is_set(): return
++        self.stop_flag.set()
++        try: self.q.put_nowait(None)
++        except Exception: pass
++        if self.acquired:
++            with TALK_LOCK:
++                TALK["active"] = False
++            STATS["talk"] = max(0, STATS["talk"] - 1)
++
++class H(http.server.BaseHTTPRequestHandler):
++    protocol_version = "HTTP/1.1"
++    def log_message(self, *a): pass
++    def handle_error(self, *a): pass          # 客户端断流/重置不再刷 traceback
++
++    def _authorized(self, qs):
++        """所有来源（含回环）都必须携带 token；令牌为空即 fail-closed。"""
++        tok = _load_token()
++        if not tok:
++            return False
++        cand = list(qs.get("token") or [])
++        hv = self.headers.get("X-Auth-Token")
++        if hv:
++            cand.append(hv.strip())
++        ck = self.headers.get("Cookie") or ""
++        for part in ck.split(";"):
++            k, _, v = part.strip().partition("=")
++            if k == "cpe_token":
++                cand.append(v)
++        return any(hmac.compare_digest(c, tok) for c in cand)
++
++    def log_message(self, fmt, *args):
++        try:
++            line = "%s %s %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), self.client_address[0], fmt % args)
++            with open("/data/ai_cpe/logs/camav_access.log", "a") as f:
++                f.write(line)
++        except Exception:
++            pass
++
++    def do_GET(self):
++        u = urllib.parse.urlparse(self.path)
++        p = u.path
++        qs = urllib.parse.parse_qs(u.query)
++        if not self._authorized(qs):
++            body = "401 unauthorized: 请用 http://<设备IP>:8092/?token=<令牌> 打开\n".encode()
++            self.send_response(401)
++            self.send_header("Content-Type", "text/plain; charset=utf-8")
++            self.send_header("WWW-Authenticate", 'Bearer realm="camav"')
++            self.send_header("Content-Length", str(len(body)))
++            self.end_headers(); self.wfile.write(body); return
++        try:
++            self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
++        except Exception:
++            pass
++        if p == "/":
++            body = PAGE.replace("!SR!", str(RATE)).replace("!FPS!", ("%g" % VID_F)).encode()
++            self.send_response(200)
++            self.send_header("Content-Type", "text/html; charset=utf-8")
++            self.send_header("Cache-Control", "no-store, must-revalidate")
++            if qs.get("token"):
++                self.send_header("Set-Cookie", "cpe_token=%s; Path=/; HttpOnly; SameSite=Lax" % qs["token"][0])
++            self.send_header("Content-Length", str(len(body)))
++            self.end_headers(); self.wfile.write(body); return
++        if p == "/stream":
++            self.stream(qs); return
++        if p == "/stream_hd":
++            self.proxy("/stream"); return
++        if p == "/snapshot":
++            self.proxy("/snapshot"); return
++        if p == "/audio":
++            self.audio(); return
++        if p == "/ws":
++            self.ws_endpoint(); return
++        if p == "/wsv":
++            self.ws_video(qs); return
++        if p == "/talk":
++            self.talk_only(); return
++        if p == "/tone":
++            dev = (qs.get("dev") or [SPK])[0]
++            self.tone(dev); return
++        if p == "/status":
++            b = ("mic=%s@%dHz bytes=%d listeners=%d ws=%d uptime=%.0fs | talk_active=%s peer=%s talk_bytes=%d | "
++                 "video_seq=%d video_kb=%.1f | spk=%s vid=%dpx/q%d/%gfps\n" %
++                 (STATS["dev"], RATE, STATS["bytes"], STATS["clients"], STATS["ws"],
++                  time.time()-STATS["since"] if STATS["since"] else 0,
++                  TALK["active"], TALK["peer"], TALK["bytes"],
++                  VF["seq"], (len(VF["data"])/1024 if VF["data"] else 0), SPK, VID_W, VID_Q, VID_F)).encode()
++            self.send_response(200); self.send_header("Content-Type","text/plain")
++            self.send_header("Content-Length", str(len(b))); self.end_headers(); self.wfile.write(b); return
++        self.send_response(404); self.send_header("Content-Length","2"); self.end_headers(); self.wfile.write(b"no")
++
++    # ---------- 低码率视频：只发最新帧 ----------
++    def stream(self, qs):
++        def num(key, default, lo, hi, cast=float):
++            try: return max(lo, min(hi, cast((qs.get(key) or [default])[0])))
++            except Exception: return default
++        w   = int(num("w", VID_W, 160, 1280, int))
++        q   = int(num("q", VID_Q, 20, 85, int))
++        fps = num("fps", VID_F, 1.0, 15.0)
++        ensure_video()
++        interval = 1.0 / fps
++        self.send_response(200)
++        self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
++        self.send_header("Cache-Control", "no-store, private")
++        self.send_header("Transfer-Encoding", "chunked")     # 必须 chunked：否则 CF 隧道只回 200 不给数据
++        self.send_header("Connection", "close")
++        self.end_headers()
++        last_seq = 0; last_t = 0.0
++        STATS["clients"] += 1
++        try:
++            while True:
++                with VFLOCK:
++                    if VF["seq"] == last_seq:
++                        VFLOCK.wait(1.0)
++                    seq = VF["seq"]; fr = VF["data"]
++                if fr is None or seq == last_seq:
++                    continue
++                last_seq = seq
++                now = time.time()
++                if now - last_t < interval:
++                    time.sleep(interval - (now - last_t))
++                    with VFLOCK:
++                        seq = VF["seq"]; fr = VF["data"]
++                    if fr is None:
++                        continue
++                    last_seq = seq  # 等待后取最新帧，避免离散到帧节奏把10fps削成约6fps
++                now = time.time()  # 以实际开始发送时刻计时，不把转码耗时重复加到间隔
++                jpg = transcode(seq, fr, w, q)
++                part = (b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n" % len(jpg)) + jpg
++                self.wfile.write(b"%x\r\n" % len(part) + part + b"\r\n")
++                self.wfile.flush()
++                last_t = now
++        except Exception:
++            pass
++        finally:
++            STATS["clients"] -= 1
++
++    def proxy(self, path):
++        try:
++            up = socket.create_connection(CAM, timeout=10)
++        except Exception:
++            self.send_response(502); self.send_header("Content-Length","8"); self.end_headers()
++            self.wfile.write(b"up fail!"); return
++        up.sendall(("GET %s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\n\r\n" % (path, CAM[0])).encode())
++        buf = b""
++        while b"\r\n\r\n" not in buf:
++            d = up.recv(4096)
++            if not d: break
++            buf += d
++        head, _, rest = buf.partition(b"\r\n\r\n")
++        ct = "application/octet-stream"
++        for ln in head.split(b"\r\n")[1:]:
++            if ln.lower().startswith(b"content-type:"):
++                ct = ln.split(b":",1)[1].strip().decode("latin1")
++        self.send_response(200)
++        self.send_header("Content-Type", ct)
++        self.send_header("Cache-Control", "no-store")
++        self.send_header("Connection", "close")
++        self.end_headers()
++        try:
++            if rest: self.wfile.write(rest)
++            while True:
++                d = up.recv(32768)
++                if not d: break
++                self.wfile.write(d)
++        except Exception: pass
++        finally: up.close()
++
++    def audio(self):
++        ensure_reader()
++        self.send_response(200)
++        self.send_header("Content-Type", "application/octet-stream")
++        self.send_header("Cache-Control", "no-store, no-transform")
++        self.send_header("Transfer-Encoding", "chunked")
++        self.send_header("Connection", "close")
++        self.end_headers()
++        STATS["clients"] += 1
++        try:
++            with CV:
++                start = POS - len(BUF)
++                pos = max(POS - int(PRE * RATE * 2), start)
++            while True:
++                with CV:
++                    start = POS - len(BUF)
++                    if pos < start: pos = start
++                    while pos >= POS:
++                        CV.wait(1.0)
++                    off = pos - start
++                    data = bytes(BUF[off:off+1024])
++                    pos += len(data)
++                if data:
++                    self.wfile.write(b"%x\r\n" % len(data) + data + b"\r\n")
++                    try: self.wfile.flush()
++                    except Exception: pass
++        except Exception:
++            pass
++        finally:
++            STATS["clients"] -= 1
++
++    # ---------- WebSocket：握手 ----------
++    def hs(self):
++        if self.headers.get("Upgrade", "").lower() != "websocket": return False
++        key = self.headers.get("Sec-WebSocket-Key")
++        if not key: return False
++        self.send_response(101)
++        self.send_header("Upgrade", "websocket")
++        self.send_header("Connection", "Upgrade")
++        self.send_header("Sec-WebSocket-Accept", ws_accept(key))
++        self.end_headers()
++        return True
++
++    def ws_endpoint(self):
++        if not self.hs(): return
++        send_lock = threading.Lock()
++        def send(op, payload=b""):
++            with send_lock:
++                ws_send(self.wfile, op, payload)
++        STATS["ws"] += 1
++        ensure_reader()
++        stop = threading.Event()
++        play = {"on": False, "enc": ImaEnc()}      # 不按"开启声音"就不发音频（省流量）
++        sess = {"s": None, "last": 0.0}
++
++        def down():
++            with CV:
++                pos = max(POS - int(PRE * RATE * 2), POS - len(BUF))
++            while not stop.is_set():
++                with CV:
++                    start = POS - len(BUF)
++                    if pos < start: pos = start
++                    while pos >= POS and not stop.is_set():
++                        CV.wait(0.5)
++                    off = pos - start
++                    data = bytes(BUF[off:off+1024])
++                    pos += len(data)
++                if data and play["on"]:
++                    try: send(2, adpcm_encode(data, play["enc"]))
++                    except Exception: break
++            stop.set()
++
++        threading.Thread(target=down, daemon=True).start()
++        try: send(1, ("cfg {\"sr\":%d,\"codec\":\"adpcm\"}" % RATE).encode())
++        except Exception: pass
++        try:
++            while True:
++                fr = ws_read(self.rfile)
++                if fr is None: break
++                op, data = fr
++                if op == 8: break
++                if op == 9:
++                    try: send(10, data)
++                    except Exception: pass
++                    continue
++                if op == 10: continue
++                if op == 1:
++                    cmd = data.strip().lower()
++                    if cmd == b"audio_on":
++                        play["enc"] = ImaEnc(); play["on"] = True
++                    elif cmd == b"audio_off":
++                        play["on"] = False
++                    elif cmd == b"talk_end":
++                        if sess["s"]: sess["s"].stop(); sess["s"] = None
++                    continue
++                if op == 2 and data:
++                    if sess["s"] is None:
++                        ts = TalkSess(send, self.client_address[0])
++                        if ts.busy:                       # 已有别人在对讲
++                            send(1, b"busy"); continue
++                        sess["s"] = ts
++                    try: sess["s"].write(data)
++                    except Exception: pass
++                    sess["last"] = time.time()
++                # 静默/超时自动释放
++                if sess["s"] is not None:
++                    why = ""
++                    if time.time() - sess["last"] > IDLE: why = "idle"
++                    elif time.time() - TALK.get("started", time.time()) > TMAX: why = "max"
++                    if why:
++                        try: send(1, ("timeout_" + why).encode())
++                        except Exception: pass
++                        sess["s"].stop(); sess["s"] = None
++        except Exception:
++            pass
++        if sess["s"]: sess["s"].stop()
++        stop.set()
++        STATS["ws"] = max(0, STATS["ws"] - 1)
++
++    def ws_video(self, qs=None):
++        """视频走独立 WebSocket（CF/穿透隧道对 HTTP 流做字节缓冲，对 WS 不缓冲）。
++        支持 ?w=&q=&fps= 降码率：省流量模式用 w=208&q=32&fps=1。"""
++        if not self.hs(): return
++        qs = qs or {}
++        def num(k, d, lo, hi, cast=float):
++            try: return max(lo, min(hi, cast((qs.get(k) or [d])[0])))
++            except Exception: return d
++        W = int(num("w", VID_W, 160, 1280, int))
++        Q = int(num("q", VID_Q, 20, 85, int))
++        F = num("fps", VID_F, 1.0, 15.0)
++        ensure_video()
++        lock = threading.Lock()
++        def send(op, payload=b""):
++            with lock:
++                ws_send(self.wfile, op, payload)
++        try: send(1, ("cfgv {\"fps\":%g,\"w\":%d,\"q\":%d}" % (F, W, Q)).encode())
++        except Exception: pass
++        last_seq = 0; last_t = 0.0
++        try:
++            while True:
++                with VFLOCK:
++                    if VF["seq"] == last_seq:
++                        VFLOCK.wait(1.0)
++                    seq = VF["seq"]; fr = VF["data"]
++                if fr is None or seq == last_seq:
++                    continue
++                last_seq = seq
++                now = time.time()
++                if now - last_t < 1.0 / F:
++                    continue                    # 只发最新帧：慢客户端只丢帧，不积压出延时
++                try:
++                    send(2, transcode(seq, fr, W, Q))
++                except Exception:
++                    break
++                last_t = now
++        except Exception:
++            pass
++
++    def talk_only(self):
++        if not self.hs(): return
++        send_lock = threading.Lock()
++        def send(op, payload=b""):
++            with send_lock:
++                ws_send(self.wfile, op, payload)
++        stop = threading.Event()
++        try:
++            self.talk_loop(send, stop)
++        except Exception:
++            pass
++
++    # ---------- 上行对讲：借用喇叭 -> 结束时立即释放 ----------
++    def talk_loop(self, send, stop):
++        with TALK_LOCK:
++            busy = TALK["active"]
++            if not busy:
++                TALK.update({"active": True, "peer": self.client_address[0],
++                             "started": time.time(), "bytes": 0})
++        if busy:
++            try: send(1, b"busy")
++            except Exception: pass
++            return
++        STATS["talk"] += 1
++        q = queue.Queue(maxsize=40)
++        dec = ImaDec()
++        wstop = threading.Event()
++        bflag = threading.Event()
++        stt = {"last": time.time(), "started": time.time()}
++
++        def writer():
++            p = None
++            for attempt in range(7):            # 语音助手可能正占着喇叭，重试等它
++                try:
++                    p = subprocess.Popen(["aplay","-D",SPK,"-f","S16_LE","-r",str(RATE),"-c","1","-t","raw","-q",
++                                          "--buffer-time=120000","--period-time=30000"],
++                                         stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
++                    break
++                except Exception as e:
++                    sys.stderr.write("talk: aplay busy/fail (%s) retry %d\n" % (e, attempt)); sys.stderr.flush()
++                    time.sleep(0.4)
++            if p is None:
++                bflag.set(); wstop.set(); return
++            STATS["spk"] = SPK
++            sys.stderr.write("talk: spk acquired %s\n" % SPK); sys.stderr.flush()
++            try:
++                while not wstop.is_set():
++                    try: d = q.get(timeout=0.5)
++                    except queue.Empty: continue
++                    if d is None: break
++                    p.stdin.write(d); p.stdin.flush()
++                    TALK["bytes"] += len(d); STATS["talk_bytes"] += len(d)
++            except Exception:
++                pass
++            finally:                            # 立即释放喇叭
++                try: p.stdin.close()
++                except Exception: pass
++                try: p.kill()
++                except Exception: pass
++                try: p.wait(timeout=3)
++                except Exception: pass
++                sys.stderr.write("talk: spk released %s\n" % SPK); sys.stderr.flush()
++
++        def watchdog():
++            why = ""
++            while not wstop.is_set():
++                time.sleep(0.5)
++                if time.time() - stt["last"] > IDLE:      why = "idle"; break
++                if time.time() - stt["started"] > TMAX:   why = "max";  break
++            if why and not wstop.is_set():
++                sys.stderr.write("talk: %s timeout -> release speaker\n" % why); sys.stderr.flush()
++                try: send(1, ("timeout_" + why).encode())
++                except Exception: pass
++                try: self.connection.shutdown(socket.SHUT_RDWR)
++                except Exception: pass
++
++        threading.Thread(target=writer, daemon=True).start()
++        threading.Thread(target=watchdog, daemon=True).start()
++        try:
++            while True:
++                if bflag.is_set():
++                    try: send(1, b"spk_busy")
++                    except Exception: pass
++                    break
++                fr = ws_read(self.rfile)
++                if fr is None: break
++                op, data = fr
++                if op == 8: break
++                if op == 9:
++                    try: send(10, data)
++                    except Exception: pass
++                    continue
++                if op == 10: continue
++                if op == 1 and data.strip() == b"talk_end":
++                    sys.stderr.write("talk: client end\n"); sys.stderr.flush(); break
++                if op in (1, 2) and data:
++                    stt["last"] = time.time()
++                    try: q.put_nowait(adpcm_decode(data, dec))
++                    except Exception: pass
++        except Exception:
++            pass
++        wstop.set()
++        try: q.put_nowait(None)
++        except Exception: pass
++        with TALK_LOCK:
++            TALK["active"] = False
++        STATS["talk"] = max(0, STATS["talk"] - 1)
++        stop.set()
++
++    def tone(self, dev):
++        allow = [x.strip() for x in os.environ.get("CAMAV_SPK_ALLOW", "plughw:2,0").split(";") if x.strip()]
++        if dev not in allow:
++            b = ("tone rejected: dev not in allowlist").encode()
++            self.send_response(403); self.send_header("Content-Type","text/plain")
++            self.send_header("Content-Length", str(len(b))); self.end_headers(); self.wfile.write(b)
++            return
++        try:
++            p = subprocess.Popen(["aplay","-D",dev,"-f","S16_LE","-r",str(RATE),"-c","1","-t","raw","-q"],
++                                 stdin=subprocess.PIPE, stderr=subprocess.PIPE)
++            n = int(RATE * 1.5)
++            buf = bytearray()
++            for i in range(n):
++                f = 440.0 if i < n//2 else 660.0
++                env = min(1.0, i/400.0, (n-i)/400.0)
++                buf += struct.pack("<h", int(11000 * env * math.sin(2*math.pi*f*i/RATE)))
++            p.stdin.write(bytes(buf)); p.stdin.flush(); p.stdin.close()
++            rc = p.wait(timeout=20)
++            msg = "tone ok dev=%s rc=%s rate=%d" % (dev, rc, RATE)
++        except Exception as e:
++            msg = "tone err dev=%s %s" % (dev, e)
++        b = msg.encode()
++        self.send_response(200); self.send_header("Content-Type","text/plain")
++        self.send_header("Content-Length", str(len(b))); self.end_headers(); self.wfile.write(b)
++
++class TS(socketserver.ThreadingMixIn, http.server.HTTPServer):
++    daemon_threads = True
++    allow_reuse_address = True
++
++    def handle_error(self, request, client_address):
++        # 客户端主动断流（浏览器关页/弱网）不刷 traceback
++        pass
++
++if __name__ == "__main__":
++    sys.stderr.write("camav v3: port=%d spk=%s mic=%s (%d->%dHz) video=%dpx/q%d/%gfps\n"
++                     % (PORT, SPK, MICS, CAPR, RATE, VID_W, VID_Q, VID_F)); sys.stderr.flush()
++    TS((os.environ.get("CAMAV_BIND", "127.0.0.1"), PORT), H).serve_forever()
